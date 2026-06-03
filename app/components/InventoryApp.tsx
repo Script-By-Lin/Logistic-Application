@@ -11,7 +11,7 @@ import {
 } from '@/types';
 
 // Dynamic sidebar tabs depending on user role
-const ADMIN_TABS = ['Overview', 'Production', 'Distribution', 'Returns', 'Reconciliation', 'Reports', 'Finance', 'Catalog Settings', 'Audit Logs'] as const;
+const ADMIN_TABS = ['Overview', 'Production', 'Distribution', 'Returns', 'Reconciliation', 'Reports', 'Finance', 'Catalog Settings', 'Audit Logs', 'Backup & Recovery'] as const;
 const VIEWER_TABS = ['Overview', 'Distribution', 'Returns', 'Reconciliation', 'Finance', 'Reports'] as const;
 
 interface AuditLog {
@@ -434,6 +434,7 @@ export default function InventoryApp() {
   const [isRegistering, setIsRegistering] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
+  const [isDataLoading, setIsDataLoading] = useState(false);
 
   // --- Sidebar & Data Tabs ---
   const sidebarTabs = user?.role === 'admin' ? ADMIN_TABS : VIEWER_TABS;
@@ -689,6 +690,8 @@ export default function InventoryApp() {
     batchId: '',
   });
 
+  const [returnPriceMode, setReturnPriceMode] = useState<'plus10' | 'manual'>('plus10');
+
   const [priceForm, setPriceForm] = useState({
     pipeTypeId: 0,
     unitPrice: 0,
@@ -702,6 +705,13 @@ export default function InventoryApp() {
   const [reportPipeTypeId, setReportPipeTypeId] = useState<string>('All');
   const [reportBatchId, setReportBatchId] = useState<string>('All');
 
+  // --- Backup & Recovery States ---
+  const [backups, setBackups] = useState<any[]>([]);
+  const [isBackupLoading, setIsBackupLoading] = useState(false);
+  const [isBackupCreating, setIsBackupCreating] = useState(false);
+  const [isBackupRestoring, setIsBackupRestoring] = useState(false);
+  const [backupMessage, setBackupMessage] = useState<string | null>(null);
+
   // --- Tab Dynamic Text ---
   const PAGE_TITLES: Record<string, Record<'en' | 'my', string>> = {
     Overview: { en: 'Live Inventory Analytics', my: 'တိုက်ရိုက် ကုန်ပစ္စည်း စာရင်း' },
@@ -713,6 +723,7 @@ export default function InventoryApp() {
     Finance: { en: 'Financial Performance & Re-buy Tracking', my: 'ဘဏ္ဍာရေး စွမ်းဆောင်ရည်နှင့် ပြန်လည်ဝယ်ယူမှု ခြေရာခံခြင်း' },
     'Catalog Settings': { en: 'Central Catalog Settings', my: 'ဗဟို ကတ်တလောက် ပြင်ဆင်ရန်' },
     'Audit Logs': { en: 'Administrator Audit Trail', my: 'အက်ဒမင် လုပ်ဆောင်မှု မှတ်တမ်း' },
+    'Backup & Recovery': { en: 'Database Backup & Recovery', my: 'ဒေတာဘေ့စ် သိမ်းဆည်းခြင်းနှင့် ပြန်လည်ရယူခြင်း' },
   };
 
   const PAGE_SUBHEADINGS: Record<string, Record<'en' | 'my', string>> = {
@@ -720,6 +731,10 @@ export default function InventoryApp() {
     'Audit Logs': {
       en: 'Audit record of all creations, price updates, and distribution authorizations.',
       my: 'ထုတ်လုပ်မှုများ၊ ဈေးနှုန်းပြင်ဆင်မှုများနှင့် ဖြန့်ဖြူးမှုအတည်ပြုချက်များ၏ လုံခြုံရေးမှတ်တမ်း။',
+    },
+    'Backup & Recovery': {
+      en: 'Manage database snapshots, export Excel reports, or upload spreadsheet backups to restore the database data.',
+      my: 'ဒေတာဘေ့စ် မှတ်တမ်းများကို စီမံခန့်ခွဲရန်၊ Excel အစီရင်ခံစာများ ထုတ်ယူရန် သို့မဟုတ် ဒေတာဘေ့စ်ပြန်လည်ရယူရန် Excel ဖိုင်တင်သွင်းရန်။',
     }
   };
 
@@ -855,16 +870,164 @@ export default function InventoryApp() {
     }
   };
 
+  const loadAllData = async () => {
+    setIsDataLoading(true);
+    try {
+      await new Promise(r => setTimeout(r, 4000));
+      await Promise.all([
+        loadData(),
+        loadVillages(),
+        user?.role === 'admin' ? loadAuditLogs() : Promise.resolve(),
+      ]);
+    } catch (error) {
+      console.error('Failed to load system data:', error);
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
+
+  const renderSkeleton = (style?: React.CSSProperties) => {
+    return <div className="skeleton-box" style={style} />;
+  };
+
+  const renderTableSkeleton = (colCount: number, rowCount: number = 5) => {
+    return Array.from({ length: rowCount }).map((_, rIdx) => (
+      <tr key={rIdx}>
+        {Array.from({ length: colCount }).map((_, cIdx) => {
+          const widths = ['80%', '60%', '70%', '50%', '90%', '40%'];
+          const width = widths[(rIdx + cIdx) % widths.length];
+          return (
+            <td key={cIdx}>
+              <div className="skeleton-box" style={{ width }} />
+            </td>
+          );
+        })}
+      </tr>
+    ));
+  };
+
+  const loadBackupsList = async () => {
+    setIsBackupLoading(true);
+    setBackupMessage(null);
+    try {
+      const response = await fetch('/api/backup');
+      const data = await response.json();
+      if (response.ok && data.backups) {
+        setBackups(data.backups);
+      } else {
+        setBackupMessage(data.error || 'Failed to load backups.');
+      }
+    } catch (error) {
+      setBackupMessage('Failed to fetch backups from server.');
+      console.error(error);
+    } finally {
+      setIsBackupLoading(false);
+    }
+  };
+
+  const handleCreateBackup = async () => {
+    setIsBackupCreating(true);
+    setBackupMessage(null);
+    try {
+      const response = await fetch('/api/backup', { method: 'POST' });
+      const data = await response.json();
+      if (response.ok) {
+        setBackupMessage(language === 'my' ? 'ဒေတာဘေ့စ် သိမ်းဆည်းမှု အောင်မြင်ပါသည်။' : 'Database backup snapshot created successfully.');
+        await loadBackupsList();
+      } else {
+        setBackupMessage(data.error || 'Failed to create backup.');
+      }
+    } catch (error) {
+      setBackupMessage('Error creating database snapshot.');
+      console.error(error);
+    } finally {
+      setIsBackupCreating(false);
+    }
+  };
+
+  const handleDeleteBackup = async (filename: string) => {
+    if (!confirm(language === 'my' ? `သိမ်းဆည်းထားသောဖိုင် "${filename}" ကို ဖျက်ရန် သေချာပါသလား?` : `Are you sure you want to delete backup file "${filename}"?`)) return;
+    setBackupMessage(null);
+    try {
+      const response = await fetch(`/api/backup?filename=${encodeURIComponent(filename)}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (response.ok) {
+        setBackupMessage(language === 'my' ? 'သိမ်းဆည်းထားသောဖိုင် ဖျက်ပြီးပါပြီ။' : 'Backup file deleted successfully.');
+        await loadBackupsList();
+      } else {
+        setBackupMessage(data.error || 'Failed to delete backup.');
+      }
+    } catch (error) {
+      setBackupMessage('Error deleting backup file.');
+      console.error(error);
+    }
+  };
+
+  const handleDownloadJson = (filename: string) => {
+    window.open(`/api/backup/download?filename=${encodeURIComponent(filename)}`, '_blank');
+  };
+
+  const handleExportExcelBackup = (filename: string) => {
+    window.open(`/api/backup/export-excel?filename=${encodeURIComponent(filename)}`, '_blank');
+  };
+
+  const handleImportExcelBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm(language === 'my' 
+      ? 'သတိပေးချက် - ဤလုပ်ဆောင်ချက်သည် လက်ရှိဒေတာဘေ့စ်မှတ်တမ်းများကို ပြန်လည်ရေးသား/ဖြည့်စွက်ပါမည်။ ဆက်လုပ်ရန် သေਚာပါသလား?' 
+      : 'WARNING: This will overwrite or upsert current database records. Are you sure you want to restore data from this Excel backup file?')) {
+      e.target.value = '';
+      return;
+    }
+
+    setIsBackupRestoring(true);
+    setBackupMessage(null);
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/backup/import', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const counts = data.results;
+        const msg = language === 'my'
+          ? `ဒေတာဘေ့စ် ပြန်လည်ရယူခြင်း အောင်မြင်ပါသည်။ ထည့်သွင်းပြီးမှတ်တမ်းများ: ${JSON.stringify(counts)}`
+          : `Database restored successfully. Imported: Pipe Types (${counts.pipe_types || 0}), Villages (${counts.villages || 0}), Productions (${counts.productions || 0}), Distributions (${counts.distributions || 0}), Returns (${counts.returns || 0}), Audit Logs (${counts.audit_logs || 0}), Users (${counts.app_users || 0})`;
+        setBackupMessage(msg);
+        // Reload all app data
+        await loadData();
+        await loadVillages();
+        await loadAuditLogs();
+      } else {
+        setBackupMessage(data.error || 'Failed to restore database.');
+      }
+    } catch (error) {
+      setBackupMessage('Error restoring data from backup file.');
+      console.error(error);
+    } finally {
+      setIsBackupRestoring(false);
+      e.target.value = '';
+    }
+  };
+
   // Reload data when user logs in successfully
   useEffect(() => {
     if (user) {
-      loadData();
-      loadVillages();
-      if (user.role === 'admin') {
-        loadAuditLogs();
-      }
+      loadAllData();
     }
   }, [user]);
+
+  // Load backups list when visiting the Backup tab
+  useEffect(() => {
+    if (activeTab === 'Backup & Recovery' && user?.role === 'admin') {
+      loadBackupsList();
+    }
+  }, [activeTab, user]);
 
   // Set form dates dynamically on client-mount to prevent hydration mismatches
   useEffect(() => {
@@ -874,6 +1037,25 @@ export default function InventoryApp() {
     setReturnForm((prev) => ({ ...prev, date: today }));
     setReportDate(today);
   }, []);
+
+  // Auto-generate batch_id based on production date and model_name
+  useEffect(() => {
+    const selectedPipe = pipeTypes.find(pt => pt.id === productionForm.pipeTypeId);
+    if (selectedPipe && productionForm.date) {
+      const cleanName = selectedPipe.name.trim().replace(/\s+/g, '-');
+      const autoBatchId = `${productionForm.date}-${cleanName}`;
+      setProductionForm(prev => ({ ...prev, batchId: autoBatchId }));
+    }
+  }, [productionForm.date, productionForm.pipeTypeId, pipeTypes]);
+
+  // Auto-calculate re-buy price (plus 10% of catalog price) when returned
+  useEffect(() => {
+    if (returnPriceMode === 'plus10') {
+      const basePrice = priceMap[returnForm.pipeTypeId] || 0;
+      const calculatedPrice = Number((basePrice * 1.1).toFixed(2));
+      setReturnForm(prev => ({ ...prev, price: calculatedPrice }));
+    }
+  }, [returnForm.pipeTypeId, returnPriceMode, priceMap]);
 
   const factoryStockMap = useMemo(() => {
     const totals = pipeTypes.reduce<Record<number, number>>((acc, pipe) => {
@@ -1743,6 +1925,14 @@ export default function InventoryApp() {
     const radius = 100;
     const thickness = 28;
 
+    if (isDataLoading) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px', width: '100%' }}>
+          <div className="skeleton-box" style={{ height: '220px', width: '220px', borderRadius: '50%' }} />
+        </div>
+      );
+    }
+
     if (pipeTypeUsageData.length === 0) {
       return (
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.95rem' }}>
@@ -2094,7 +2284,7 @@ export default function InventoryApp() {
       let csvContent = '\uFEFF';
       const { label } = reportFilterRange;
 
-      csvContent += `PipeFlow Village Distribution & Left Return Report\n`;
+      csvContent += `TrammelNet - Village Distribution & Left Return Report\n`;
       csvContent += `Filters: ${label}\n`;
       csvContent += `Generated On: ${new Date().toLocaleString()}\n\n`;
 
@@ -2129,7 +2319,7 @@ export default function InventoryApp() {
     let csvContent = '\uFEFF';
     const { label } = reportFilterRange;
 
-    csvContent += `PipeFlow Centralized Inventory Report\n`;
+    csvContent += `TrammelNet Centralized Inventory Report\n`;
     csvContent += `Period: ${label}\n`;
     csvContent += `Generated On: ${new Date().toLocaleString()}\n\n`;
 
@@ -2818,10 +3008,12 @@ export default function InventoryApp() {
     return (
       <div className="login-viewport">
         <div className="premium-loader-container">
-          <div className="loader-logo-pulse">PI</div>
-          <div className="loader-bar-track">
-            <div className="loader-bar-fill" />
+          <div className="spinner-wrapper">
+            <div className="spinner-ring outer-ring" />
+            <div className="spinner-ring inner-ring" />
+            <div className="spinner-center">T</div>
           </div>
+          <div className="loader-title">TrammelNet</div>
           <div className="loader-text">
             {language === 'my' ? 'စနစ်ပတ်ဝန်းကျင်အား ပြင်ဆင်နေသည်...' : 'LOADING USER ENVIRONMENT'}
           </div>
@@ -2835,12 +3027,12 @@ export default function InventoryApp() {
     return (
       <div className="login-viewport">
         <div className="login-pane">
-          <div className="logo-mark">Inve</div>
-          <h2>{isRegistering ? (language === 'my' ? 'အက်ဒမင် အကောင့်ပြုလုပ်ရန်' : 'Create Admin Account') : (language === 'my' ? 'စနစ်ထဲသို့ ဝင်ရန်' : 'Sign in to Pipe Flow')}</h2>
+          <div style={{ fontSize: '2rem', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--accent, #4f46e5)', marginBottom: '16px' }}>TrammelNet</div>
+          <h2>{isRegistering ? (language === 'my' ? 'အက်ဒမင် အကောင့်ပြုလုပ်ရန်' : 'Create Admin Account') : (language === 'my' ? 'စနစ်ထဲသို့ ဝင်ရန်' : 'Sign in to TrammelNet')}</h2>
           <p className="login-subtitle">
             {isRegistering 
               ? (language === 'my' ? 'စနစ်ထိန်းချုပ်ရန် အက်ဒမင်အကောင့်အသစ်တစ်ခု ဖန်တီးပါ။' : 'Provision a new administrator account for system control.')
-              : (language === 'my' ? 'ပိုက်ကုန်ပစ္စည်းများနှင့် အရည်အသွေးထိန်းချုပ်မှုကို စီမံခန့်ခွဲရန် ဝင်ရောက်ပါ။' : 'Access central pipe inventory management and quality tracking.')}
+              : (language === 'my' ? 'ကုန်ပစ္စည်းများနှင့် အရည်အသွေးထိန်းချုပ်မှုကို စီမံခန့်ခွဲရန် ဝင်ရောက်ပါ။' : 'Access centralized inventory management and quality tracking.')}
           </p>
 
           {message && <div className="alert">{message}</div>}
@@ -2892,17 +3084,19 @@ export default function InventoryApp() {
       )}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         {/* Logo block */}
-        <div className="logo-block">
-          <div className="logo-mark">PI</div>
-          <div>
-            <div className="sidebar-title">PipeFlow</div>
-            <div className="sidebar-subtitle">Inventory App</div>
+        <div className="logo-block" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '2px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.08))' }}>
+          <div style={{ fontSize: '1.5rem', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--accent, #4f46e5)' }}>
+            TrammelNet
+          </div>
+          <div className="sidebar-subtitle" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6, fontWeight: '600' }}>
+            Inventory App
           </div>
           <button 
             type="button" 
             className="mobile-close-btn" 
             onClick={() => setIsSidebarOpen(false)}
             aria-label="Close sidebar"
+            style={{ position: 'absolute', right: '16px', top: '16px' }}
           >
             &times;
           </button>
@@ -3062,23 +3256,23 @@ export default function InventoryApp() {
               <div className="stats-grid cols-5">
                 <div className="summary-card">
                   <p>{t.totalProduction}</p>
-                  <h3>{totalProduction}</h3>
+                  <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : totalProduction}</h3>
                 </div>
                 <div className="summary-card">
                   <p>{t.totalDistributedUnits}</p>
-                  <h3>{totalDistributed}</h3>
+                  <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : totalDistributed}</h3>
                 </div>
                 <div className="summary-card">
                   <p>{t.totalReturnedUnits}</p>
-                  <h3>{totalReturned}</h3>
+                  <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : totalReturned}</h3>
                 </div>
                 <div className="summary-card">
                   <p>{t.leftToReturn}</p>
-                  <h3>{totalDistributed - totalReturned}</h3>
+                  <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : (totalDistributed - totalReturned)}</h3>
                 </div>
                 <div className="summary-card">
                   <p>{t.currentBalance}</p>
-                  <h3>{currentBalance}</h3>
+                  <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : currentBalance}</h3>
                 </div>
               </div>
 
@@ -3099,26 +3293,34 @@ export default function InventoryApp() {
                     </div>
 
                     <div className="chart-bars-wrapper">
-                      {weeklyVelocity.map((item, index) => {
-                        const dayNames: Record<string, string> = {
-                          Mon: language === 'my' ? 'တနင်္လာ' : 'Mon',
-                          Tue: language === 'my' ? 'အင်္ဂါ' : 'Tue',
-                          Wed: language === 'my' ? 'ဗုဒ္ဓဟူး' : 'Wed',
-                          Thu: language === 'my' ? 'ကြာသပတေး' : 'Thu',
-                          Fri: language === 'my' ? 'သောကြာ' : 'Fri',
-                          Sat: language === 'my' ? 'စနေ' : 'Sat',
-                          Sun: language === 'my' ? 'တနင်္ဂနွေ' : 'Sun',
-                        };
-                        return (
-                          <div key={index} className="chart-bar-col">
-                            <div
-                              className="chart-bar-fill"
-                              style={{ height: `${item.percentage}%` }}
-                              data-value={`${item.quantity} ${language === 'my' ? 'ယူနစ်' : 'units'}`}
-                            />
+                      {isDataLoading ? (
+                        Array.from({ length: 7 }).map((_, idx) => (
+                          <div key={idx} className="chart-bar-col">
+                            <div className="skeleton-box" style={{ height: `${(idx * 15) % 60 + 20}%`, width: '44px', borderRadius: '6px' }} />
                           </div>
-                        );
-                      })}
+                        ))
+                      ) : (
+                        weeklyVelocity.map((item, index) => {
+                          const dayNames: Record<string, string> = {
+                            Mon: language === 'my' ? 'တနင်္လာ' : 'Mon',
+                            Tue: language === 'my' ? 'အင်္ဂါ' : 'Tue',
+                            Wed: language === 'my' ? 'ဗုဒ္ဓဟူး' : 'Wed',
+                            Thu: language === 'my' ? 'ကြာသပတေး' : 'Thu',
+                            Fri: language === 'my' ? 'သောကြာ' : 'Fri',
+                            Sat: language === 'my' ? 'စနေ' : 'Sat',
+                            Sun: language === 'my' ? 'တနင်္ဂနွေ' : 'Sun',
+                          };
+                          return (
+                            <div key={index} className="chart-bar-col">
+                              <div
+                                className="chart-bar-fill"
+                                style={{ height: `${item.percentage}%` }}
+                                data-value={`${item.quantity} ${language === 'my' ? 'ယူနစ်' : 'units'}`}
+                              />
+                            </div>
+                          );
+                        })
+                      )}
                     </div>
 
                     <div className="chart-bar-labels">
@@ -3147,7 +3349,13 @@ export default function InventoryApp() {
                   </div>
 
                   <div className="notifications-widget">
-                    {systemAlerts.length === 0 ? (
+                    {isDataLoading ? (
+                      Array.from({ length: 3 }).map((_, idx) => (
+                        <div key={idx} className="notification-item alert-info" style={{ pointerEvents: 'none', background: 'transparent', border: 'none', padding: '10px 0' }}>
+                          <div className="skeleton-box" style={{ width: '100%', height: '1.2rem' }} />
+                        </div>
+                      ))
+                    ) : systemAlerts.length === 0 ? (
                       <div className="notification-item alert-info">
                         {t.systemStatusOptimal}
                       </div>
@@ -3191,30 +3399,41 @@ export default function InventoryApp() {
                       </span>
                     </div>
                     <div className="quick-metrics-stack">
-                      <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
-                        <span className="metric-strip-label">
-                          {language === 'my' ? 'ကုန်ထုတ်လုပ်မှု လုပ်ငန်းစဉ် မှတ်တမ်းများ' : 'Production Process Logs'}
-                        </span>
-                        <span className="metric-strip-value">{productions.length}</span>
-                      </div>
-                      <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
-                        <span className="metric-strip-label">
-                          {language === 'my' ? 'ဖြန့်ဖြူးမှု လုပ်ငန်းစဉ် မှတ်တမ်းများ' : 'Distribution Process Logs'}
-                        </span>
-                        <span className="metric-strip-value">{distributions.length}</span>
-                      </div>
-                      <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
-                        <span className="metric-strip-label">
-                          {language === 'my' ? 'ပြန်အပ်နှံမှု လုပ်ငန်းစဉ် မှတ်တမ်းများ' : 'Return Process Logs'}
-                        </span>
-                        <span className="metric-strip-value">{returnsList.length}</span>
-                      </div>
-                      <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
-                        <span className="metric-strip-label">
-                          {t.outpostsServed}
-                        </span>
-                        <span className="metric-strip-value">{activeVillages}</span>
-                      </div>
+                      {isDataLoading ? (
+                        Array.from({ length: 4 }).map((_, idx) => (
+                          <div key={idx} className="metric-strip" style={{ background: 'var(--bg-primary)', pointerEvents: 'none' }}>
+                            <div className="skeleton-box" style={{ width: '50%', height: '1rem' }} />
+                            <div className="skeleton-box" style={{ width: '15%', height: '1.25rem' }} />
+                          </div>
+                        ))
+                      ) : (
+                        <>
+                          <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
+                            <span className="metric-strip-label">
+                              {language === 'my' ? 'ကုန်ထုတ်လုပ်မှု လုပ်ငန်းစဉ် မှတ်တမ်းများ' : 'Production Process Logs'}
+                            </span>
+                            <span className="metric-strip-value">{productions.length}</span>
+                          </div>
+                          <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
+                            <span className="metric-strip-label">
+                              {language === 'my' ? 'ဖြန့်ဖြူးမှု လုပ်ငန်းစဉ် မှတ်တမ်းများ' : 'Distribution Process Logs'}
+                            </span>
+                            <span className="metric-strip-value">{distributions.length}</span>
+                          </div>
+                          <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
+                            <span className="metric-strip-label">
+                              {language === 'my' ? 'ပြန်အပ်နှံမှု လုပ်ငန်းစဉ် မှတ်တမ်းများ' : 'Return Process Logs'}
+                            </span>
+                            <span className="metric-strip-value">{returnsList.length}</span>
+                          </div>
+                          <div className="metric-strip" style={{ background: 'var(--bg-primary)' }}>
+                            <span className="metric-strip-label">
+                              {t.outpostsServed}
+                            </span>
+                            <span className="metric-strip-value">{activeVillages}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -3387,7 +3606,9 @@ export default function InventoryApp() {
                     </tr>
                   </thead>
                   <tbody>
-                    {productions.length === 0 ? (
+                    {isDataLoading ? (
+                      renderTableSkeleton(user.role === 'admin' ? 6 : 5)
+                    ) : productions.length === 0 ? (
                       <tr>
                         <td colSpan={user.role === 'admin' ? 6 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                           {t.noBatchesRegistered}
@@ -3545,7 +3766,9 @@ export default function InventoryApp() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredDistributions.length === 0 ? (
+                      {isDataLoading ? (
+                        renderTableSkeleton(user.role === 'admin' ? 6 : 5)
+                      ) : filteredDistributions.length === 0 ? (
                         <tr>
                           <td colSpan={user.role === 'admin' ? 6 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                             {t.noDistributionRecords}
@@ -3703,7 +3926,9 @@ export default function InventoryApp() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredReturns.length === 0 ? (
+                      {isDataLoading ? (
+                        renderTableSkeleton(user.role === 'admin' ? 9 : 8)
+                      ) : filteredReturns.length === 0 ? (
                         <tr>
                           <td colSpan={user.role === 'admin' ? 9 : 8} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                             {t.noReturnLogsMatch}
@@ -3824,7 +4049,9 @@ export default function InventoryApp() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredReconciliation.length === 0 ? (
+                      {isDataLoading ? (
+                        renderTableSkeleton(10)
+                      ) : filteredReconciliation.length === 0 ? (
                         <tr>
                           <td colSpan={10} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                             {t.noClaims}
@@ -3979,25 +4206,25 @@ export default function InventoryApp() {
                 <div className="summary-card" style={{ borderLeft: '4px solid var(--primary)' }}>
                   <p>{t.totalRevenue}</p>
                   <h3 style={{ color: 'var(--primary)', marginTop: '8px' }}>
-                    {formatCurrency(financeKPIs.totalRevenue)}
+                    {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%' }) : formatCurrency(financeKPIs.totalRevenue)}
                   </h3>
                 </div>
                 <div className="summary-card" style={{ borderLeft: '4px solid var(--accent-red, #ef4444)' }}>
                   <p>{t.totalRefunds}</p>
                   <h3 style={{ color: 'var(--accent-red, #ef4444)', marginTop: '8px' }}>
-                    {formatCurrency(financeKPIs.totalRefunds)}
+                    {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%' }) : formatCurrency(financeKPIs.totalRefunds)}
                   </h3>
                 </div>
                 <div className="summary-card" style={{ borderLeft: `4px solid ${financeKPIs.netProfit >= 0 ? 'var(--accent-green, #10b981)' : 'var(--accent-red, #ef4444)'}` }}>
                   <p>{t.netProfit}</p>
                   <h3 style={{ color: financeKPIs.netProfit >= 0 ? 'var(--accent-green, #10b981)' : 'var(--accent-red, #ef4444)', marginTop: '8px' }}>
-                    {formatCurrency(financeKPIs.netProfit)}
+                    {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%' }) : formatCurrency(financeKPIs.netProfit)}
                   </h3>
                 </div>
                 <div className="summary-card" style={{ borderLeft: '4px solid var(--warning, #f59e0b)' }}>
                   <p>{t.refundRate}</p>
                   <h3 style={{ color: 'var(--warning, #f59e0b)', marginTop: '8px' }}>
-                    +{financeKPIs.refundRate.toFixed(1)}%
+                    {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '40%' }) : `+${financeKPIs.refundRate.toFixed(1)}%`}
                   </h3>
                 </div>
               </div>
@@ -4019,7 +4246,9 @@ export default function InventoryApp() {
                         </tr>
                       </thead>
                       <tbody>
-                        {modelFinanceData.length === 0 ? (
+                        {isDataLoading ? (
+                          renderTableSkeleton(5)
+                        ) : modelFinanceData.length === 0 ? (
                           <tr>
                             <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                               {t.noClaims}
@@ -4078,7 +4307,9 @@ export default function InventoryApp() {
                         </tr>
                       </thead>
                       <tbody>
-                        {batchFinanceData.length === 0 ? (
+                        {isDataLoading ? (
+                          renderTableSkeleton(5)
+                        ) : batchFinanceData.length === 0 ? (
                           <tr>
                             <td colSpan={5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                               {t.noClaims}
@@ -4223,7 +4454,7 @@ export default function InventoryApp() {
                   </>
                 )}
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end', marginLeft: 'auto' }}>
+                <div className="responsive-btn-group right-aligned">
                   <button type="button" className="secondary" onClick={handleExportExcel}>
                     📊 {t.exportToExcelBtn}
                   </button>
@@ -4239,8 +4470,8 @@ export default function InventoryApp() {
                 <div className="print-only-header" style={{ display: 'none', marginBottom: '30px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid var(--border-color)', paddingBottom: '16px' }}>
                     <div>
-                      <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--text-primary)' }}>PIPEFLOW SYSTEMS</h1>
-                      <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Centralized Pipe Inventory Network</p>
+                      <h1 style={{ margin: 0, fontSize: '24px', color: 'var(--text-primary)' }}>TRAMMELNET</h1>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: 'var(--text-secondary)' }}>Centralized Inventory Network</p>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <p style={{ margin: 0, fontWeight: '600', fontSize: '16px' }}>{t.reportGenerationTitle}</p>
@@ -4254,7 +4485,7 @@ export default function InventoryApp() {
                   <p className="report-period" style={{ fontSize: '1rem', marginTop: '4px' }}>
                     {language === 'my' ? 'အစီရင်ခံစာ ကာလ:' : 'Reporting Period:'}{' '}
                     <strong style={{ color: 'var(--accent)' }}>
-                      {reportFilterRange.label || (language === 'my' ? 'ရွေးချယ်မထားပါ' : 'Not Selected')}
+                      {isDataLoading ? renderSkeleton({ height: '1.25rem', width: '150px', display: 'inline-block', verticalAlign: 'middle', marginLeft: '8px' }) : (reportFilterRange.label || (language === 'my' ? 'ရွေးချယ်မထားပါ' : 'Not Selected'))}
                     </strong>
                   </p>
                 </div>
@@ -4264,16 +4495,16 @@ export default function InventoryApp() {
                   <div className="stats-grid report-summary-grid" style={{ marginBottom: '32px', border: '1px solid var(--border-color)', gridTemplateColumns: 'repeat(3, 1fr)' }}>
                     <div className="summary-card">
                       <p>{language === 'my' ? 'စုစုပေါင်း ဖြန့်ဖြူးပြီး အရေအတွက်' : 'Total Distributed Units'}</p>
-                      <h3>{reportData.totals.distributed}</h3>
+                      <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : reportData.totals.distributed}</h3>
                     </div>
                     <div className="summary-card">
                       <p>{language === 'my' ? 'စုစုပေါင်း ပြန်အပ်နှံပြီး အရေအတွက်' : 'Total Returned Units'}</p>
-                      <h3>{reportData.totals.returned}</h3>
+                      <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : reportData.totals.returned}</h3>
                     </div>
                     <div className="summary-card">
                       <p>{language === 'my' ? 'ပြန်အပ်ရန် ကျန်ရှိသော အရေအတွက်' : 'Left to Return to Company'}</p>
                       <h3 style={{ color: reportData.totals.balance > 0 ? 'var(--warning)' : 'var(--text-primary)' }}>
-                        {reportData.totals.balance}
+                        {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : reportData.totals.balance}
                       </h3>
                     </div>
                   </div>
@@ -4281,28 +4512,32 @@ export default function InventoryApp() {
                   <div className="stats-grid report-summary-grid" style={{ marginBottom: '32px', border: '1px solid var(--border-color)' }}>
                     <div className="summary-card">
                       <p>{t.totalProducedUnits}</p>
-                      <h3>{reportData.totals.produced}</h3>
+                      <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : reportData.totals.produced}</h3>
                     </div>
                     <div className="summary-card">
                       <p>{t.totalDistributedUnits}</p>
-                      <h3>{reportData.totals.distributed}</h3>
+                      <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : reportData.totals.distributed}</h3>
                     </div>
                     <div className="summary-card">
                       <p>{t.totalReturnedUnits}</p>
-                      <h3>{reportData.totals.returned}</h3>
+                      <h3>{isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : reportData.totals.returned}</h3>
                     </div>
                     <div className="summary-card">
                       <p>{t.netInventoryChange}</p>
                       <h3 style={{ color: reportData.totals.balance >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                        {reportData.totals.balance >= 0 ? '+' : ''}
-                        {reportData.totals.balance}
+                        {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%', marginTop: '8px' }) : (
+                          <>
+                            {reportData.totals.balance >= 0 ? '+' : ''}
+                            {reportData.totals.balance}
+                          </>
+                        )}
                       </h3>
                     </div>
                   </div>
                 )}
 
                 {reportType === 'distribution_left' ? (
-                  reportFilteredRecon.length === 0 ? (
+                  !isDataLoading && reportFilteredRecon.length === 0 ? (
                     <div className="no-activity-placeholder" style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
                       <span style={{ fontSize: '3rem', display: 'block', marginBottom: '16px' }}>📋</span>
                       <p>{language === 'my' ? 'မှတ်တမ်း မရှိပါ။' : 'No records found.'}</p>
@@ -4328,10 +4563,13 @@ export default function InventoryApp() {
                             </tr>
                           </thead>
                           <tbody>
-                            {reportFilteredRecon.map((item: any) => (
-                              <tr key={item.id}>
-                                <td>{item.village}</td>
-                                <td>{item.pipeName}</td>
+                            {isDataLoading ? (
+                              renderTableSkeleton(9)
+                            ) : (
+                              reportFilteredRecon.map((item: any) => (
+                                <tr key={item.id}>
+                                  <td>{item.village}</td>
+                                  <td>{item.pipeName}</td>
                                   <td>
                                     {item.batchId ? (
                                       <button
@@ -4346,36 +4584,38 @@ export default function InventoryApp() {
                                       'N/A'
                                     )}
                                   </td>
-                                <td>{item.distDate}</td>
-                                <td>{item.distributedQty} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                                <td>
-                                  {item.returnedDamagedQty > 0 ? (
-                                    <span style={{ color: 'var(--accent-red)', fontWeight: '600' }}>
-                                      {item.returnedDamagedQty} {language === 'my' ? 'ယူနစ်' : 'units'}
-                                    </span>
-                                  ) : (
-                                    `0 ${language === 'my' ? 'ယူနစ်' : 'units'}`
-                                  )}
-                                </td>
-                                <td>{item.returnedProductionGradeQty || 0} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                                <td>
-                                  {item.leftQty > 0 ? (
-                                    <span style={{ color: 'var(--warning)', fontWeight: '600' }}>
-                                      {item.leftQty} {language === 'my' ? 'ယူနစ်' : 'units'}
-                                    </span>
-                                  ) : (
-                                    `0 ${language === 'my' ? 'ယူနစ်' : 'units'}`
-                                  )}
-                                </td>
-                                <td>{item.returnDate}</td>
-                              </tr>
-                            ))}
+                                  <td>{item.distDate}</td>
+                                  <td>{item.distributedQty} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                                  <td>
+                                    {item.returnedDamagedQty > 0 ? (
+                                      <span style={{ color: 'var(--accent-red)', fontWeight: '600' }}>
+                                        {item.returnedDamagedQty} {language === 'my' ? 'ယူနစ်' : 'units'}
+                                      </span>
+                                    ) : (
+                                      `0 ${language === 'my' ? 'ယူနစ်' : 'units'}`
+                                    )}
+                                  </td>
+                                  <td>{item.returnedProductionGradeQty || 0} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                                  <td>
+                                    {item.leftQty > 0 ? (
+                                      <span style={{ color: 'var(--warning)', fontWeight: '600' }}>
+                                        {item.leftQty} {language === 'my' ? 'ယူနစ်' : 'units'}
+                                      </span>
+                                    ) : (
+                                      `0 ${language === 'my' ? 'ယူနစ်' : 'units'}`
+                                    )}
+                                  </td>
+                                  <td>{item.returnDate}</td>
+                                </tr>
+                              ))
+                            )}
                           </tbody>
                         </table>
                       </div>
                     </div>
                   )
                 ) : (
+                  !isDataLoading &&
                   reportData.productions.length === 0 &&
                   reportData.distributions.length === 0 &&
                   reportData.returns.length === 0 ? (
@@ -4386,7 +4626,7 @@ export default function InventoryApp() {
                   ) : (
                     <div className="report-tables-stack" style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                       {/* Production Summary Table */}
-                      {reportData.productions.length > 0 && (
+                      {(isDataLoading || reportData.productions.length > 0) && (
                         <div className="table-panel report-table-panel" style={{ padding: 0 }}>
                           <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>🏭 {t.productionSummaryHeader}</h3>
                           <div className="table-wrapper">
@@ -4400,27 +4640,31 @@ export default function InventoryApp() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {reportData.productions.map((item: any) => (
-                                  <tr key={item.id}>
-                                    <td>{item.date}</td>
-                                    <td>
-                                      {item.batch_id ? (
-                                        <button
-                                          type="button"
-                                          className="link-btn"
-                                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
-                                          onClick={() => setViewingBatchId(item.batch_id)}
-                                        >
-                                          {item.batch_id}
-                                        </button>
-                                      ) : (
-                                        'N/A'
-                                      )}
-                                    </td>
-                                    <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown'}</td>
-                                    <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                                  </tr>
-                                ))}
+                                {isDataLoading ? (
+                                  renderTableSkeleton(4)
+                                ) : (
+                                  reportData.productions.map((item: any) => (
+                                    <tr key={item.id}>
+                                      <td>{item.date}</td>
+                                      <td>
+                                        {item.batch_id ? (
+                                          <button
+                                            type="button"
+                                            className="link-btn"
+                                            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
+                                            onClick={() => setViewingBatchId(item.batch_id)}
+                                          >
+                                            {item.batch_id}
+                                          </button>
+                                        ) : (
+                                          'N/A'
+                                        )}
+                                      </td>
+                                      <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown'}</td>
+                                      <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                                    </tr>
+                                  ))
+                                )}
                               </tbody>
                             </table>
                           </div>
@@ -4428,7 +4672,7 @@ export default function InventoryApp() {
                       )}
 
                       {/* Distribution Summary Table */}
-                      {reportData.distributions.length > 0 && (
+                      {(isDataLoading || reportData.distributions.length > 0) && (
                         <div className="table-panel report-table-panel" style={{ padding: 0 }}>
                           <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>🚚 {t.distributionSummaryHeader}</h3>
                           <div className="table-wrapper">
@@ -4445,30 +4689,34 @@ export default function InventoryApp() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {reportData.distributions.map((item: any) => (
-                                  <tr key={item.id}>
-                                    <td>{item.date}</td>
-                                    <td>{item.village}</td>
-                                    <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown'}</td>
-                                    <td>
-                                      {item.batch_id ? (
-                                        <button
-                                          type="button"
-                                          className="link-btn"
-                                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
-                                          onClick={() => setViewingBatchId(item.batch_id)}
-                                        >
-                                          {item.batch_id}
-                                        </button>
-                                      ) : (
-                                        'N/A'
-                                      )}
-                                    </td>
-                                    <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                                    <td>{formatCurrency(item.price)}</td>
-                                    <td>{formatCurrency(item.quantity * item.price)}</td>
-                                  </tr>
-                                ))}
+                                {isDataLoading ? (
+                                  renderTableSkeleton(7)
+                                ) : (
+                                  reportData.distributions.map((item: any) => (
+                                    <tr key={item.id}>
+                                      <td>{item.date}</td>
+                                      <td>{item.village}</td>
+                                      <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown'}</td>
+                                      <td>
+                                        {item.batch_id ? (
+                                          <button
+                                            type="button"
+                                            className="link-btn"
+                                            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
+                                            onClick={() => setViewingBatchId(item.batch_id)}
+                                          >
+                                            {item.batch_id}
+                                          </button>
+                                        ) : (
+                                          'N/A'
+                                        )}
+                                      </td>
+                                      <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                                      <td>{formatCurrency(item.price)}</td>
+                                      <td>{formatCurrency(item.quantity * item.price)}</td>
+                                    </tr>
+                                  ))
+                                )}
                               </tbody>
                             </table>
                           </div>
@@ -4476,7 +4724,7 @@ export default function InventoryApp() {
                       )}
 
                       {/* Returns Summary Table */}
-                      {reportData.returns.length > 0 && (
+                      {(isDataLoading || reportData.returns.length > 0) && (
                         <div className="table-panel report-table-panel" style={{ padding: 0 }}>
                           <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>🔄 {t.returnsSummaryHeader}</h3>
                           <div className="table-wrapper">
@@ -4494,37 +4742,41 @@ export default function InventoryApp() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {reportData.returns.map((item: any) => (
-                                  <tr key={item.id}>
-                                    <td>{item.date}</td>
-                                    <td>{item.village}</td>
-                                    <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown'}</td>
-                                    <td>
-                                      {item.batch_id ? (
-                                        <button
-                                          type="button"
-                                          className="link-btn"
-                                          style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
-                                          onClick={() => setViewingBatchId(item.batch_id)}
-                                        >
-                                          {item.batch_id}
-                                        </button>
-                                      ) : (
-                                        'N/A'
-                                      )}
-                                    </td>
-                                    <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                                    <td>
-                                      <span className={`badge ${item.status === 'damaged' ? 'badge-danger' : 'badge-success'}`}>
-                                        {item.status === 'damaged' 
-                                          ? (language === 'my' ? 'ပျက်စီး (ကျေးရွာသို့ ပြန်ပို့)' : 'DAMAGED') 
-                                          : (language === 'my' ? 'ထုတ်လုပ်မှု အဆင့်မီ' : 'PRODUCTION GRADE')}
-                                      </span>
-                                    </td>
-                                    <td>{formatCurrency(item.price || 0)}</td>
-                                    <td>{formatCurrency((item.price || 0) * (item.quantity || 0))}</td>
-                                  </tr>
-                                ))}
+                                {isDataLoading ? (
+                                  renderTableSkeleton(8)
+                                ) : (
+                                  reportData.returns.map((item: any) => (
+                                    <tr key={item.id}>
+                                      <td>{item.date}</td>
+                                      <td>{item.village}</td>
+                                      <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown'}</td>
+                                      <td>
+                                        {item.batch_id ? (
+                                          <button
+                                            type="button"
+                                            className="link-btn"
+                                            style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
+                                            onClick={() => setViewingBatchId(item.batch_id)}
+                                          >
+                                            {item.batch_id}
+                                          </button>
+                                        ) : (
+                                          'N/A'
+                                        )}
+                                      </td>
+                                      <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                                      <td>
+                                        <span className={`badge ${item.status === 'damaged' ? 'badge-danger' : 'badge-success'}`}>
+                                          {item.status === 'damaged' 
+                                            ? (language === 'my' ? 'ပျက်စီး (ကျေးရွာသို့ ပြန်ပို့)' : 'DAMAGED') 
+                                            : (language === 'my' ? 'ထုတ်လုပ်မှု အဆင့်မီ' : 'PRODUCTION GRADE')}
+                                        </span>
+                                      </td>
+                                      <td>{formatCurrency(item.price || 0)}</td>
+                                      <td>{formatCurrency((item.price || 0) * (item.quantity || 0))}</td>
+                                    </tr>
+                                  ))
+                                )}
                               </tbody>
                             </table>
                           </div>
@@ -4555,7 +4807,9 @@ export default function InventoryApp() {
                       </tr>
                     </thead>
                     <tbody>
-                      {pipeTypes.length === 0 ? (
+                      {isDataLoading ? (
+                        renderTableSkeleton(3)
+                      ) : pipeTypes.length === 0 ? (
                         <tr>
                           <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                             No pipe models registered in the catalog.
@@ -4618,7 +4872,9 @@ export default function InventoryApp() {
                       </tr>
                     </thead>
                     <tbody>
-                      {villages.length === 0 ? (
+                      {isDataLoading ? (
+                        renderTableSkeleton(2)
+                      ) : villages.length === 0 ? (
                         <tr>
                           <td colSpan={2} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                             {t.noVillageNodesRegistered}
@@ -4669,7 +4925,9 @@ export default function InventoryApp() {
                     </tr>
                   </thead>
                   <tbody>
-                    {auditLogs.length === 0 ? (
+                    {isDataLoading ? (
+                      renderTableSkeleton(4)
+                    ) : auditLogs.length === 0 ? (
                       <tr>
                         <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
                           {t.noAuditEntriesLogged}
@@ -4689,6 +4947,133 @@ export default function InventoryApp() {
                           </td>
                           <td className="details-col" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                             {log.details || 'None'}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* BACKUP & RECOVERY TAB RENDER */}
+          {activeTab === 'Backup & Recovery' && user?.role === 'admin' && (
+            <div className="table-panel">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                <h2>{language === 'my' ? 'ဒေတာဘေ့စ် သိမ်းဆည်းခြင်းနှင့် ပြန်လည်ရယူခြင်း' : 'Database Snapshots & Data Recovery'}</h2>
+                <div className="responsive-btn-group">
+                  <button
+                    type="button"
+                    className="primary"
+                    disabled={isBackupCreating || isBackupRestoring}
+                    onClick={handleCreateBackup}
+                  >
+                    {isBackupCreating 
+                      ? (language === 'my' ? 'သိမ်းဆည်းနေပါသည်...' : 'Creating Snapshot...') 
+                      : (language === 'my' ? 'အသစ်သိမ်းဆည်းမည်' : 'Create Database Snapshot')}
+                  </button>
+                  <label 
+                    className="action-btn edit" 
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: '6px', 
+                      cursor: isBackupRestoring ? 'not-allowed' : 'pointer',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: 'var(--success, #16a34a)',
+                      color: 'white',
+                      fontWeight: '600',
+                      fontSize: '0.9rem',
+                      opacity: isBackupRestoring ? 0.6 : 1
+                    }}
+                  >
+                    {isBackupRestoring 
+                      ? (language === 'my' ? 'ပြန်လည်ရယူနေပါသည်...' : 'Restoring Data...') 
+                      : (language === 'my' ? 'Excel Backup တင်သွင်းမည်' : 'Import Excel Backup (.xlsx)')}
+                    <input
+                      type="file"
+                      accept=".xlsx"
+                      disabled={isBackupRestoring}
+                      onChange={handleImportExcelBackup}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {backupMessage && (
+                <div className="alert" style={{ marginBottom: '24px' }}>
+                  <span>ℹ️</span>
+                  <span>{backupMessage}</span>
+                </div>
+              )}
+
+              <div style={{ marginBottom: '24px' }}>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.6' }}>
+                  {language === 'my' 
+                    ? 'ဤကဏ္ဍတွင် လက်ရှိ ဒေတာဘေ့စ်ရှိ ဇယားများအားလုံးကို local server တွင် သိမ်းဆည်းထားနိုင်သည်။ ဒေတာဘေ့စ် ပျက်စီးသွားပါက သို့မဟုတ် offline ဖြစ်နေပါကလည်း သိမ်းဆည်းထားပြီးသော ဖိုင်များကို Download ရယူနိုင်ပြီး Excel (.xlsx) အစီရင်ခံစာများ ထုတ်ယူနိုင်သည်။'
+                    : 'Use this panel to manage database snapshot file archives saved locally on the server. Even if the Supabase database is gone or unreachable, you can still list, download raw backups, and export them directly to Excel (.xlsx) workbooks.'
+                  }
+                </p>
+              </div>
+
+              <div className="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>{language === 'my' ? 'ဖိုင်အမည်' : 'Backup Filename'}</th>
+                      <th>{language === 'my' ? 'ဖန်တီးသည့်ရက်စွဲ' : 'Date Created'}</th>
+                      <th>{language === 'my' ? 'ဖိုင်အရွယ်အစား' : 'File Size'}</th>
+                      <th>{language === 'my' ? 'လုပ်ဆောင်ချက်များ' : 'Actions'}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isBackupLoading ? (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                          {language === 'my' ? 'ဖိုင်များ ရှာဖွေနေပါသည်...' : 'Loading backup archives...'}
+                        </td>
+                      </tr>
+                    ) : backups.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                          {language === 'my' ? 'သိမ်းဆည်းထားသော Backup မရှိသေးပါ။' : 'No local backup snapshots found.'}
+                        </td>
+                      </tr>
+                    ) : (
+                      backups.map((b) => (
+                        <tr key={b.filename}>
+                          <td style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--text-primary)' }}>{b.filename}</td>
+                          <td>{new Date(b.createdAt).toLocaleString()}</td>
+                          <td>{(b.sizeBytes / 1024).toFixed(2)} KB</td>
+                          <td>
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                className="action-btn edit"
+                                style={{ backgroundColor: 'var(--accent, #4f46e5)', color: 'white' }}
+                                onClick={() => handleDownloadJson(b.filename)}
+                              >
+                                📥 JSON
+                              </button>
+                              <button
+                                type="button"
+                                className="action-btn edit"
+                                style={{ backgroundColor: '#0d9488', color: 'white' }}
+                                onClick={() => handleExportExcelBackup(b.filename)}
+                              >
+                                📊 Excel (.xlsx)
+                              </button>
+                              <button
+                                type="button"
+                                className="action-btn delete"
+                                onClick={() => handleDeleteBackup(b.filename)}
+                              >
+                                {t.delete}
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -4774,14 +5159,14 @@ export default function InventoryApp() {
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="production-batch">{t.productionBatchId}</label>
+                        <label htmlFor="production-batch">{t.productionBatchId} ({language === 'my' ? 'အလိုအလျောက်ထုတ်ပေးသည်' : 'Auto-Generated'})</label>
                         <input
                           id="production-batch"
                           type="text"
-                          placeholder="e.g. BATCH-2026-X"
-                          disabled={user.role !== 'admin'}
+                          readOnly
+                          placeholder={language === 'my' ? 'အလိုအလျောက် တွက်ချက်မည်' : 'Auto-generated batch ID'}
+                          style={{ backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed', opacity: 0.8 }}
                           value={productionForm.batchId}
-                          onChange={(event) => setProductionForm({ ...productionForm, batchId: event.target.value })}
                         />
                       </div>
                     </div>
@@ -5057,15 +5442,45 @@ export default function InventoryApp() {
                         </small>
                       </div>
 
+                      <div className="form-group full-width">
+                        <label style={{ marginBottom: '8px', display: 'block' }}>{language === 'my' ? 'ပြန်လည်ဝယ်ယူသည့် စျေးနှုန်း သတ်မှတ်ချက်' : 'Re-buy Price Options'}</label>
+                        <div className="radio-group-row">
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            <input
+                              type="radio"
+                              name="returnPriceMode"
+                              value="plus10"
+                              checked={returnPriceMode === 'plus10'}
+                              onChange={() => setReturnPriceMode('plus10')}
+                            />
+                            <span>{language === 'my' ? 'မူရင်းစျေးနှုန်း + ၁၀%' : 'Catalog Price + 10%'}</span>
+                          </label>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            <input
+                              type="radio"
+                              name="returnPriceMode"
+                              value="manual"
+                              checked={returnPriceMode === 'manual'}
+                              onChange={() => setReturnPriceMode('manual')}
+                            />
+                            <span>{language === 'my' ? 'ကိုယ်တိုင် ရိုက်ထည့်မည်' : 'Manual Input'}</span>
+                          </label>
+                        </div>
+                      </div>
+
                       <div className="form-group">
-                        <label htmlFor="return-price">{t.returnUnitPrice}</label>
+                        <label htmlFor="return-price">
+                          {t.returnUnitPrice}{' '}
+                          {returnPriceMode === 'plus10' && returnForm.qtyProductionGrade > 0 && `(Auto: 10% markup)`}
+                        </label>
                         <input
                           id="return-price"
                           type="number"
                           step="0.01"
                           min="0"
                           required
-                          disabled={user.role !== 'admin' || returnForm.qtyProductionGrade <= 0}
+                          disabled={user.role !== 'admin' || returnForm.qtyProductionGrade <= 0 || returnPriceMode === 'plus10'}
+                          style={returnPriceMode === 'plus10' ? { backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed', opacity: 0.8 } : undefined}
                           value={returnForm.qtyProductionGrade <= 0 ? 0 : (returnForm.price || '')}
                           onChange={(event) => setReturnForm({ ...returnForm, price: Number(event.target.value) })}
                         />

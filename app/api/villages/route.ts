@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import { logAction } from '@/lib/audit';
 import { withAuth } from '@/lib/api-helper';
+import { getCache, setCache, invalidateCache } from '@/lib/apiCache';
 
 export async function GET() {
   if (!supabase) {
@@ -10,6 +11,11 @@ export async function GET() {
   }
 
   try {
+    const cachedVillages = getCache<any[]>('villages');
+    if (cachedVillages) {
+      return NextResponse.json({ villages: cachedVillages });
+    }
+
     const { data: villages, error } = await supabase
       .from('villages')
       .select('*')
@@ -19,6 +25,7 @@ export async function GET() {
       throw error;
     }
 
+    setCache('villages', villages || []);
     return NextResponse.json({ villages });
   } catch (error: any) {
     console.error('Failed to get villages list:', error);
@@ -53,6 +60,7 @@ export const POST = withAuth(
       throw error;
     }
 
+    invalidateCache('villages');
     await logAction(user.email, 'CREATE_VILLAGE', `Created new outpost node: ${trimmedName}`);
 
     return NextResponse.json({ success: true, village: data });
@@ -113,6 +121,7 @@ export const DELETE = withAuth(
       throw deleteErr;
     }
 
+    invalidateCache('villages');
     await logAction(user.email, 'DELETE_VILLAGE', `Removed outpost node: ${village.name}`);
 
     return NextResponse.json({ success: true });
