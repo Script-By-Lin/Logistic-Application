@@ -40,7 +40,7 @@ export const GET = withAuth(
         ['Table Name', 'Row Count'],
       ];
 
-      const tables = ['pipe_types', 'villages', 'productions', 'distributions', 'returns', 'audit_logs'];
+      const tables = ['pipe_types', 'villages', 'productions', 'distributions', 'returns', 'audit_logs', 'village_funding'];
       for (const t of tables) {
         const count = backup.data[t] ? backup.data[t].length : 0;
         overviewData.push([t, count]);

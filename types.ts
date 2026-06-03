@@ -36,3 +36,12 @@ export interface ReturnRecord {
   remark: string | null;
   batch_id: string | null;
 }
+
+export interface VillageFundingRecord {
+  id: number;
+  date: string;
+  village: string;
+  type: 'disbursement' | 'repayment';
+  amount: number;
+  remark: string | null;
+}

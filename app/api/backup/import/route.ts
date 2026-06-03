@@ -19,7 +19,7 @@ export const POST = withAuth(
       const buffer = Buffer.from(await file.arrayBuffer());
       const workbook = XLSX.read(buffer, { type: 'buffer' });
       
-      const tables = ['pipe_types', 'villages', 'productions', 'distributions', 'returns', 'audit_logs'];
+      const tables = ['pipe_types', 'villages', 'productions', 'distributions', 'returns', 'audit_logs', 'village_funding'];
       const data: Record<string, any[]> = {};
       
       let foundSheetsCount = 0;
@@ -79,6 +79,13 @@ export const POST = withAuth(
         const { error } = await supabase!.from('audit_logs').upsert(data.audit_logs);
         if (error) throw new Error(`Failed to restore audit_logs: ${error.message}`);
         results.audit_logs = data.audit_logs.length;
+      }
+
+      // 7. Restore village_funding
+      if (data.village_funding && data.village_funding.length > 0) {
+        const { error } = await supabase!.from('village_funding').upsert(data.village_funding);
+        if (error) throw new Error(`Failed to restore village_funding: ${error.message}`);
+        results.village_funding = data.village_funding.length;
       }
 
       invalidateCache('villages');

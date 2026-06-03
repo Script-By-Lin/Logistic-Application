@@ -48,8 +48,8 @@ export const POST = withAuth(
     // 1. Parallel verification (Single Database Round-trip)
     const [prodRes, distRes, retRes] = await Promise.all([
       supabase!.from('productions').select('pipe_type_id').eq('batch_id', trimmedBatchId),
-      supabase!.from('distributions').select('quantity').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage),
-      supabase!.from('returns').select('quantity, status').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage),
+      supabase!.from('distributions').select('quantity, remark').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage),
+      supabase!.from('returns').select('quantity, status, remark').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage),
     ]);
 
     if (prodRes.error) throw prodRes.error;
@@ -63,14 +63,24 @@ export const POST = withAuth(
     const inferredPipeTypeId = prodRes.data[0].pipe_type_id;
 
     // 2. Village Balance Verification
-    const distributed = sum(distRes.data || []);
-    const returned = sum((retRes.data || []).filter((r: any) => r.status !== 'damaged'));
-    const balance = distributed - returned;
+    const isResentReturn = remark && remark.includes('is-resent');
+    const distData = distRes.data || [];
+    const retData = retRes.data || [];
+
+    const normalDistributed = sum(distData.filter((d: any) => !d.remark || !d.remark.includes('is-resent')));
+    const resentDistributed = sum(distData.filter((d: any) => d.remark && d.remark.includes('is-resent')));
+
+    const normalReturned = sum(retData.filter((r: any) => !r.remark || !r.remark.includes('is-resent')));
+    const resentReturned = sum(retData.filter((r: any) => r.remark && r.remark.includes('is-resent')));
+
+    const balance = isResentReturn 
+      ? (resentDistributed - resentReturned) 
+      : (normalDistributed - normalReturned);
 
     if (quantity > balance) {
       return NextResponse.json(
         {
-          error: `Return quantity (${quantity} units) exceeds available village balance (${balance} units) for this batch.`,
+          error: `Return quantity (${quantity} units) exceeds available village ${isResentReturn ? 'resent ' : ''}balance (${balance} units) for this batch.`,
         },
         { status: 400 }
       );
@@ -191,8 +201,8 @@ export const PATCH = withAuth(
     const [originalRes, prodRes, distRes, retRes] = await Promise.all([
       supabase!.from('returns').select('*').eq('id', recordId).maybeSingle(),
       supabase!.from('productions').select('pipe_type_id').eq('batch_id', trimmedBatchId),
-      supabase!.from('distributions').select('quantity').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage),
-      supabase!.from('returns').select('quantity, status').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage).neq('id', recordId),
+      supabase!.from('distributions').select('quantity, remark').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage),
+      supabase!.from('returns').select('quantity, status, remark').eq('batch_id', trimmedBatchId).eq('village', trimmedVillage).neq('id', recordId),
     ]);
 
     if (originalRes.error) throw originalRes.error;
@@ -212,14 +222,24 @@ export const PATCH = withAuth(
     const inferredPipeTypeId = prodRes.data[0].pipe_type_id;
 
     // 2. Village Balance Verification
-    const distributed = sum(distRes.data || []);
-    const returnedOther = sum((retRes.data || []).filter((r: any) => r.status !== 'damaged'));
-    const balance = distributed - returnedOther;
+    const isResentReturn = remark && remark.includes('is-resent');
+    const distData = distRes.data || [];
+    const retData = retRes.data || [];
+
+    const normalDistributed = sum(distData.filter((d: any) => !d.remark || !d.remark.includes('is-resent')));
+    const resentDistributed = sum(distData.filter((d: any) => d.remark && d.remark.includes('is-resent')));
+
+    const normalReturned = sum(retData.filter((r: any) => !r.remark || !r.remark.includes('is-resent')));
+    const resentReturned = sum(retData.filter((r: any) => r.remark && r.remark.includes('is-resent')));
+
+    const balance = isResentReturn 
+      ? (resentDistributed - resentReturned) 
+      : (normalDistributed - normalReturned);
 
     if (quantity > balance) {
       return NextResponse.json(
         {
-          error: `Return quantity (${quantity} units) exceeds outstanding village balance (${balance} units) for this batch.`,
+          error: `Return quantity (${quantity} units) exceeds outstanding village ${isResentReturn ? 'resent ' : ''}balance (${balance} units) for this batch.`,
         },
         { status: 400 }
       );

@@ -8,6 +8,7 @@ import {
   PipeType,
   ProductionRecord,
   ReturnRecord,
+  VillageFundingRecord,
 } from '@/types';
 
 // Dynamic sidebar tabs depending on user role
@@ -451,7 +452,15 @@ export default function InventoryApp() {
   const [productions, setProductions] = useState<ProductionRecord[]>([]);
   const [distributions, setDistributions] = useState<DistributionRecord[]>([]);
   const [returnsList, setReturnsList] = useState<ReturnRecord[]>([]);
+  const [fundingList, setFundingList] = useState<VillageFundingRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [fundingForm, setFundingForm] = useState({
+    date: new Date().toISOString().slice(0, 10),
+    village: '',
+    type: 'disbursement' as 'disbursement' | 'repayment',
+    amount: 0,
+    remark: '',
+  });
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | null>(null);
@@ -657,6 +666,7 @@ export default function InventoryApp() {
   const [filterStatus, setFilterStatus] = useState('All'); // For returns
   const [searchBatchId, setSearchBatchId] = useState(''); // For production QC search
   const [filterBatchId, setFilterBatchId] = useState('All');
+  const [filterReconType, setFilterReconType] = useState<'All' | 'Distributions' | 'Returns'>('All');
   const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all'>('month');
 
   // --- Form Input States ---
@@ -806,6 +816,7 @@ export default function InventoryApp() {
         if (list.length > 0) {
           setDistributionForm((prev) => ({ ...prev, village: list[0].name }));
           setReturnForm((prev) => ({ ...prev, village: list[0].name }));
+          setFundingForm((prev) => ({ ...prev, village: list[0].name }));
         }
       }
     } catch (error) {
@@ -851,6 +862,18 @@ export default function InventoryApp() {
       }
       if (!returnsRes.error && returnsRes.data) {
         setReturnsList(returnsRes.data as ReturnRecord[]);
+      }
+      // Fetch funding records from API
+      try {
+        const fundingRes = await fetch('/api/village-funding');
+        if (fundingRes.ok) {
+          const fundingData = await fundingRes.json();
+          if (fundingData.funding) {
+            setFundingList(fundingData.funding);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load funding records:', err);
       }
     } catch (error) {
       console.warn('Supabase fetch failed; using fallback data.', error);
@@ -1146,13 +1169,13 @@ export default function InventoryApp() {
     });
 
     distributions.forEach((d) => {
-      if (d.batch_id) {
+      if (d.batch_id && (!d.remark || !d.remark.includes('is-resent'))) {
         distTotals[d.batch_id] = (distTotals[d.batch_id] || 0) + Number(d.quantity || 0);
       }
     });
 
     returnsList.forEach((r) => {
-      if (r.batch_id) {
+      if (r.batch_id && (!r.remark || !r.remark.includes('is-resent'))) {
         retTotals[r.batch_id] = (retTotals[r.batch_id] || 0) + Number(r.quantity || 0);
       }
     });
@@ -1217,6 +1240,35 @@ export default function InventoryApp() {
     return balances;
   }, [villages, distributions, returnsList]);
 
+  const villageFundingSummaryMap = useMemo(() => {
+    const summary: Record<string, { disbursements: number; repayments: number; balance: number }> = {};
+    
+    // Initialize for all villages
+    villages.forEach((v) => {
+      summary[v.name] = { disbursements: 0, repayments: 0, balance: 0 };
+    });
+
+    // Populate from fundingList
+    fundingList.forEach((f) => {
+      if (!summary[f.village]) {
+        summary[f.village] = { disbursements: 0, repayments: 0, balance: 0 };
+      }
+      const amt = Number(f.amount || 0);
+      if (f.type === 'disbursement') {
+        summary[f.village].disbursements += amt;
+      } else if (f.type === 'repayment') {
+        summary[f.village].repayments += amt;
+      }
+    });
+
+    // Calculate balance
+    Object.keys(summary).forEach((vName) => {
+      summary[vName].balance = summary[vName].disbursements - summary[vName].repayments;
+    });
+
+    return summary;
+  }, [villages, fundingList]);
+
   const registeredBatchesList = useMemo(() => {
     const uniqueBatches = Array.from(new Set(productions.map(p => p.batch_id).filter(Boolean)));
     return uniqueBatches.map(batchId => {
@@ -1258,12 +1310,14 @@ export default function InventoryApp() {
     }
 
     const totalProduced = batchProductions.reduce((sum, p) => sum + Number(p.quantity || 0), 0);
-    const totalDistributed = batchDistributions.reduce((sum, d) => sum + Number(d.quantity || 0), 0);
+    const totalDistributed = batchDistributions
+      .filter(d => !d.remark || !d.remark.includes('is-resent'))
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0);
     const totalReturnedDamaged = batchReturns
-      .filter(r => r.status === 'damaged')
+      .filter(r => r.status === 'damaged' && (!r.remark || !r.remark.includes('is-resent')))
       .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
     const totalReturnedProdGrade = batchReturns
-      .filter(r => r.status === 'production_grade')
+      .filter(r => r.status === 'production_grade' && (!r.remark || !r.remark.includes('is-resent')))
       .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
 
     return {
@@ -1367,9 +1421,9 @@ export default function InventoryApp() {
     : 0;
   const totalStock = Object.values(factoryStockMap).reduce((sum, quantity) => sum + quantity, 0);
   const totalProduction = sumQuantity(productions);
-  const totalDistributed = sumQuantity(distributions);
-  const totalReturned = sumQuantity(returnsList);
-  const currentBalance = totalProduction - totalDistributed + totalReturned;
+  const totalDistributed = sumQuantity(distributions.filter(d => !d.remark || !d.remark.includes('is-resent')));
+  const totalReturned = sumQuantity(returnsList.filter(r => !r.remark || !r.remark.includes('is-resent')));
+  const currentBalance = totalProduction - sumQuantity(distributions) + sumQuantity(returnsList);
   const activeStockItems = availablePipeTypes.length;
   const activeVillages = new Set(distributions.map((item) => item.village)).size;
 
@@ -1412,12 +1466,12 @@ export default function InventoryApp() {
       batchIds.forEach((batchId) => {
         // Find all distributions of this batch to this village, sorted by date
         const dists = distributions
-          .filter((d) => d.village === v.name && (d.batch_id || null) === batchId)
+          .filter((d) => d.village === v.name && (d.batch_id || null) === batchId && (!d.remark || !d.remark.includes('is-resent')))
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         // Find all returns of this batch from this village, sorted by date
         const rets = returnsList
-          .filter((r) => r.village === v.name && (r.batch_id || null) === batchId)
+          .filter((r) => r.village === v.name && (r.batch_id || null) === batchId && (!r.remark || !r.remark.includes('is-resent')))
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         if (dists.length === 0 && rets.length === 0) return;
@@ -1579,9 +1633,12 @@ export default function InventoryApp() {
     return reconciliationLedger.filter((item) => {
       const matchVillage = filterVillage === 'All' || item.village === filterVillage;
       const matchBatchId = filterBatchId === 'All' || item.batchId === filterBatchId;
-      return matchVillage && matchBatchId;
+      const matchType = filterReconType === 'All'
+        || (filterReconType === 'Distributions' && Number(item.distributedQty) > 0)
+        || (filterReconType === 'Returns' && (Number(item.returnedDamagedQty) > 0 || Number(item.returnedProductionGradeQty) > 0));
+      return matchVillage && matchBatchId && matchType;
     });
-  }, [reconciliationLedger, filterVillage, filterBatchId]);
+  }, [reconciliationLedger, filterVillage, filterBatchId, filterReconType]);
 
   // --- Charts Data Selectors ---
   const mostDamagedVillageData = useMemo(() => {
@@ -1604,6 +1661,7 @@ export default function InventoryApp() {
   const leftToReturnByBatchData = useMemo(() => {
     const groups: Record<string, { batchId: string; pipeTypeId: number; distributed: number; returned: number; balance: number }> = {};
     distributions.forEach((d) => {
+      if (d.remark && d.remark.includes('is-resent')) return;
       const batchId = d.batch_id || 'Unknown';
       const pipeTypeId = d.pipe_type_id;
       const key = `${batchId}_${pipeTypeId}`;
@@ -1613,6 +1671,7 @@ export default function InventoryApp() {
       groups[key].distributed += Number(d.quantity || 0);
     });
     returnsList.forEach((r) => {
+      if (r.remark && r.remark.includes('is-resent')) return;
       const batchId = r.batch_id || 'Unknown';
       const pipeTypeId = r.pipe_type_id;
       const key = `${batchId}_${pipeTypeId}`;
@@ -1634,6 +1693,7 @@ export default function InventoryApp() {
     const counts: Record<string, number> = {};
     villages.forEach((v) => { counts[v.name] = 0; });
     distributions.forEach((d) => {
+      if (d.remark && d.remark.includes('is-resent')) return;
       counts[d.village] = (counts[d.village] || 0) + Number(d.quantity || 0);
     });
     return Object.entries(counts)
@@ -1646,6 +1706,7 @@ export default function InventoryApp() {
     const counts: Record<number, number> = {};
     pipeTypes.forEach((p) => { counts[p.id] = 0; });
     distributions.forEach((d) => {
+      if (d.remark && d.remark.includes('is-resent')) return;
       counts[d.pipe_type_id] = (counts[d.pipe_type_id] || 0) + Number(d.quantity || 0);
     });
     const total = Object.values(counts).reduce((s, c) => s + c, 0);
@@ -1662,6 +1723,7 @@ export default function InventoryApp() {
   const returnsOverTimeData = useMemo(() => {
     const grouped: Record<string, number> = {};
     returnsList.forEach((r) => {
+      if (r.remark && r.remark.includes('is-resent')) return;
       grouped[r.date] = (grouped[r.date] || 0) + Number(r.quantity || 0);
     });
     return Object.entries(grouped)
@@ -1674,6 +1736,7 @@ export default function InventoryApp() {
     let productionGrade = 0;
     let damaged = 0;
     returnsList.forEach((r) => {
+      if (r.remark && r.remark.includes('is-resent')) return;
       if (r.status === 'damaged') {
         damaged += Number(r.quantity || 0);
       } else {
@@ -1695,8 +1758,8 @@ export default function InventoryApp() {
     const sortedDates = Array.from(datesSet).sort().slice(-8);
     return sortedDates.map((dateStr) => {
       const prodQty = productions.filter(p => p.date === dateStr).reduce((s, p) => s + Number(p.quantity || 0), 0);
-      const distQty = distributions.filter(d => d.date === dateStr).reduce((s, d) => s + Number(d.quantity || 0), 0);
-      const retQty = returnsList.filter(r => r.date === dateStr).reduce((s, r) => s + Number(r.quantity || 0), 0);
+      const distQty = distributions.filter(d => d.date === dateStr && (!d.remark || !d.remark.includes('is-resent'))).reduce((s, d) => s + Number(d.quantity || 0), 0);
+      const retQty = returnsList.filter(r => r.date === dateStr && (!r.remark || !r.remark.includes('is-resent'))).reduce((s, r) => s + Number(r.quantity || 0), 0);
       return {
         date: dateStr,
         production: prodQty,
@@ -1803,25 +1866,25 @@ export default function InventoryApp() {
 
     if (filterBatchId !== 'All') {
       filteredProds = productions.filter(p => p.batch_id === filterBatchId);
-      filteredDists = distributions.filter(d => d.batch_id === filterBatchId);
-      filteredRets = returnsList.filter(r => r.batch_id === filterBatchId);
+      filteredDists = distributions.filter(d => d.batch_id === filterBatchId && (!d.remark || !d.remark.includes('is-resent')));
+      filteredRets = returnsList.filter(r => r.batch_id === filterBatchId && (!r.remark || !r.remark.includes('is-resent')));
     } else {
       const { start, end } = reportFilterRange;
       if (!start) return { productions: [], distributions: [], returns: [], totals: { produced: 0, distributed: 0, returned: 0, balance: 0 } };
 
       if (reportType === 'daily') {
         filteredProds = productions.filter(p => p.date === start);
-        filteredDists = distributions.filter(d => d.date === start);
-        filteredRets = returnsList.filter(r => r.date === start);
+        filteredDists = distributions.filter(d => d.date === start && (!d.remark || !d.remark.includes('is-resent')));
+        filteredRets = returnsList.filter(r => r.date === start && (!r.remark || !r.remark.includes('is-resent')));
       } else if (reportType === 'weekly') {
         filteredProds = productions.filter(p => p.date >= start && p.date <= end);
-        filteredDists = distributions.filter(d => d.date >= start && d.date <= end);
-        filteredRets = returnsList.filter(r => r.date >= start && r.date <= end);
+        filteredDists = distributions.filter(d => d.date >= start && d.date <= end && (!d.remark || !d.remark.includes('is-resent')));
+        filteredRets = returnsList.filter(r => r.date >= start && r.date <= end && (!r.remark || !r.remark.includes('is-resent')));
       } else {
         const yearMonth = start.slice(0, 7);
         filteredProds = productions.filter(p => p.date.startsWith(yearMonth));
-        filteredDists = distributions.filter(d => d.date.startsWith(yearMonth));
-        filteredRets = returnsList.filter(r => r.date.startsWith(yearMonth));
+        filteredDists = distributions.filter(d => d.date.startsWith(yearMonth) && (!d.remark || !d.remark.includes('is-resent')));
+        filteredRets = returnsList.filter(r => r.date.startsWith(yearMonth) && (!r.remark || !r.remark.includes('is-resent')));
       }
     }
 
@@ -2342,10 +2405,10 @@ export default function InventoryApp() {
 
     if (reportData.distributions.length > 0) {
       csvContent += `Distribution Outbound Summary\n`;
-      csvContent += `Date,Outpost Node,Pipe Model,Batch ID,Quantity (Units),Unit Price (MMK),Total (MMK)\n`;
+      csvContent += `Date,Outpost Node,Pipe Model,Batch ID,Quantity (Units),Unit Price (MMK),Total (MMK),Remarks\n`;
       reportData.distributions.forEach((d: any) => {
         const pipeName = pipeTypes.find((pt) => pt.id === d.pipe_type_id)?.name || 'Unknown';
-        csvContent += `"${d.date}","${d.village}","${pipeName}","${d.batch_id || ''}",${d.quantity},${d.price},${d.quantity * d.price}\n`;
+        csvContent += `"${d.date}","${d.village}","${pipeName}","${d.batch_id || ''}",${d.quantity},${d.price},${d.quantity * d.price},"${d.remark || ''}"\n`;
       });
       csvContent += `\n`;
     }
@@ -2379,6 +2442,63 @@ export default function InventoryApp() {
       return;
     }
     window.print();
+  };
+
+  const handleLogFundingTransaction = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fundingForm.date || !fundingForm.village || !fundingForm.type || !fundingForm.amount) {
+      alert(language === 'my' ? 'အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်စွက်ပါ' : 'Please fill all required fields.');
+      return;
+    }
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/village-funding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fundingForm),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setFundingForm({
+          date: new Date().toISOString().slice(0, 10),
+          village: villages.length > 0 ? villages[0].name : '',
+          type: 'disbursement',
+          amount: 0,
+          remark: '',
+        });
+        // Reload data
+        await loadData();
+      } else {
+        alert(data.error || 'Failed to log funding transaction.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error saving transaction.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const deleteFundingRecord = async (id: number) => {
+    if (!confirm(language === 'my' ? 'ဤမှတ်တမ်းကို ဖျက်ရန် သေချာပါသလား?' : 'Are you sure you want to delete this cash transaction record?')) return;
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/village-funding?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (response.ok) {
+        await loadData();
+      } else {
+        alert(data.error || 'Failed to delete record.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting record.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // --- Auth Handlers ---
@@ -2920,8 +3040,13 @@ export default function InventoryApp() {
 
     const totalRevenue = dists.reduce((sum, d) => sum + (Number(d.quantity || 0) * Number(d.price || 0)), 0);
     const totalRefunds = rets.reduce((sum, r) => sum + (Number(r.quantity || 0) * Number(r.price || 0)), 0);
-    const netProfit = (totalRevenue - totalRefunds) * (-1);
-    const refundRate = totalRevenue > 0 ? (totalRefunds / totalRevenue) * 100 - 100 : 0;
+    const netProfit = totalRevenue - totalRefunds;
+    const totalProductionCostOfReturns = rets.reduce((sum, r) => {
+      const pt = pipeTypes.find((p) => p.id === r.pipe_type_id);
+      const prodPrice = pt ? Number(pt.unit_price || 0) : 0;
+      return sum + (Number(r.quantity || 0) * prodPrice);
+    }, 0);
+    const refundRate = totalProductionCostOfReturns > 0 ? (totalRefunds / totalProductionCostOfReturns) * 100 : 0;
 
     return {
       totalRevenue,
@@ -2929,7 +3054,7 @@ export default function InventoryApp() {
       netProfit,
       refundRate,
     };
-  }, [filteredFinanceData]);
+  }, [filteredFinanceData, pipeTypes]);
 
   const modelFinanceData = useMemo(() => {
     const { dists, rets } = filteredFinanceData;
@@ -4026,6 +4151,19 @@ export default function InventoryApp() {
                     ))}
                   </select>
                 </div>
+
+                <div className="filter-group">
+                  <label htmlFor="recon-type-select">{language === 'my' ? 'မှတ်တမ်း အမျိုးအစား' : 'Record Type'}:</label>
+                  <select
+                    id="recon-type-select"
+                    value={filterReconType}
+                    onChange={(e) => setFilterReconType(e.target.value as 'All' | 'Distributions' | 'Returns')}
+                  >
+                    <option value="All">{language === 'my' ? 'အားလုံး' : 'All'}</option>
+                    <option value="Distributions">{language === 'my' ? 'ဖြန့်ဖြူးမှုများသာ' : 'Distributions Only'}</option>
+                    <option value="Returns">{language === 'my' ? 'ပြန်အပ်နှံမှုများသာ' : 'Returns Only'}</option>
+                  </select>
+                </div>
               </div>
 
               {/* RECONCILIATION SUMMARY TABLE */}
@@ -4202,7 +4340,7 @@ export default function InventoryApp() {
               </div>
 
               {/* Finance KPIs stats grid */}
-              <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+              <div className="stats-grid" style={{ gap: '16px', marginBottom: '24px' }}>
                 <div className="summary-card" style={{ borderLeft: '4px solid var(--primary)' }}>
                   <p>{t.totalRevenue}</p>
                   <h3 style={{ color: 'var(--primary)', marginTop: '8px' }}>
@@ -4224,7 +4362,7 @@ export default function InventoryApp() {
                 <div className="summary-card" style={{ borderLeft: '4px solid var(--warning, #f59e0b)' }}>
                   <p>{t.refundRate}</p>
                   <h3 style={{ color: 'var(--warning, #f59e0b)', marginTop: '8px' }}>
-                    {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '40%' }) : `+${financeKPIs.refundRate.toFixed(1)}%`}
+                    {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '40%' }) : `${financeKPIs.refundRate.toFixed(1)}%`}
                   </h3>
                 </div>
               </div>
@@ -4342,6 +4480,188 @@ export default function InventoryApp() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              </div>
+
+              <div className={user?.role === 'admin' ? 'finance-funding-grid' : ''}>
+                {/* SUMMARY TABLE */}
+                <div className="table-panel">
+                  <h2>{language === 'my' ? 'ကျေးရွာအလိုက် ငွေကြေးစီးဆင်းမှု အနှစ်ချုပ်' : 'Outpost Funding & Repayment Summary'}</h2>
+                  <p style={{ marginBottom: '12px', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                    {language === 'my' 
+                      ? 'ကုမ္ပဏီမှ ကျေးရွာများသို့ ထုတ်ပေးထားသော ရန်ပုံငွေနှင့် ပြန်လည်ပေးဆပ်မှု လက်ကျန်များကို ခြေရာခံခြင်း။'
+                      : 'Track advances disbursed to outposts, repayments made to company, and remaining outstanding balances.'}
+                  </p>
+                  <div className="table-wrapper">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{language === 'my' ? 'ကျေးရွာ' : 'Outpost Village'}</th>
+                          <th>{language === 'my' ? 'ထုတ်ပေးငွေ စုစုပေါင်း' : 'Total Disbursed'}</th>
+                          <th>{language === 'my' ? 'ပြန်လည်ပေးဆပ်ငွေ စုစုပေါင်း' : 'Total Repaid'}</th>
+                          <th>{language === 'my' ? 'ကျန်ရှိသော လက်ကျန်' : 'Outstanding Balance'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {villages.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No outposts registered.</td>
+                          </tr>
+                        ) : (
+                          villages.map((v) => {
+                             const sum = villageFundingSummaryMap[v.name] || { disbursements: 0, repayments: 0, balance: 0 };
+                             return (
+                               <tr key={v.id}>
+                                 <td style={{ fontWeight: '600' }}>{v.name}</td>
+                                 <td style={{ color: 'var(--primary)' }}>{formatCurrency(sum.disbursements)}</td>
+                                 <td style={{ color: 'var(--accent-green, #10b981)' }}>{formatCurrency(sum.repayments)}</td>
+                                 <td>
+                                   <span style={{ 
+                                     fontWeight: '600', 
+                                     color: sum.balance > 0 ? 'var(--warning, #f59e0b)' : 'var(--text-primary)'
+                                   }}>
+                                     {formatCurrency(sum.balance)}
+                                   </span>
+                                 </td>
+                               </tr>
+                             );
+                           })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* LOG FORM (Admin Only) */}
+                {user.role === 'admin' && (
+                  <div className="table-panel" style={{ padding: '20px' }}>
+                    <h2>{language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှု မှတ်တမ်းတင်ရန်' : 'Log Cash Transaction'}</h2>
+                    <form onSubmit={handleLogFundingTransaction} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</label>
+                        <input 
+                          type="date" 
+                          required 
+                          value={fundingForm.date} 
+                          onChange={(e) => setFundingForm({ ...fundingForm, date: e.target.value })}
+                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>{language === 'my' ? 'ကျေးရွာ' : 'Outpost Village'}</label>
+                        <select 
+                          required
+                          value={fundingForm.village}
+                          onChange={(e) => setFundingForm({ ...fundingForm, village: e.target.value })}
+                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                        >
+                          <option value="">Select outpost...</option>
+                          {villages.map((v) => (
+                            <option key={v.id} value={v.name}>{v.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>{language === 'my' ? 'အမျိုးအစား' : 'Transaction Type'}</label>
+                        <select 
+                          required
+                          value={fundingForm.type}
+                          onChange={(e) => setFundingForm({ ...fundingForm, type: e.target.value as any })}
+                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                        >
+                          <option value="disbursement">{language === 'my' ? 'ကုမ္ပဏီမှ ကျေးရွာသို့ ထုတ်ပေးငွေ' : 'Disbursement (Company to Village)'}</option>
+                          <option value="repayment">{language === 'my' ? 'ကျေးရွာမှ ကုမ္ပဏီသို့ ပြန်ဆပ်ငွေ' : 'Repayment (Village to Company)'}</option>
+                        </select>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>{language === 'my' ? 'ပမာဏ (MMK)' : 'Amount (MMK)'}</label>
+                        <input 
+                          type="number" 
+                          min="1" 
+                          required 
+                          placeholder="e.g. 50000"
+                          value={fundingForm.amount || ''}
+                          onChange={(e) => setFundingForm({ ...fundingForm, amount: Number(e.target.value) })}
+                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                        />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <label style={{ fontSize: '0.85rem', fontWeight: '600' }}>{language === 'my' ? 'မှတ်ချက်' : 'Remarks / Reference'}</label>
+                        <input 
+                          type="text" 
+                          placeholder="e.g. Operation advance, Weekly settle..."
+                          value={fundingForm.remark}
+                          onChange={(e) => setFundingForm({ ...fundingForm, remark: e.target.value })}
+                          style={{ padding: '8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                        />
+                      </div>
+                      <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="primary" 
+                        style={{ marginTop: '8px', padding: '10px', borderRadius: '6px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: '600', cursor: 'pointer' }}
+                      >
+                        {isSubmitting ? 'Submitting...' : (language === 'my' ? 'သိမ်းဆည်းမည်' : 'Save Transaction')}
+                      </button>
+                    </form>
+                  </div>
+                )}
+              </div>
+
+              {/* TRANSACTION HISTORY LOG */}
+              <div className="table-panel" style={{ width: '100%', marginBottom: '24px' }}>
+                <h2>{language === 'my' ? 'ငွေကြေးစီးဆင်းမှု မှတ်တမ်း' : 'Cash Flow Ledger History'}</h2>
+                <div className="table-wrapper" style={{ marginTop: '12px' }}>
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</th>
+                        <th>{language === 'my' ? 'ကျေးရွာ' : 'Outpost Village'}</th>
+                        <th>{language === 'my' ? 'အမျိုးအစား' : 'Type'}</th>
+                        <th>{language === 'my' ? 'ပမာဏ' : 'Amount'}</th>
+                        <th>{language === 'my' ? 'မှတ်ချက်' : 'Remarks'}</th>
+                        {user.role === 'admin' && <th>{language === 'my' ? 'လုပ်ဆောင်ချက်' : 'Action'}</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isDataLoading ? (
+                        renderTableSkeleton(user.role === 'admin' ? 6 : 5)
+                      ) : fundingList.length === 0 ? (
+                        <tr>
+                          <td colSpan={user.role === 'admin' ? 6 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                            {language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှုမှတ်တမ်း မရှိသေးပါ။' : 'No transactions recorded yet.'}
+                          </td>
+                        </tr>
+                      ) : (
+                        fundingList.map((f) => (
+                          <tr key={f.id}>
+                            <td>{f.date}</td>
+                            <td style={{ fontWeight: '600' }}>{f.village}</td>
+                            <td>
+                              <span className={`badge ${f.type === 'disbursement' ? 'badge-primary' : 'badge-success'}`} style={{ backgroundColor: f.type === 'disbursement' ? 'var(--primary)' : 'var(--success)', color: 'white' }}>
+                                {f.type === 'disbursement' 
+                                  ? (language === 'my' ? 'ကုမ္ပဏီမှ ထုတ်ပေးငွေ' : 'DISBURSEMENT') 
+                                  : (language === 'my' ? 'ကျေးရွာမှ ပြန်ဆပ်ငွေ' : 'REPAYMENT')}
+                              </span>
+                            </td>
+                            <td style={{ fontWeight: '600' }}>{formatCurrency(f.amount)}</td>
+                            <td>{f.remark || '-'}</td>
+                            {user.role === 'admin' && (
+                              <td>
+                                <button
+                                  type="button"
+                                  className="action-btn delete"
+                                  onClick={() => deleteFundingRecord(f.id)}
+                                >
+                                  {t.delete}
+                                </button>
+                              </td>
+                            )}
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </>
@@ -4686,11 +5006,12 @@ export default function InventoryApp() {
                                   <th>Quantity</th>
                                   <th>Unit Price</th>
                                   <th>Total Price</th>
+                                  <th>Remarks</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {isDataLoading ? (
-                                  renderTableSkeleton(7)
+                                  renderTableSkeleton(8)
                                 ) : (
                                   reportData.distributions.map((item: any) => (
                                     <tr key={item.id}>
@@ -4714,6 +5035,7 @@ export default function InventoryApp() {
                                       <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
                                       <td>{formatCurrency(item.price)}</td>
                                       <td>{formatCurrency(item.quantity * item.price)}</td>
+                                      <td style={{ fontSize: '0.85rem' }}>{item.remark || '-'}</td>
                                     </tr>
                                   ))
                                 )}
@@ -4793,7 +5115,7 @@ export default function InventoryApp() {
             <div className="split-pane-wrapper">
               
               {/* Left Column: Pipe Models CRUD */}
-              <div className="table-panel" style={{ padding: '40px', borderRight: '1px solid var(--border-color)', overflowY: 'auto' }}>
+              <div className="table-panel">
                 <h2>{t.centralPipesCatalog}</h2>
                 <p style={{ marginBottom: '24px' }}>{t.configureStandardRates}</p>
                 
@@ -4859,7 +5181,7 @@ export default function InventoryApp() {
               </div>
 
               {/* Right Column: Outpost Registry CRUD */}
-              <div className="table-panel" style={{ padding: '40px', overflowY: 'auto' }}>
+              <div className="table-panel">
                 <h2>{t.villageOutpostRegistry}</h2>
                 <p style={{ marginBottom: '24px' }}>{t.manageActiveNodes}</p>
 
@@ -6065,6 +6387,7 @@ export default function InventoryApp() {
                             <th>{language === 'my' ? 'မှ - သို့ (တည်နေရာ)' : 'From - To (Location)'}</th>
                             <th>{language === 'my' ? 'အရေအတွက်' : 'Quantity'}</th>
                             <th>{language === 'my' ? 'ဖြန့်ဖြူးဈေးနှုန်း' : 'Price'}</th>
+                            <th>{language === 'my' ? 'မှတ်ချက်' : 'Remarks'}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -6075,6 +6398,7 @@ export default function InventoryApp() {
                               <td>{d.from_location || 'Factory'} &rarr; {d.to_location || 'Village Store'}</td>
                               <td>{d.quantity} {language === 'my' ? 'လုံး' : 'units'}</td>
                               <td>{formatCurrency(d.price)}</td>
+                              <td style={{ fontSize: '0.85rem' }}>{d.remark || '-'}</td>
                             </tr>
                           ))}
                         </tbody>

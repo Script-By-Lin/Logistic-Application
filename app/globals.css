@@ -875,6 +875,10 @@ table input[type="number"] {
   overflow-y: auto;
 }
 
+.split-pane-wrapper > .table-panel:first-child {
+  border-right: 1px solid var(--border-color);
+}
+
 .qc-card {
   padding: 16px;
   border: 1px solid var(--border-color);
@@ -1079,6 +1083,11 @@ td.remarks-col, td.details-col {
   
   .pane-column.left-pane,
   .split-pane-wrapper > form {
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .split-pane-wrapper > .table-panel:first-child {
     border-right: none;
     border-bottom: 1px solid var(--border-color);
   }
@@ -1609,7 +1618,7 @@ button.secondary:active:not(:disabled) {
 
   /* --- ROOT SCALING --- */
   html {
-    font-size: 14px;
+    font-size: 12px;
   }
 
   /* --- HEADER: Compact, clean, touch-friendly --- */
@@ -1647,19 +1656,22 @@ button.secondary:active:not(:disabled) {
   .header-actions {
     width: 100% !important;
     flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
   }
 
   .header-actions > div {
     width: 100% !important;
-    justify-content: flex-start !important;
-    gap: 12px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
   }
 
   .header-actions button.primary,
   .header-actions button.secondary {
-    flex: 1;
-    min-width: 120px;
-    justify-content: center;
+    width: 100% !important;
+    justify-content: center !important;
     padding: 8px 16px !important;
     font-size: 0.85rem !important;
     white-space: nowrap !important;
@@ -1918,6 +1930,14 @@ button.secondary:active:not(:disabled) {
     border-radius: 6px !important;
   }
 
+  /* --- LOGIN PANE: Compact --- */
+  .login-pane {
+    padding: 24px 16px !important;
+    max-width: calc(100% - 32px) !important;
+    margin: 16px !important;
+    gap: 16px !important;
+  }
+
   /* --- MODALS: Full-screen style on mobile --- */
   .modal-overlay {
     padding: 8px !important;
@@ -2085,4 +2105,21 @@ button.secondary:active:not(:disabled) {
     transform: translateX(100%);
   }
 }
+
+/* --- FINANCE FUNDING GRID RESPONSIVE STYLES --- */
+.finance-funding-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .finance-funding-grid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+}
+
 

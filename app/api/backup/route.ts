@@ -53,6 +53,7 @@ export const POST = withAuth(
         distributionsRes,
         returnsRes,
         auditLogsRes,
+        villageFundingRes,
       ] = await Promise.all([
         supabase!.from('pipe_types').select('*'),
         supabase!.from('villages').select('*'),
@@ -60,6 +61,7 @@ export const POST = withAuth(
         supabase!.from('distributions').select('*'),
         supabase!.from('returns').select('*'),
         supabase!.from('audit_logs').select('*'),
+        supabase!.from('village_funding').select('*'),
       ]);
 
       if (pipeTypesRes.error) throw pipeTypesRes.error;
@@ -68,6 +70,7 @@ export const POST = withAuth(
       if (distributionsRes.error) throw distributionsRes.error;
       if (returnsRes.error) throw returnsRes.error;
       if (auditLogsRes.error) throw auditLogsRes.error;
+      if (villageFundingRes.error) throw villageFundingRes.error;
 
       const backupData = {
         timestamp: new Date().toISOString(),
@@ -79,6 +82,7 @@ export const POST = withAuth(
           distributions: distributionsRes.data || [],
           returns: returnsRes.data || [],
           audit_logs: auditLogsRes.data || [],
+          village_funding: villageFundingRes.data || [],
         },
       };
 
