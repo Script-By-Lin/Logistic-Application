@@ -423,6 +423,14 @@ function sumQuantity(records: { quantity: number }[]) {
   return records.reduce((sum, record) => sum + Number(record.quantity || 0), 0);
 }
 
+function getLocalTodayDateString() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export default function InventoryApp() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -455,7 +463,7 @@ export default function InventoryApp() {
   const [fundingList, setFundingList] = useState<VillageFundingRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [fundingForm, setFundingForm] = useState({
-    date: new Date().toISOString().slice(0, 10),
+    date: '',
     village: '',
     type: 'disbursement' as 'disbursement' | 'repayment',
     amount: 0,
@@ -464,6 +472,13 @@ export default function InventoryApp() {
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | null>(null);
+
+  useEffect(() => {
+    if (activeModal === null) {
+      setDistType('normal');
+      setSelectedDamagedReturnId('');
+    }
+  }, [activeModal]);
   const [editingPipe, setEditingPipe] = useState<PipeType | null>(null);
   const [editPriceValue, setEditPriceValue] = useState<number | ''>('');
 
@@ -638,6 +653,10 @@ export default function InventoryApp() {
 
   const handleReturnEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const remarkToSend = editReturnHasResent
+      ? (editReturnForm.remark.includes('is-resent') ? editReturnForm.remark : (editReturnForm.remark ? `${editReturnForm.remark} is-resent` : 'is-resent'))
+      : editReturnForm.remark;
+
     await submitEditForm('/api/returns', {
       id: editReturnForm.id,
       date: editReturnForm.date,
@@ -646,7 +665,7 @@ export default function InventoryApp() {
       quantity: editReturnForm.quantity,
       status: editReturnForm.status,
       price: editReturnForm.price,
-      remark: editReturnForm.remark,
+      remark: remarkToSend,
     }, () => {
       setActiveModal(null);
       setEditingReturn(null);
@@ -689,12 +708,15 @@ export default function InventoryApp() {
     batchId: '',
   });
 
+  const [distType, setDistType] = useState<'normal' | 'resend_damaged'>('normal');
+  const [selectedDamagedReturnId, setSelectedDamagedReturnId] = useState<string>('');
+
   const [returnForm, setReturnForm] = useState({
     date: '',
     village: '',
     pipeTypeId: 0,
-    qtyProductionGrade: 0,
-    qtyDamaged: 0,
+    status: 'production_grade',
+    quantity: 0,
     price: 0,
     remark: '',
     batchId: '',
@@ -848,8 +870,8 @@ export default function InventoryApp() {
             ...prev,
             pipeTypeId: types[0].id,
             price: types[0].unit_price,
-            qtyProductionGrade: 0,
-            qtyDamaged: 0,
+            status: 'production_grade',
+            quantity: 0,
           }));
           setPriceForm((prev) => ({ ...prev, pipeTypeId: types[0].id }));
         }
@@ -1054,10 +1076,11 @@ export default function InventoryApp() {
 
   // Set form dates dynamically on client-mount to prevent hydration mismatches
   useEffect(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalTodayDateString();
     setProductionForm((prev) => ({ ...prev, date: today }));
     setDistributionForm((prev) => ({ ...prev, date: today }));
     setReturnForm((prev) => ({ ...prev, date: today }));
+    setFundingForm((prev) => ({ ...prev, date: today }));
     setReportDate(today);
   }, []);
 
@@ -1092,13 +1115,17 @@ export default function InventoryApp() {
     });
 
     distributions.forEach((distribution) => {
-      totals[distribution.pipe_type_id] =
-        (totals[distribution.pipe_type_id] || 0) - Number(distribution.quantity || 0);
+      if (!distribution.remark || !distribution.remark.includes('is-resent')) {
+        totals[distribution.pipe_type_id] =
+          (totals[distribution.pipe_type_id] || 0) - Number(distribution.quantity || 0);
+      }
     });
 
     returnsList.forEach((returnRecord) => {
-      totals[returnRecord.pipe_type_id] =
-        (totals[returnRecord.pipe_type_id] || 0) + Number(returnRecord.quantity || 0);
+      if (returnRecord.status !== 'damaged') {
+        totals[returnRecord.pipe_type_id] =
+          (totals[returnRecord.pipe_type_id] || 0) + Number(returnRecord.quantity || 0);
+      }
     });
 
     return totals;
@@ -1143,13 +1170,13 @@ export default function InventoryApp() {
     });
 
     distributions.forEach((dist) => {
-      if (dist.batch_id) {
+      if (dist.batch_id && (!dist.remark || !dist.remark.includes('is-resent'))) {
         totals[dist.batch_id] = (totals[dist.batch_id] || 0) - Number(dist.quantity || 0);
       }
     });
 
     returnsList.forEach((ret) => {
-      if (ret.batch_id) {
+      if (ret.batch_id && ret.status !== 'damaged') {
         totals[ret.batch_id] = (totals[ret.batch_id] || 0) + Number(ret.quantity || 0);
       }
     });
@@ -1176,7 +1203,9 @@ export default function InventoryApp() {
 
     returnsList.forEach((r) => {
       if (r.batch_id && (!r.remark || !r.remark.includes('is-resent'))) {
-        retTotals[r.batch_id] = (retTotals[r.batch_id] || 0) + Number(r.quantity || 0);
+        if (r.status === 'production_grade') {
+          retTotals[r.batch_id] = (retTotals[r.batch_id] || 0) + Number(r.quantity || 0);
+        }
       }
     });
 
@@ -1419,11 +1448,55 @@ export default function InventoryApp() {
   const selectedReturnBalance = returnForm.batchId 
     ? (villageBatchBalanceMap[returnForm.village]?.[returnForm.batchId] || 0)
     : 0;
+
+  const outstandingResentForSelected = useMemo(() => {
+    if (!returnForm.village || !returnForm.batchId) return 0;
+    const totalResentDist = distributions
+      .filter(d => d.village === returnForm.village && d.batch_id === returnForm.batchId && d.remark && d.remark.includes('is-resent'))
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0);
+    const totalResentRet = returnsList
+      .filter(r => r.village === returnForm.village && r.batch_id === returnForm.batchId && r.remark && r.remark.includes('is-resent'))
+      .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
+    return Math.max(0, totalResentDist - totalResentRet);
+  }, [distributions, returnsList, returnForm.village, returnForm.batchId]);
+
+  const hasResentItems = outstandingResentForSelected > 0;
+
+  useEffect(() => {
+    if (hasResentItems) {
+      setReturnForm(prev => ({ ...prev, status: 'production_grade' }));
+    }
+  }, [hasResentItems]);
+
+  const editReturnHasResent = useMemo(() => {
+    if (!editReturnForm.village || !editReturnForm.batchId) return false;
+    const isResentBeingEdited = editingReturn && editingReturn.remark && editingReturn.remark.includes('is-resent');
+    if (isResentBeingEdited) return true;
+
+    const totalResentDist = distributions
+      .filter(d => d.village === editReturnForm.village && d.batch_id === editReturnForm.batchId && d.remark && d.remark.includes('is-resent'))
+      .reduce((sum, d) => sum + Number(d.quantity || 0), 0);
+    const totalResentRet = returnsList
+      .filter(r => r.village === editReturnForm.village && r.batch_id === editReturnForm.batchId && r.remark && r.remark.includes('is-resent'))
+      .reduce((sum, r) => sum + Number(r.quantity || 0), 0);
+    return Math.max(0, totalResentDist - totalResentRet) > 0;
+  }, [distributions, returnsList, editReturnForm.village, editReturnForm.batchId, editingReturn]);
+
+  useEffect(() => {
+    if (editReturnHasResent && editReturnForm.status !== 'production_grade') {
+      setEditReturnForm(prev => ({ ...prev, status: 'production_grade' }));
+    }
+  }, [editReturnHasResent, editReturnForm.status]);
+
+  const outstandingDamagedReturns = useMemo(() => {
+    return returnsList.filter(r => r.status === 'damaged' && (!r.remark || !r.remark.includes('is-resent')));
+  }, [returnsList]);
+
   const totalStock = Object.values(factoryStockMap).reduce((sum, quantity) => sum + quantity, 0);
   const totalProduction = sumQuantity(productions);
   const totalDistributed = sumQuantity(distributions.filter(d => !d.remark || !d.remark.includes('is-resent')));
-  const totalReturned = sumQuantity(returnsList.filter(r => !r.remark || !r.remark.includes('is-resent')));
-  const currentBalance = totalProduction - sumQuantity(distributions) + sumQuantity(returnsList);
+  const totalReturned = sumQuantity(returnsList.filter(r => r.status === 'production_grade'));
+  const currentBalance = totalProduction - totalDistributed + totalReturned;
   const activeStockItems = availablePipeTypes.length;
   const activeVillages = new Set(distributions.map((item) => item.village)).size;
 
@@ -1440,6 +1513,7 @@ export default function InventoryApp() {
       returnDate: string;
       rebuyValue: number;
       leftQty: number;
+      isResent?: boolean;
     }> = [];
 
     const getPipeNameForBatch = (bId: string | null, fallbackId?: number) => {
@@ -1466,12 +1540,12 @@ export default function InventoryApp() {
       batchIds.forEach((batchId) => {
         // Find all distributions of this batch to this village, sorted by date
         const dists = distributions
-          .filter((d) => d.village === v.name && (d.batch_id || null) === batchId && (!d.remark || !d.remark.includes('is-resent')))
+          .filter((d) => d.village === v.name && (d.batch_id || null) === batchId)
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         // Find all returns of this batch from this village, sorted by date
         const rets = returnsList
-          .filter((r) => r.village === v.name && (r.batch_id || null) === batchId && (!r.remark || !r.remark.includes('is-resent')))
+          .filter((r) => r.village === v.name && (r.batch_id || null) === batchId)
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
         if (dists.length === 0 && rets.length === 0) return;
@@ -1506,6 +1580,7 @@ export default function InventoryApp() {
 
         // For each distribution, output row(s)
         dists.forEach((d) => {
+          const isResentDist = !!(d.remark && d.remark.includes('is-resent'));
           const matchedRets = distReturnMap.get(d.id) || [];
           if (matchedRets.length > 0) {
             // Group matched returns by date
@@ -1558,6 +1633,7 @@ export default function InventoryApp() {
                 returnDate: group.date,
                 rebuyValue: group.rebuyValue,
                 leftQty,
+                isResent: isResentDist,
               });
             });
           } else {
@@ -1574,6 +1650,7 @@ export default function InventoryApp() {
               returnDate: 'N/A',
               rebuyValue: 0,
               leftQty: Number(d.quantity),
+              isResent: isResentDist,
             });
           }
         });
@@ -1621,6 +1698,7 @@ export default function InventoryApp() {
               returnDate: group.date,
               rebuyValue: group.rebuyValue,
               leftQty: 0,
+              isResent: false,
             });
           });
       });
@@ -1736,7 +1814,6 @@ export default function InventoryApp() {
     let productionGrade = 0;
     let damaged = 0;
     returnsList.forEach((r) => {
-      if (r.remark && r.remark.includes('is-resent')) return;
       if (r.status === 'damaged') {
         damaged += Number(r.quantity || 0);
       } else {
@@ -1753,13 +1830,21 @@ export default function InventoryApp() {
   const activityTrendData = useMemo(() => {
     const datesSet = new Set<string>();
     productions.forEach(p => datesSet.add(p.date));
-    distributions.forEach(d => datesSet.add(d.date));
-    returnsList.forEach(r => datesSet.add(r.date));
+    distributions.forEach(d => {
+      if (!d.remark || !d.remark.includes('is-resent')) {
+        datesSet.add(d.date);
+      }
+    });
+    returnsList.forEach(r => {
+      if (r.status === 'production_grade') {
+        datesSet.add(r.date);
+      }
+    });
     const sortedDates = Array.from(datesSet).sort().slice(-8);
     return sortedDates.map((dateStr) => {
       const prodQty = productions.filter(p => p.date === dateStr).reduce((s, p) => s + Number(p.quantity || 0), 0);
       const distQty = distributions.filter(d => d.date === dateStr && (!d.remark || !d.remark.includes('is-resent'))).reduce((s, d) => s + Number(d.quantity || 0), 0);
-      const retQty = returnsList.filter(r => r.date === dateStr && (!r.remark || !r.remark.includes('is-resent'))).reduce((s, r) => s + Number(r.quantity || 0), 0);
+      const retQty = returnsList.filter(r => r.date === dateStr && r.status === 'production_grade').reduce((s, r) => s + Number(r.quantity || 0), 0);
       return {
         date: dateStr,
         production: prodQty,
@@ -1842,9 +1927,11 @@ export default function InventoryApp() {
         const distKey = item.id.split('-r')[0].split('-none')[0];
         if (!countedDistIds.has(distKey)) {
           countedDistIds.add(distKey);
-          distributed += Number(item.distributedQty || 0);
+          if (!item.isResent) {
+            distributed += Number(item.distributedQty || 0);
+          }
         }
-        returned += Number(item.returnedDamagedQty || 0) + Number(item.returnedProductionGradeQty || 0);
+        returned += Number(item.returnedProductionGradeQty || 0);
       });
       
       return {
@@ -1866,31 +1953,31 @@ export default function InventoryApp() {
 
     if (filterBatchId !== 'All') {
       filteredProds = productions.filter(p => p.batch_id === filterBatchId);
-      filteredDists = distributions.filter(d => d.batch_id === filterBatchId && (!d.remark || !d.remark.includes('is-resent')));
-      filteredRets = returnsList.filter(r => r.batch_id === filterBatchId && (!r.remark || !r.remark.includes('is-resent')));
+      filteredDists = distributions.filter(d => d.batch_id === filterBatchId);
+      filteredRets = returnsList.filter(r => r.batch_id === filterBatchId);
     } else {
       const { start, end } = reportFilterRange;
       if (!start) return { productions: [], distributions: [], returns: [], totals: { produced: 0, distributed: 0, returned: 0, balance: 0 } };
 
       if (reportType === 'daily') {
         filteredProds = productions.filter(p => p.date === start);
-        filteredDists = distributions.filter(d => d.date === start && (!d.remark || !d.remark.includes('is-resent')));
-        filteredRets = returnsList.filter(r => r.date === start && (!r.remark || !r.remark.includes('is-resent')));
+        filteredDists = distributions.filter(d => d.date === start);
+        filteredRets = returnsList.filter(r => r.date === start);
       } else if (reportType === 'weekly') {
         filteredProds = productions.filter(p => p.date >= start && p.date <= end);
-        filteredDists = distributions.filter(d => d.date >= start && d.date <= end && (!d.remark || !d.remark.includes('is-resent')));
-        filteredRets = returnsList.filter(r => r.date >= start && r.date <= end && (!r.remark || !r.remark.includes('is-resent')));
+        filteredDists = distributions.filter(d => d.date >= start && d.date <= end);
+        filteredRets = returnsList.filter(r => r.date >= start && r.date <= end);
       } else {
         const yearMonth = start.slice(0, 7);
         filteredProds = productions.filter(p => p.date.startsWith(yearMonth));
-        filteredDists = distributions.filter(d => d.date.startsWith(yearMonth) && (!d.remark || !d.remark.includes('is-resent')));
-        filteredRets = returnsList.filter(r => r.date.startsWith(yearMonth) && (!r.remark || !r.remark.includes('is-resent')));
+        filteredDists = distributions.filter(d => d.date.startsWith(yearMonth));
+        filteredRets = returnsList.filter(r => r.date.startsWith(yearMonth));
       }
     }
 
     const produced = sumQuantity(filteredProds);
-    const distributed = sumQuantity(filteredDists);
-    const returned = sumQuantity(filteredRets);
+    const distributed = sumQuantity(filteredDists.filter(d => !d.remark || !d.remark.includes('is-resent')));
+    const returned = sumQuantity(filteredRets.filter(r => r.status === 'production_grade'));
 
     return {
       productions: filteredProds,
@@ -2367,7 +2454,7 @@ export default function InventoryApp() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.setAttribute('href', url);
-      link.setAttribute('download', `distribution_left_report_${new Date().toISOString().slice(0, 10)}.csv`);
+      link.setAttribute('download', `distribution_left_report_${getLocalTodayDateString()}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -2461,7 +2548,7 @@ export default function InventoryApp() {
       const data = await response.json();
       if (response.ok) {
         setFundingForm({
-          date: new Date().toISOString().slice(0, 10),
+          date: getLocalTodayDateString(),
           village: villages.length > 0 ? villages[0].name : '',
           type: 'disbursement',
           amount: 0,
@@ -2598,7 +2685,7 @@ export default function InventoryApp() {
       batchId: productionForm.batchId,
     }, () => {
       setProductionForm({
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalTodayDateString(),
         pipeTypeId: pipeTypes.length > 0 ? pipeTypes[0].id : 0,
         quantity: 0,
         batchId: '',
@@ -2607,20 +2694,132 @@ export default function InventoryApp() {
     });
   };
 
+  const handleDistTypeChange = (type: 'normal' | 'resend_damaged') => {
+    setDistType(type);
+    setSelectedDamagedReturnId('');
+    setDistributionForm({
+      date: getLocalTodayDateString(),
+      village: villages.length > 0 ? villages[0].name : '',
+      pipeTypeId: pipeTypes.length > 0 ? pipeTypes[0].id : 0,
+      quantity: 0,
+      price: 0,
+      fromLocation: 'Factory',
+      toLocation: 'Village Store',
+      remark: '',
+      batchId: '',
+    });
+  };
+
+  const handleDamagedReturnSelect = (idStr: string) => {
+    if (!idStr) {
+      setSelectedDamagedReturnId('');
+      setDistributionForm({
+        ...distributionForm,
+        village: villages.length > 0 ? villages[0].name : '',
+        batchId: '',
+        pipeTypeId: 0,
+        quantity: 0,
+        price: 0,
+        remark: '',
+      });
+      return;
+    }
+    const ret = returnsList.find(r => r.id === Number(idStr));
+    if (ret) {
+      setSelectedDamagedReturnId(idStr);
+      setDistributionForm({
+        ...distributionForm,
+        village: ret.village,
+        batchId: ret.batch_id || '',
+        pipeTypeId: ret.pipe_type_id,
+        quantity: Number(ret.quantity || 0),
+        price: 0,
+        fromLocation: 'Factory',
+        toLocation: 'Village Store',
+        remark: `is-resent (Resent from damaged return ID: ${ret.id})`,
+      });
+    }
+  };
+
+  const handleQuickResend = (ret: ReturnRecord) => {
+    setDistType('resend_damaged');
+    setSelectedDamagedReturnId(String(ret.id));
+    setDistributionForm({
+      date: getLocalTodayDateString(),
+      village: ret.village,
+      pipeTypeId: ret.pipe_type_id,
+      quantity: Number(ret.quantity || 0),
+      price: 0,
+      fromLocation: 'Factory',
+      toLocation: 'Village Store',
+      remark: `is-resent (Resent from damaged return ID: ${ret.id})`,
+      batchId: ret.batch_id || '',
+    });
+    setActiveModal('distribution');
+  };
+
   const handleDistributionSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    await submitForm('/api/distribution', {
-      date: distributionForm.date,
-      village: distributionForm.village,
-      batchId: distributionForm.batchId,
-      quantity: distributionForm.quantity,
-      price: distributionForm.price,
-      fromLocation: distributionForm.fromLocation,
-      toLocation: distributionForm.toLocation,
-      remark: distributionForm.remark,
-    }, () => {
+
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const distRes = await fetch('/api/distribution', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date: distributionForm.date,
+          village: distributionForm.village,
+          batchId: distributionForm.batchId,
+          quantity: distributionForm.quantity,
+          price: distributionForm.price,
+          fromLocation: distributionForm.fromLocation,
+          toLocation: distributionForm.toLocation,
+          remark: distributionForm.remark,
+        }),
+      });
+
+      const distData = await distRes.json();
+      if (!distRes.ok) {
+        setMessage(distData.error || 'Failed to save distribution.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (distType === 'resend_damaged' && selectedDamagedReturnId) {
+        const retRecord = returnsList.find(r => r.id === Number(selectedDamagedReturnId));
+        if (retRecord) {
+          const newRemark = retRecord.remark 
+            ? `${retRecord.remark} is-resent` 
+            : 'is-resent';
+            
+          const retRes = await fetch('/api/returns', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: retRecord.id,
+              date: retRecord.date,
+              village: retRecord.village,
+              batchId: retRecord.batch_id,
+              quantity: retRecord.quantity,
+              status: retRecord.status,
+              price: retRecord.price || 0,
+              remark: newRemark,
+            }),
+          });
+          
+          const retData = await retRes.json();
+          if (!retRes.ok) {
+            setMessage(retData.error || 'Failed to update return record as resent.');
+          }
+        }
+      }
+
+      setMessage(language === 'my' ? 'မှတ်တမ်း သိမ်းဆည်းပြီးပါပြီ။' : 'Record saved successfully.');
+      
       setDistributionForm({
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalTodayDateString(),
         village: villages.length > 0 ? villages[0].name : '',
         pipeTypeId: 0,
         quantity: 0,
@@ -2630,22 +2829,31 @@ export default function InventoryApp() {
         remark: '',
         batchId: '',
       });
+      setDistType('normal');
+      setSelectedDamagedReturnId('');
       setActiveModal(null);
-    });
+      await loadData();
+      await loadVillages();
+      await loadAuditLogs();
+    } catch (error) {
+      setMessage('Server error while saving the record.');
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReturnSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const { date, village, batchId, qtyProductionGrade, qtyDamaged, price, remark } = returnForm;
+    const { date, village, batchId, status, quantity, price, remark } = returnForm;
 
-    const totalQty = qtyProductionGrade + qtyDamaged;
-    if (totalQty <= 0) {
+    if (quantity <= 0) {
       setMessage(language === 'my' ? 'ပြန်အပ်နှံမည့် အရေအတွက်သည် သုညထက် ကြီးရပါမည်။' : 'Quantity to return must be greater than zero.');
       return;
     }
 
-    if (totalQty > selectedReturnBalance) {
+    if (quantity > selectedReturnBalance) {
       setMessage(
         language === 'my'
           ? 'အမှား - ပြန်အပ်နှံမည့် အရေအတွက်သည် ကျေးရွာရှိ လက်ကျန်ထက် မကျော်လွန်ရပါ။'
@@ -2657,61 +2865,38 @@ export default function InventoryApp() {
     setIsSubmitting(true);
     setMessage(null);
 
-    try {
-      if (qtyProductionGrade > 0) {
-        const res = await fetch('/api/returns', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date,
-            village,
-            batchId,
-            quantity: qtyProductionGrade,
-            status: 'production_grade',
-            price,
-            remark: qtyDamaged > 0 ? `${remark} (Production Grade part)` : remark,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setMessage(data.error || 'Failed to save Production Grade return.');
-          setIsSubmitting(false);
-          return;
-        }
-      }
+    const remarkToSend = outstandingResentForSelected > 0
+      ? (remark ? `${remark} is-resent` : 'is-resent')
+      : remark;
 
-      if (qtyDamaged > 0) {
-        const res = await fetch('/api/returns', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            date,
-            village,
-            batchId,
-            quantity: qtyDamaged,
-            status: 'damaged',
-            price: 0,
-            remark: qtyProductionGrade > 0 ? `${remark} (Damaged part)` : remark,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setMessage(data.error || 'Failed to save Damaged return.');
-          setIsSubmitting(false);
-          await loadData();
-          await loadVillages();
-          await loadAuditLogs();
-          return;
-        }
+    try {
+      const res = await fetch('/api/returns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          date,
+          village,
+          batchId,
+          quantity,
+          status,
+          price: status === 'production_grade' ? price : 0,
+          remark: remarkToSend,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage(data.error || 'Failed to save return.');
+        setIsSubmitting(false);
+        return;
       }
 
       setMessage(language === 'my' ? 'ပြန်အပ်နှံမှု မှတ်တမ်း သိမ်းဆည်းပြီးပါပြီ။' : 'Returns saved successfully.');
       setReturnForm({
-        date: new Date().toISOString().slice(0, 10),
+        date: getLocalTodayDateString(),
         village: villages.length > 0 ? villages[0].name : '',
         pipeTypeId: 0,
-        qtyProductionGrade: 0,
-        qtyDamaged: 0,
+        status: 'production_grade',
+        quantity: 0,
         price: 0,
         remark: '',
         batchId: '',
@@ -3030,8 +3215,8 @@ export default function InventoryApp() {
     };
 
     return {
-      dists: distributions.filter((d) => isWithinPeriod(d.date)),
-      rets: returnsList.filter((r) => isWithinPeriod(r.date)),
+      dists: distributions.filter((d) => isWithinPeriod(d.date) && (!d.remark || !d.remark.includes('is-resent'))),
+      rets: returnsList.filter((r) => isWithinPeriod(r.date) && r.status === 'production_grade'),
     };
   }, [distributions, returnsList, financePeriod]);
 
@@ -4086,12 +4271,27 @@ export default function InventoryApp() {
                                   ? (language === 'my' ? 'ပျက်စီး' : 'DAMAGED') 
                                   : (language === 'my' ? 'ထုတ်လုပ်မှု အဆင့်မီ' : 'PRODUCTION GRADE')}
                               </span>
+                              {item.remark && item.remark.includes('is-resent') && (
+                                <span className="badge badge-info" style={{ marginLeft: '6px', backgroundColor: 'var(--primary)', color: 'white' }}>
+                                  {language === 'my' ? 'ပြန်လည်ပို့ပြီး' : 'Resent'}
+                                </span>
+                              )}
                             </td>
                             <td>{formatCurrency(item.price || 0)}</td>
                             <td>{formatCurrency((item.price || 0) * (item.quantity || 0))}</td>
                             {user.role === 'admin' && (
                               <td>
                                 <div style={{ display: 'flex', gap: '8px' }}>
+                                  {item.status === 'damaged' && (!item.remark || !item.remark.includes('is-resent')) && (
+                                    <button
+                                      type="button"
+                                      className="action-btn edit"
+                                      style={{ backgroundColor: 'var(--warning-light)', color: 'var(--warning)' }}
+                                      onClick={() => handleQuickResend(item)}
+                                    >
+                                      {language === 'my' ? 'ပြန်လည်ပို့ဆောင်ရန်' : 'Resend'}
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     className="action-btn edit"
@@ -5507,6 +5707,61 @@ export default function InventoryApp() {
                 {activeModal === 'distribution' && (
                   <form onSubmit={handleDistributionSubmit}>
                     <div className="form-grid">
+                      {/* Distribution Type Selection */}
+                      <div className="form-group full-width">
+                        <label style={{ marginBottom: '8px', display: 'block' }}>
+                          {language === 'my' ? 'ဖြန့်ဖြူးမှုအမျိုးအစား' : 'Distribution Type'}
+                        </label>
+                        <div className="radio-group-row" style={{ display: 'flex', gap: '16px' }}>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            <input
+                              type="radio"
+                              name="distType"
+                              value="normal"
+                              checked={distType === 'normal'}
+                              onChange={() => handleDistTypeChange('normal')}
+                            />
+                            <span>{language === 'my' ? 'ပုံမှန် ဖြန့်ဖြူးမှု (စက်ရုံလက်ကျန်)' : 'Normal Distribution (Factory Stock)'}</span>
+                          </label>
+                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                            <input
+                              type="radio"
+                              name="distType"
+                              value="resend_damaged"
+                              checked={distType === 'resend_damaged'}
+                              onChange={() => handleDistTypeChange('resend_damaged')}
+                            />
+                            <span>{language === 'my' ? 'ပျက်စီးပစ္စည်း ပြန်လည်ပေးပို့ခြင်း' : 'Resend Damaged Return'}</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Outstanding Damaged Returns Dropdown */}
+                      {distType === 'resend_damaged' && (
+                        <div className="form-group full-width">
+                          <label htmlFor="distribution-damaged-return-id">
+                            {language === 'my' ? 'ပြန်အပ်ထားသော ပျက်စီးပစ္စည်း ရွေးချယ်ရန်' : 'Select Damaged Return Record'}
+                          </label>
+                          <select
+                            id="distribution-damaged-return-id"
+                            required
+                            disabled={user.role !== 'admin'}
+                            value={selectedDamagedReturnId}
+                            onChange={(event) => handleDamagedReturnSelect(event.target.value)}
+                          >
+                            <option value="">{language === 'my' ? '-- ရွေးချယ်ပါ --' : '-- Select Damaged Return --'}</option>
+                            {outstandingDamagedReturns.map((ret) => {
+                              const pipeType = pipeTypes.find(pt => pt.id === ret.pipe_type_id);
+                              return (
+                                <option key={ret.id} value={ret.id}>
+                                  ID: {ret.id} - {ret.village} - {ret.batch_id} ({pipeType?.name || 'Unknown'}) - {ret.quantity} units - returned on {ret.date}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      )}
+
                       <div className="form-group">
                         <label htmlFor="distribution-date">{t.deliveryDate}</label>
                         <input
@@ -5523,7 +5778,7 @@ export default function InventoryApp() {
                         <label htmlFor="distribution-village">{t.destinationOutpost}</label>
                         <select
                           id="distribution-village"
-                          disabled={user.role !== 'admin'}
+                          disabled={user.role !== 'admin' || distType === 'resend_damaged'}
                           value={distributionForm.village}
                           onChange={(event) => setDistributionForm({ ...distributionForm, village: event.target.value })}
                         >
@@ -5534,12 +5789,13 @@ export default function InventoryApp() {
                           ))}
                         </select>
                       </div>
+
                       <div className="form-group">
                         <label htmlFor="distribution-batch-id">{language === 'my' ? 'ထုတ်လုပ်မှုအသုတ် ရွေးချယ်ရန်' : 'Select Production Batch'}</label>
                         <select
                           id="distribution-batch-id"
                           required
-                          disabled={user.role !== 'admin'}
+                          disabled={user.role !== 'admin' || distType === 'resend_damaged'}
                           value={distributionForm.batchId}
                           onChange={(event) => {
                             const selectedBatchId = event.target.value;
@@ -5559,14 +5815,24 @@ export default function InventoryApp() {
                             }
                           }}
                         >
-                          <option value="">{language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}</option>
-                          {registeredBatchesList
-                            .filter((batch) => !batchStatusMap[batch.batchId]?.isFullyReturned)
-                            .map((batch) => (
-                              <option key={batch.batchId} value={batch.batchId}>
-                                {batch.batchId} ({batch.pipeName})
-                              </option>
-                            ))}
+                          {distType === 'resend_damaged' ? (
+                            distributionForm.batchId ? (
+                              <option value={distributionForm.batchId}>{distributionForm.batchId}</option>
+                            ) : (
+                              <option value="">{language === 'my' ? '-- အသုတ်မရှိပါ --' : '-- No Batch --'}</option>
+                            )
+                          ) : (
+                            <>
+                              <option value="">{language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}</option>
+                              {registeredBatchesList
+                                .filter((batch) => !batchStatusMap[batch.batchId]?.isFullyReturned)
+                                .map((batch) => (
+                                  <option key={batch.batchId} value={batch.batchId}>
+                                    {batch.batchId} ({batch.pipeName})
+                                  </option>
+                                ))}
+                            </>
+                          )}
                         </select>
                       </div>
 
@@ -5578,12 +5844,16 @@ export default function InventoryApp() {
                           placeholder="0"
                           min="1"
                           required
-                          disabled={user.role !== 'admin'}
+                          disabled={user.role !== 'admin' || distType === 'resend_damaged'}
                           value={distributionForm.quantity === 0 ? '' : (distributionForm.quantity || '')}
                           onChange={(event) => setDistributionForm({ ...distributionForm, quantity: Number(event.target.value) })}
                         />
-                        <small>{t.maximumFactoryAvailable}: {batchStockMap[distributionForm.batchId] ?? 0} {language === 'my' ? 'ယူနစ်' : 'units'}</small>
-                      </div>                      <div className="form-group">
+                        {distType !== 'resend_damaged' && (
+                          <small>{t.maximumFactoryAvailable}: {batchStockMap[distributionForm.batchId] ?? 0} {language === 'my' ? 'ယူနစ်' : 'units'}</small>
+                        )}
+                      </div>
+
+                      <div className="form-group">
                         <label htmlFor="distribution-price">{t.autoCalculatedUnitPrice}</label>
                         <input
                           id="distribution-price"
@@ -5591,7 +5861,7 @@ export default function InventoryApp() {
                           step="0.01"
                           min="0"
                           required
-                          disabled={user.role !== 'admin'}
+                          disabled={user.role !== 'admin' || distType === 'resend_damaged'}
                           value={distributionForm.price || ''}
                           onChange={(event) => setDistributionForm({ 
                             ...distributionForm, 
@@ -5672,8 +5942,8 @@ export default function InventoryApp() {
                             village: event.target.value,
                             batchId: '',
                             pipeTypeId: 0,
-                            qtyProductionGrade: 0,
-                            qtyDamaged: 0,
+                            status: 'production_grade',
+                            quantity: 0,
                             price: 0,
                           })}
                         >
@@ -5720,47 +5990,55 @@ export default function InventoryApp() {
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="return-qty-production-grade">
-                          {language === 'my' 
-                            ? 'ထုတ်လုပ်မှု အဆင့်မီ အရေအတွက် (ကုမ္ပဏီမှ ပြန်လည်ဝယ်ယူသည်)' 
-                            : 'Quantity - Production Grade (Re-bought)'}
+                        <label htmlFor="return-status">
+                          {language === 'my' ? 'ပြန်အပ်နှံမှု အမျိုးအစား' : 'Return Classification'}
                         </label>
-                        <input
-                          id="return-qty-production-grade"
-                          type="number"
-                          placeholder="0"
-                          min="0"
-                          disabled={user.role !== 'admin'}
-                          value={returnForm.qtyProductionGrade === 0 ? '' : returnForm.qtyProductionGrade}
-                          onChange={(event) => setReturnForm({ ...returnForm, qtyProductionGrade: Number(event.target.value) })}
-                        />
+                        <select
+                          id="return-status"
+                          disabled={user.role !== 'admin' || hasResentItems}
+                          value={returnForm.status}
+                          onChange={(event) => setReturnForm({ ...returnForm, status: event.target.value as 'production_grade' | 'damaged' })}
+                        >
+                          <option value="production_grade">
+                            {language === 'my' ? 'ထုတ်လုပ်မှု အဆင့်မီ (Production Grade)' : 'Production Grade (Re-buy)'}
+                          </option>
+                          <option value="damaged">
+                            {language === 'my' ? 'ပျက်စီးပစ္စည်း (Damaged)' : 'Damaged (No Re-buy)'}
+                          </option>
+                        </select>
+                        {hasResentItems && (
+                          <small style={{ color: 'var(--success)', display: 'block', marginTop: '4px' }}>
+                            {language === 'my' 
+                              ? 'ပျက်စီးပစ္စည်း ပြန်လည်ပေးပို့ထားမှုရှိသောကြောင့် Production Grade အဖြစ်သာ ပြန်အပ်နိုင်ပါသည်။' 
+                              : 'Outstanding resent items detected. Locked to Production Grade.'}
+                          </small>
+                        )}
                       </div>
 
                       <div className="form-group">
-                        <label htmlFor="return-qty-damaged">
-                          {language === 'my' 
-                            ? 'ပျက်စီး အရေအတွက် (ကျေးရွာသို့ ပြန်လည်ပေးပို့ - ဝယ်ယူမှုမရှိ)' 
-                            : 'Quantity - Damaged (No Re-buy)'}
+                        <label htmlFor="return-quantity">
+                          {language === 'my' ? 'ပြန်အပ်နှံမည့် အရေအတွက်' : 'Quantity to Return'}
                         </label>
                         <input
-                          id="return-qty-damaged"
+                          id="return-quantity"
                           type="number"
                           placeholder="0"
-                          min="0"
+                          min="1"
+                          required
                           disabled={user.role !== 'admin'}
-                          value={returnForm.qtyDamaged === 0 ? '' : returnForm.qtyDamaged}
-                          onChange={(event) => setReturnForm({ ...returnForm, qtyDamaged: Number(event.target.value) })}
+                          value={returnForm.quantity === 0 ? '' : returnForm.quantity}
+                          onChange={(event) => setReturnForm({ ...returnForm, quantity: Number(event.target.value) })}
                         />
                       </div>
 
                       <div className="form-group full-width" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         <small style={{ fontWeight: '500' }}>
-                          {t.villageBalanceCurrentlyDeployed}: {Math.max(0, selectedReturnBalance - (returnForm.qtyProductionGrade + returnForm.qtyDamaged))} {language === 'my' ? 'ယူနစ်' : 'units'}
+                          {t.villageBalanceCurrentlyDeployed}: {Math.max(0, selectedReturnBalance - returnForm.quantity)} {language === 'my' ? 'ယူနစ်' : 'units'}
                         </small>
-                        <small style={{ color: (returnForm.qtyProductionGrade + returnForm.qtyDamaged) > selectedReturnBalance ? 'var(--danger)' : 'var(--text-secondary)' }}>
+                        <small style={{ color: returnForm.quantity > selectedReturnBalance ? 'var(--danger)' : 'var(--text-secondary)' }}>
                           {language === 'my' 
-                            ? `စုစုပေါင်း ပြန်အပ်နှံမည့် အရေအတွက်: ${returnForm.qtyProductionGrade + returnForm.qtyDamaged} ယူနစ်`
-                            : `Total return quantity: ${returnForm.qtyProductionGrade + returnForm.qtyDamaged} units`}
+                            ? `စုစုပေါင်း ပြန်အပ်နှံမည့် အရေအတွက်: ${returnForm.quantity} ယူနစ်`
+                            : `Total return quantity: ${returnForm.quantity} units`}
                         </small>
                       </div>
 
@@ -5774,6 +6052,7 @@ export default function InventoryApp() {
                               value="plus10"
                               checked={returnPriceMode === 'plus10'}
                               onChange={() => setReturnPriceMode('plus10')}
+                              disabled={returnForm.status !== 'production_grade'}
                             />
                             <span>{language === 'my' ? 'မူရင်းစျေးနှုန်း + ၁၀%' : 'Catalog Price + 10%'}</span>
                           </label>
@@ -5784,6 +6063,7 @@ export default function InventoryApp() {
                               value="manual"
                               checked={returnPriceMode === 'manual'}
                               onChange={() => setReturnPriceMode('manual')}
+                              disabled={returnForm.status !== 'production_grade'}
                             />
                             <span>{language === 'my' ? 'ကိုယ်တိုင် ရိုက်ထည့်မည်' : 'Manual Input'}</span>
                           </label>
@@ -5793,7 +6073,7 @@ export default function InventoryApp() {
                       <div className="form-group">
                         <label htmlFor="return-price">
                           {t.returnUnitPrice}{' '}
-                          {returnPriceMode === 'plus10' && returnForm.qtyProductionGrade > 0 && `(Auto: 10% markup)`}
+                          {returnPriceMode === 'plus10' && returnForm.status === 'production_grade' && `(Auto: 10% markup)`}
                         </label>
                         <input
                           id="return-price"
@@ -5801,16 +6081,16 @@ export default function InventoryApp() {
                           step="0.01"
                           min="0"
                           required
-                          disabled={user.role !== 'admin' || returnForm.qtyProductionGrade <= 0 || returnPriceMode === 'plus10'}
-                          style={returnPriceMode === 'plus10' ? { backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed', opacity: 0.8 } : undefined}
-                          value={returnForm.qtyProductionGrade <= 0 ? 0 : (returnForm.price || '')}
+                          disabled={user.role !== 'admin' || returnForm.status !== 'production_grade' || returnPriceMode === 'plus10'}
+                          style={returnPriceMode === 'plus10' || returnForm.status !== 'production_grade' ? { backgroundColor: 'var(--bg-secondary)', cursor: 'not-allowed', opacity: 0.8 } : undefined}
+                          value={returnForm.status !== 'production_grade' ? 0 : (returnForm.price || '')}
                           onChange={(event) => setReturnForm({ ...returnForm, price: Number(event.target.value) })}
                         />
-                        {returnForm.qtyProductionGrade <= 0 && (
+                        {returnForm.status !== 'production_grade' && (
                           <small style={{ color: 'var(--text-secondary)' }}>
                             {language === 'my' 
-                              ? 'ထုတ်လုပ်မှု အဆင့်မီ ပစ္စည်း အရေအတွက် ၀ ထက်ကြီးမှသာ ပြန်လည်ဝယ်ယူသည့် ဈေးနှုန်းထည့်သွင်းနိုင်ပါမည်။' 
-                              : 'Re-buy price is only applicable when Production Grade quantity is greater than 0.'}
+                              ? 'ပျက်စီးပစ္စည်း ပြန်အပ်နှံခြင်းအတွက် ပြန်လည်ဝယ်ယူသည့် ဈေးနှုန်းမရှိပါ။' 
+                              : 'Re-buy price is not applicable for Damaged returns.'}
                           </small>
                         )}
                       </div>
@@ -6235,7 +6515,7 @@ export default function InventoryApp() {
                         <label htmlFor="edit-return-status">{t.inventoryClassification}</label>
                         <select
                           id="edit-return-status"
-                          disabled={user.role !== 'admin'}
+                          disabled={user.role !== 'admin' || editReturnHasResent}
                           value={editReturnForm.status}
                           onChange={(event) => {
                             const newStatus = event.target.value as 'damaged' | 'production_grade';
@@ -6251,6 +6531,13 @@ export default function InventoryApp() {
                           <option value="production_grade">{t.productionGrade}</option>
                           <option value="damaged">{t.damagedScrapped}</option>
                         </select>
+                        {editReturnHasResent && (
+                          <small style={{ color: 'var(--success)', display: 'block', marginTop: '4px' }}>
+                            {language === 'my' 
+                              ? 'ပျက်စီးပစ္စည်း ပြန်လည်ပေးပို့ထားမှုရှိသောကြောင့် Production Grade အဖြစ်သာ ပြင်ဆင်နိုင်ပါသည်။' 
+                              : 'Outstanding resent items detected. Locked to Production Grade.'}
+                          </small>
+                        )}
                       </div>
 
                       <div className="form-group">

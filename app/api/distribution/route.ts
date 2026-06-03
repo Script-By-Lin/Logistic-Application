@@ -43,7 +43,7 @@ export const POST = withAuth(
     // 1. Parallel verification (Single Database Round-trip)
     const [prodRes, distRes, retRes] = await Promise.all([
       supabase!.from('productions').select('pipe_type_id, quantity').eq('batch_id', trimmedBatchId),
-      supabase!.from('distributions').select('quantity').eq('batch_id', trimmedBatchId),
+      supabase!.from('distributions').select('quantity, remark').eq('batch_id', trimmedBatchId),
       supabase!.from('returns').select('quantity, status').eq('batch_id', trimmedBatchId),
     ]);
 
@@ -58,18 +58,22 @@ export const POST = withAuth(
     const inferredPipeTypeId = prodRes.data[0].pipe_type_id;
 
     // 2. Stock Level Calculations
-    const produced = sum(prodRes.data);
-    const distributed = sum(distRes.data || []);
-    const returned = sum((retRes.data || []).filter((r: any) => r.status !== 'damaged'));
-    const available = produced - distributed + returned;
+    const isResent = remark && remark.includes('is-resent');
+    
+    if (!isResent) {
+      const produced = sum(prodRes.data);
+      const distributed = sum((distRes.data || []).filter((d: any) => !d.remark || !d.remark.includes('is-resent')));
+      const returned = sum((retRes.data || []).filter((r: any) => r.status !== 'damaged'));
+      const available = produced - distributed + returned;
 
-    if (quantity > available) {
-      return NextResponse.json(
-        {
-          error: `Insufficient factory stock for this batch. Available: ${available} units, Requested: ${quantity} units.`,
-        },
-        { status: 400 }
-      );
+      if (quantity > available) {
+        return NextResponse.json(
+          {
+            error: `Insufficient factory stock for this batch. Available: ${available} units, Requested: ${quantity} units.`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // 3. Database Insertion
@@ -183,7 +187,7 @@ export const PATCH = withAuth(
     const [originalRes, prodRes, distRes, retRes] = await Promise.all([
       supabase!.from('distributions').select('*').eq('id', recordId).maybeSingle(),
       supabase!.from('productions').select('pipe_type_id, quantity').eq('batch_id', trimmedBatchId),
-      supabase!.from('distributions').select('quantity').eq('batch_id', trimmedBatchId).neq('id', recordId),
+      supabase!.from('distributions').select('quantity, remark').eq('batch_id', trimmedBatchId).neq('id', recordId),
       supabase!.from('returns').select('quantity, status').eq('batch_id', trimmedBatchId),
     ]);
 
@@ -204,18 +208,22 @@ export const PATCH = withAuth(
     const inferredPipeTypeId = prodRes.data[0].pipe_type_id;
 
     // 2. Stock Level Calculations
-    const produced = sum(prodRes.data);
-    const distributedOther = sum(distRes.data || []);
-    const returned = sum((retRes.data || []).filter((r: any) => r.status !== 'damaged'));
-    const available = produced - distributedOther + returned;
+    const isResent = remark && remark.includes('is-resent');
 
-    if (quantity > available) {
-      return NextResponse.json(
-        {
-          error: `Insufficient factory stock for this batch update. Available: ${available} units, Requested: ${quantity} units.`,
-        },
-        { status: 400 }
-      );
+    if (!isResent) {
+      const produced = sum(prodRes.data);
+      const distributedOther = sum((distRes.data || []).filter((d: any) => !d.remark || !d.remark.includes('is-resent')));
+      const returned = sum((retRes.data || []).filter((r: any) => r.status !== 'damaged'));
+      const available = produced - distributedOther + returned;
+
+      if (quantity > available) {
+        return NextResponse.json(
+          {
+            error: `Insufficient factory stock for this batch update. Available: ${available} units, Requested: ${quantity} units.`,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // 3. Database Update
