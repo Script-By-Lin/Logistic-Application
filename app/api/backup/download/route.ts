@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { withAuth } from '@/lib/api-helper';
+import { getBackupsDir } from '@/lib/backup-path';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -13,7 +14,7 @@ export const GET = withAuth(
       return NextResponse.json({ error: 'Invalid backup filename.' }, { status: 400 });
     }
 
-    const backupsDir = path.join(process.cwd(), 'backups');
+    const backupsDir = getBackupsDir();
     const filePath = path.join(backupsDir, filename);
 
     try {

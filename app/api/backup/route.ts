@@ -3,10 +3,9 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
 import { logAction } from '@/lib/audit';
 import { withAuth } from '@/lib/api-helper';
+import { getBackupsDir } from '@/lib/backup-path';
 import fs from 'fs/promises';
 import path from 'path';
-
-const getBackupsDir = () => path.join(process.cwd(), 'backups');
 
 export const GET = withAuth(
   async () => {
