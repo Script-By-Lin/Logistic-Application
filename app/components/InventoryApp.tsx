@@ -465,10 +465,24 @@ export default function InventoryApp() {
   const sidebarTabs = user?.role === 'admin' ? ADMIN_TABS : VIEWER_TABS;
   const [activeTab, setActiveTab] = useState<string>('Overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
     setIsSidebarOpen(false);
+    setIsProfileOpen(false); // Close profile dropdown when activeTab changes
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!isProfileOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.sidebar-profile-container')) {
+        setIsProfileOpen(false);
+      }
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, [isProfileOpen]);
 
   // --- Inventory, Outpost & Log Data States ---
   const [pipeTypes, setPipeTypes] = useState<PipeType[]>([]);
@@ -3612,6 +3626,22 @@ export default function InventoryApp() {
             </button>
           </form>
 
+          {/* <div style={{ marginTop: '16px', textAlign: 'center' }}>
+            <button 
+              type="button" 
+              className="text-link" 
+              style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: '0.9rem', fontWeight: 600 }}
+              onClick={() => {
+                setIsRegistering(!isRegistering);
+                setMessage(null);
+              }}
+            >
+              {isRegistering 
+                ? (language === 'my' ? 'စနစ်ထဲသို့ဝင်ရန် အကောင့်ရှိပြီးသားဖြစ်သည်' : 'Already have an account? Sign In') 
+                : (language === 'my' ? 'အက်ဒမင်အကောင့်အသစ်တစ်ခု ဖန်တီးပါ' : 'Create new Administrator account')}
+            </button>
+          </div> */}
+
           
         </div>
       </div>
@@ -3686,102 +3716,168 @@ export default function InventoryApp() {
           })}
         </nav>
 
-        <div className="sidebar-footer">
-          {/* Sleek Language Switcher Pill */}
-          <div className="lang-switcher-block">
+        <div className="sidebar-footer" style={{ padding: '16px 20px', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.08))' }}>
+          {/* SIDEBAR PROFILE WIDGET */}
+          <div className="sidebar-profile-container" style={{ position: 'relative', width: '100%' }}>
             <button 
               type="button" 
-              className={`lang-btn ${language === 'en' ? 'active' : ''}`}
-              onClick={() => setLanguage('en')}
+              className={`sidebar-profile-trigger ${isProfileOpen ? 'active' : ''}`}
+              onClick={() => setIsProfileOpen(!isProfileOpen)}
+              aria-label="Toggle profile menu"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                width: '100%',
+                background: 'var(--bg-secondary, rgba(255,255,255,0.03))',
+                border: '1px solid var(--border-color)',
+                padding: '10px 14px',
+                borderRadius: '12px',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                textAlign: 'left'
+              }}
             >
-              English
+              <div className="profile-avatar" style={{ flexShrink: 0 }}>
+                {user.email.split('@')[0].slice(0, 2).toUpperCase()}
+              </div>
+              <div className="profile-info-text" style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0, textAlign: 'left', alignItems: 'flex-start' }}>
+                <span className="profile-name" style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: '0.88rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%' }}>
+                  {user.email.split('@')[0]}
+                </span>
+                <span className="profile-role" style={{ color: 'var(--text-muted)', fontSize: '0.72rem', textTransform: 'capitalize' }}>
+                  {user.role === 'admin' ? 'Administrator' : 'Viewer'}
+                </span>
+              </div>
+              <span className="profile-chevron" style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
+                {isProfileOpen ? '▼' : '▲'}
+              </span>
             </button>
-            <button 
-              type="button" 
-              className={`lang-btn ${language === 'my' ? 'active' : ''}`}
-              onClick={() => setLanguage('my')}
-            >
-              မြန်မာ
-            </button>
+            
+            {isProfileOpen && (
+              <div 
+                className="sidebar-profile-dropdown"
+                style={{
+                  position: 'absolute',
+                  bottom: '100%',
+                  left: 0,
+                  right: 0,
+                  marginBottom: '10px',
+                  background: '#ffffff',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '16px',
+                  boxShadow: '0 -10px 25px -5px rgba(0, 0, 0, 0.1), 0 -8px 10px -6px rgba(0, 0, 0, 0.05)',
+                  zIndex: 1000,
+                  padding: '16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                  animation: 'fadeInSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) both'
+                }}
+              >
+                <div className="dropdown-header-info" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <p className="dropdown-email" style={{ fontSize: '0.82rem', fontWeight: 550, color: 'var(--text-primary)', wordBreak: 'break-all' }}>{user.email}</p>
+                  <span className={`role-badge badge-${user.role}`}>
+                    {user.role === 'admin' ? 'Admin' : 'Viewer'}
+                  </span>
+                </div>
+                
+                <div className="dropdown-divider"></div>
+                
+                {/* Language switcher */}
+                <div className="dropdown-lang-section" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <span className="dropdown-section-title" style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {language === 'my' ? 'ဘာသာစကား' : 'Language'}
+                  </span>
+                  <div className="dropdown-lang-pill-row">
+                    <button 
+                      type="button" 
+                      className={`lang-pill-btn ${language === 'en' ? 'active' : ''}`}
+                      onClick={() => setLanguage('en')}
+                    >
+                      EN
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`lang-pill-btn ${language === 'my' ? 'active' : ''}`}
+                      onClick={() => setLanguage('my')}
+                    >
+                      မြန်မာ
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="dropdown-divider"></div>
+                <button type="button" className="dropdown-logout-btn" onClick={handleLogout}>
+                  <span className="logout-icon">🚪</span>
+                  <span>{t.signOut}</span>
+                </button>
+              </div>
+            )}
           </div>
-          <button type="button" className="logout-btn" onClick={handleLogout}>
-            <span className="link-text">{t.signOut} ({user.email.split('@')[0]})</span>
-          </button>
         </div>
       </aside>
 
       <section className="dashboard-content">
         <div className="dashboard-header">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <button 
-                type="button" 
-                className="mobile-menu-btn" 
-                onClick={() => setIsSidebarOpen(true)}
-                aria-label="Open sidebar"
-              >
-                ☰
-              </button>
+          <div className="header-left-side">
+            <div className="header-title-row">
               <h1>{PAGE_TITLES[activeTab]?.[language] || activeTab}</h1>
             </div>
             {PAGE_SUBHEADINGS[activeTab]?.[language] && (
-              <p className="subheading" style={{ margin: '4px 0 0 0' }}>
+              <p className="subheading">
                 {PAGE_SUBHEADINGS[activeTab]?.[language]}
               </p>
             )}
           </div>
-          {user.role === 'admin' && (
-            <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {activeTab === 'Overview' && (
-                <button 
-                  className="primary" 
-                  onClick={() => setActiveModal('distribution')}
-                >
-                  {t.addDistribution}
-                </button>
-              )}
-              {activeTab === 'Production' && (
-                <button 
-                  className="primary" 
-                  onClick={() => setActiveModal('production')}
-                >
-                  {t.addProduction}
-                </button>
-              )}
-              {activeTab === 'Distribution' && (
-                <button 
-                  className="primary" 
-                  onClick={() => setActiveModal('distribution')}
-                >
-                  {t.addDistribution}
-                </button>
-              )}
-              {activeTab === 'Returns' && (
-                <button 
-                  className="primary" 
-                  onClick={() => setActiveModal('return')}
-                >
-                  {t.addReturn}
-                </button>
-              )}
-              {activeTab === 'Catalog Settings' && (
-                <div style={{ display: 'flex', gap: '12px', width: '100%', flexWrap: 'wrap' }}>
-                  <button 
-                    className="secondary" 
-                    onClick={() => setActiveModal('new_pipe')}
-                  >
-                    {t.newPipeModel}
-                  </button>
+          <div className="header-right-side">
+            {user.role === 'admin' && (
+              <div className="header-actions">
+                {activeTab === 'Production' && (
                   <button 
                     className="primary" 
-                    onClick={() => setActiveModal('new_outpost')}
+                    onClick={() => setActiveModal('production')}
                   >
-                    {t.newOutpostNode}
+                    {t.addProduction}
                   </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+                {activeTab === 'Distribution' && (
+                  <button 
+                    className="primary" 
+                    onClick={() => setActiveModal('distribution')}
+                  >
+                    {t.addDistribution}
+                  </button>
+                )}
+                {activeTab === 'Returns' && (
+                  <button 
+                    className="primary" 
+                    onClick={() => setActiveModal('return')}
+                  >
+                    {t.addReturn}
+                  </button>
+                )}
+                {activeTab === 'Catalog Settings' && (
+                  <div className="catalog-actions-row">
+                    <button 
+                      className="secondary" 
+                      onClick={() => setActiveModal('new_pipe')}
+                    >
+                      {t.newPipeModel}
+                    </button>
+                    <button 
+                      className="primary" 
+                      onClick={() => setActiveModal('new_outpost')}
+                    >
+                      {t.newOutpostNode}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+
+          </div>
         </div>
 
         {message ? (
@@ -4139,7 +4235,7 @@ export default function InventoryApp() {
                   }}
                 />
               </div>
-              <div className="table-wrapper">
+              <div className="table-wrapper mobile-cards">
                 <table>
                   <thead>
                     <tr>
@@ -4168,8 +4264,8 @@ export default function InventoryApp() {
                           const hasDamaged = returnsList.some((r) => r.pipe_type_id === prod.pipe_type_id && r.status === 'damaged');
                           return (
                             <tr key={prod.id}>
-                              <td>{prod.date}</td>
-                              <td>
+                              <td data-label={language === 'my' ? 'ရက်စွဲ' : 'Date'}>{prod.date}</td>
+                              <td data-label="Batch ID">
                                 {prod.batch_id ? (
                                   <button
                                     type="button"
@@ -4188,9 +4284,9 @@ export default function InventoryApp() {
                                   </span>
                                 )}
                               </td>
-                              <td>{pipeName}</td>
-                              <td>{prod.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                              <td>
+                              <td data-label="Model">{pipeName}</td>
+                              <td data-label="Output">{prod.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                              <td data-label="QC Status">
                                 {hasDamaged ? (
                                   <span className="badge badge-warning">{t.defectReturns}</span>
                                 ) : (
@@ -4198,7 +4294,7 @@ export default function InventoryApp() {
                                 )}
                               </td>
                               {user.role === 'admin' && (
-                                <td>
+                                <td className="actions-cell">
                                   <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
                                       type="button"
@@ -4319,7 +4415,7 @@ export default function InventoryApp() {
               <div className="table-panel">
                 <h2>{t.filteredDistributionLogs}</h2>
                 <p style={{ marginBottom: '16px' }}>{t.listOfAllOutgoingOutpostDeliveries}</p>
-                <div className="table-wrapper">
+                <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
                       <tr>
@@ -4343,10 +4439,10 @@ export default function InventoryApp() {
                       ) : (
                         (isPrinting ? filteredDistributions : filteredDistributions.slice((getPage('distribution') - 1) * getPageSize('distribution'), getPage('distribution') * getPageSize('distribution'))).map((item) => (
                           <tr key={item.id}>
-                            <td>{item.date}</td>
-                            <td>{item.village}</td>
-                            <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown model'}</td>
-                            <td>
+                            <td data-label={language === 'my' ? 'ရက်စွဲ' : 'Date'}>{item.date}</td>
+                            <td data-label={language === 'my' ? 'ကျေးရွာ' : 'Destination'}>{item.village}</td>
+                            <td data-label="Model">{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown model'}</td>
+                            <td data-label="Batch ID">
                               {item.batch_id ? (
                                 <button
                                   type="button"
@@ -4360,9 +4456,9 @@ export default function InventoryApp() {
                                 'N/A'
                               )}
                             </td>
-                            <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                            <td data-label={language === 'my' ? 'အရေအတွက်' : 'Quantity'}>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
                             {user.role === 'admin' && (
-                              <td>
+                              <td className="actions-cell">
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                   <button
                                     type="button"
@@ -4498,7 +4594,7 @@ export default function InventoryApp() {
               <div className="table-panel">
                 <h2>{t.filteredReturnsLogs}</h2>
                 <p style={{ marginBottom: '16px' }}>{t.listOfIncomingReturns}</p>
-                <div className="table-wrapper">
+                <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
                       <tr>
@@ -4525,10 +4621,10 @@ export default function InventoryApp() {
                       ) : (
                         (isPrinting ? filteredReturns : filteredReturns.slice((getPage('returns') - 1) * getPageSize('returns'), getPage('returns') * getPageSize('returns'))).map((item) => (
                           <tr key={item.id}>
-                            <td>{item.date}</td>
-                            <td>{item.village}</td>
-                            <td>{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown model'}</td>
-                            <td>
+                            <td data-label={language === 'my' ? 'ရက်စွဲ' : 'Date'}>{item.date}</td>
+                            <td data-label={language === 'my' ? 'ကျေးရွာ' : 'Outpost'}>{item.village}</td>
+                            <td data-label="Model">{pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || 'Unknown model'}</td>
+                            <td data-label="Batch ID">
                               {item.batch_id ? (
                                 <button
                                   type="button"
@@ -4542,8 +4638,8 @@ export default function InventoryApp() {
                                 'N/A'
                               )}
                             </td>
-                            <td>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                            <td>
+                            <td data-label={language === 'my' ? 'အရေအတွက်' : 'Qty'}>{item.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                            <td data-label="Status">
                               <span className={`badge ${item.status === 'damaged' ? 'badge-danger' : 'badge-success'}`}>
                                 {item.status === 'damaged' 
                                   ? (language === 'my' ? 'ပျက်စီး' : 'DAMAGED') 
@@ -4555,10 +4651,10 @@ export default function InventoryApp() {
                                 </span>
                               )}
                             </td>
-                            <td>{formatCurrency(item.price || 0)}</td>
-                            <td>{formatCurrency((item.price || 0) * (item.quantity || 0))}</td>
+                            <td data-label={language === 'my' ? 'စျေးနှုန်း' : 'Unit Price'}>{formatCurrency(item.price || 0)}</td>
+                            <td data-label={language === 'my' ? 'စုစုပေါင်း' : 'Total'}>{formatCurrency((item.price || 0) * (item.quantity || 0))}</td>
                             {user.role === 'admin' && (
-                              <td>
+                              <td className="actions-cell">
                                 <div style={{ display: 'flex', gap: '8px' }}>
                                   {item.status === 'damaged' && (!item.remark || !item.remark.includes('is-resent')) && (
                                     <button
@@ -4661,7 +4757,7 @@ export default function InventoryApp() {
               <div className="table-panel">
                 <h2>{t.overallDistributeSummary}</h2>
                 <p style={{ marginBottom: '16px' }}>{t.whenAndWhenReturn}</p>
-                <div className="table-wrapper">
+                <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
                       <tr>
@@ -4689,9 +4785,9 @@ export default function InventoryApp() {
                       ) : (
                         (isPrinting ? filteredReconciliation : filteredReconciliation.slice((getPage('reconciliation') - 1) * getPageSize('reconciliation'), getPage('reconciliation') * getPageSize('reconciliation'))).map((item) => (
                           <tr key={item.id}>
-                            <td>{item.village}</td>
-                            <td>{item.pipeName}</td>
-                            <td>
+                            <td data-label={language === 'my' ? 'ကျေးရွာ' : 'Village'}>{item.village}</td>
+                            <td data-label="Model">{item.pipeName}</td>
+                            <td data-label="Batch ID">
                               {item.batchId ? (
                                 <button
                                   type="button"
@@ -4705,15 +4801,15 @@ export default function InventoryApp() {
                                 'N/A'
                               )}
                             </td>
-                            <td>
+                            <td data-label={language === 'my' ? 'ဖြန့်ဖြူးပြီး' : 'Distributed'}>
                               {item.distributedQty === 0 || item.distributedQty === 'N/A'
                                 ? `0 ${language === 'my' ? 'ယူနစ်' : 'units'}`
                                 : `${item.distributedQty} ${language === 'my' ? 'ယူနစ်' : 'units'}`}
                             </td>
-                            <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            <td data-label={language === 'my' ? 'ဖြန့်ရက်' : 'Dist Date'} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                               {item.distDate}
                             </td>
-                            <td>
+                            <td data-label={language === 'my' ? 'ပျက်စီး' : 'Damaged'}>
                               {item.returnedDamagedQty > 0 ? (
                                 <span style={{ color: 'var(--accent-red)', fontWeight: '600' }}>
                                   {item.returnedDamagedQty} {language === 'my' ? 'ယူနစ်' : 'units'}
@@ -4722,8 +4818,8 @@ export default function InventoryApp() {
                                 `0 ${language === 'my' ? 'ယူနစ်' : 'units'}`
                               )}
                             </td>
-                            <td>{item.returnedProductionGradeQty || 0} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                            <td>
+                            <td data-label={language === 'my' ? 'ပြန်အပ်' : 'Returned'}>{item.returnedProductionGradeQty || 0} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                            <td data-label={language === 'my' ? 'ကျန်ရှိ' : 'Left'}>
                               {item.leftQty > 0 ? (
                                 <span style={{ color: 'var(--warning)', fontWeight: '600' }}>
                                   {item.leftQty} {language === 'my' ? 'ယူနစ်' : 'units'}
@@ -4732,10 +4828,10 @@ export default function InventoryApp() {
                                 `0 ${language === 'my' ? 'ယူနစ်' : 'units'}`
                               )}
                             </td>
-                            <td style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            <td data-label={language === 'my' ? 'ပြန်အပ်ရက်' : 'Ret Date'} style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                               {item.returnDate}
                             </td>
-                            <td>
+                            <td data-label={language === 'my' ? 'ပြန်ဝယ်တန်' : 'Re-buy Value'}>
                               {item.rebuyValue > 0 ? (
                                 <span className="badge badge-success">
                                   {formatCurrency(item.rebuyValue)}
@@ -4891,7 +4987,7 @@ export default function InventoryApp() {
                 <div className="table-panel" style={{ width: '100%' }}>
                   <h2>{t.rebuyVsProduction}</h2>
                   <p></p>
-                  <div className="table-wrapper">
+                  <div className="table-wrapper mobile-cards">
                     <table>
                       <thead>
                         <tr>
@@ -4956,7 +5052,7 @@ export default function InventoryApp() {
                 <div className="table-panel" style={{ width: '100%' }}>
                   <h2>{t.batchFinanceRatio}</h2>
                   <p></p>
-                  <div className="table-wrapper">
+                  <div className="table-wrapper mobile-cards">
                     <table>
                       <thead>
                         <tr>
@@ -5019,7 +5115,7 @@ export default function InventoryApp() {
                       ? 'ကုမ္ပဏီမှ ကျေးရွာများသို့ ထုတ်ပေးထားသော ရန်ပုံငွေနှင့် ပြန်လည်ပေးဆပ်မှု လက်ကျန်များကို ခြေရာခံခြင်း။'
                       : 'Track advances disbursed to outposts, repayments made to company, and remaining outstanding balances.'}
                   </p>
-                  <div className="table-wrapper">
+                  <div className="table-wrapper mobile-cards">
                     <table>
                       <thead>
                         <tr>
@@ -5209,7 +5305,7 @@ export default function InventoryApp() {
                   </div>
                 </div>
 
-                <div className="table-wrapper" style={{ marginTop: '12px' }}>
+                <div className="table-wrapper mobile-cards" style={{ marginTop: '12px' }}>
                   <table>
                     <thead>
                       <tr>
@@ -5506,7 +5602,7 @@ export default function InventoryApp() {
                       <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         🚚 {language === 'my' ? 'ဖြန့်ဖြူးမှုနှင့် ကျန်ရှိသောပြန်အပ်ရန် စာရင်း' : 'Distribution & Left to Return Summary'}
                       </h3>
-                      <div className="table-wrapper">
+                      <div className="table-wrapper mobile-cards">
                         <table>
                           <thead>
                             <tr>
@@ -5592,7 +5688,7 @@ export default function InventoryApp() {
                       {(isDataLoading || reportData.productions.length > 0) && (
                         <div className="table-panel report-table-panel" style={{ padding: 0 }}>
                           <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>🏭 {t.productionSummaryHeader}</h3>
-                          <div className="table-wrapper">
+                          <div className="table-wrapper mobile-cards">
                             <table>
                               <thead>
                                 <tr>
@@ -5642,7 +5738,7 @@ export default function InventoryApp() {
                       {(isDataLoading || reportData.distributions.length > 0) && (
                         <div className="table-panel report-table-panel" style={{ padding: 0 }}>
                           <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>🚚 {t.distributionSummaryHeader}</h3>
-                          <div className="table-wrapper">
+                          <div className="table-wrapper mobile-cards">
                             <table>
                               <thead>
                                 <tr>
@@ -5700,7 +5796,7 @@ export default function InventoryApp() {
                       {(isDataLoading || reportData.returns.length > 0) && (
                         <div className="table-panel report-table-panel" style={{ padding: 0 }}>
                           <h3 style={{ marginBottom: '16px', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '8px' }}>🔄 {t.returnsSummaryHeader}</h3>
-                          <div className="table-wrapper">
+                          <div className="table-wrapper mobile-cards">
                             <table>
                               <thead>
                                 <tr>
@@ -5774,7 +5870,7 @@ export default function InventoryApp() {
                 <h2>{t.centralPipesCatalog}</h2>
                 <p style={{ marginBottom: '24px' }}>{t.configureStandardRates}</p>
                 
-                <div className="table-wrapper">
+                <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
                       <tr>
@@ -5844,7 +5940,7 @@ export default function InventoryApp() {
                 <h2>{t.villageOutpostRegistry}</h2>
                 <p style={{ marginBottom: '24px' }}>{t.manageActiveNodes}</p>
 
-                <div className="table-wrapper">
+                <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
                       <tr>
@@ -5899,7 +5995,7 @@ export default function InventoryApp() {
             <div className="table-panel">
               <h2>{t.operationalSystemAuditTrail}</h2>
               <p>{t.chronologicalSecurityLogs}</p>
-              <div className="table-wrapper">
+              <div className="table-wrapper mobile-cards">
                 <table>
                   <thead>
                     <tr>
@@ -5921,16 +6017,16 @@ export default function InventoryApp() {
                     ) : (
                       (isPrinting ? auditLogs : auditLogs.slice((getPage('auditLogs') - 1) * getPageSize('auditLogs'), getPage('auditLogs') * getPageSize('auditLogs'))).map((log) => (
                         <tr key={log.id}>
-                          <td style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                          <td data-label={t.timestamp} style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                             {formatAuditTimestamp(log.timestamp)}
                           </td>
-                          <td>{log.user_email}</td>
-                          <td>
+                          <td data-label={t.actorUser}>{log.user_email}</td>
+                          <td data-label={t.operationAction}>
                             <span className="badge badge-success" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
                               {log.action}
                             </span>
                           </td>
-                          <td className="details-col" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                          <td data-label={t.operationalDetails} className="details-col" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                             {log.details || 'None'}
                           </td>
                         </tr>
@@ -6008,7 +6104,7 @@ export default function InventoryApp() {
                 </p>
               </div>
 
-              <div className="table-wrapper">
+              <div className="table-wrapper mobile-cards">
                 <table>
                   <thead>
                     <tr>
@@ -7191,7 +7287,7 @@ export default function InventoryApp() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{language === 'my' ? 'ထုတ်လုပ်မှု မှတ်တမ်း မရှိပါ။' : 'No production records found.'}</p>
                   ) : (
                     <>
-                      <div className="table-wrapper">
+                      <div className="table-wrapper mobile-cards">
                         <table>
                           <thead>
                             <tr>
@@ -7227,7 +7323,7 @@ export default function InventoryApp() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{language === 'my' ? 'ဖြန့်ဖြူးမှု မှတ်တမ်း မရှိပါ။' : 'No distribution records found.'}</p>
                   ) : (
                     <>
-                      <div className="table-wrapper">
+                      <div className="table-wrapper mobile-cards">
                         <table>
                           <thead>
                             <tr>
@@ -7269,7 +7365,7 @@ export default function InventoryApp() {
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{language === 'my' ? 'ပြန်လည်အပ်နှံမှု မှတ်တမ်း မရှိပါ။' : 'No return records found.'}</p>
                   ) : (
                     <>
-                      <div className="table-wrapper">
+                      <div className="table-wrapper mobile-cards">
                         <table>
                           <thead>
                             <tr>
@@ -7318,6 +7414,33 @@ export default function InventoryApp() {
           </div>
         )}
       </section>
+
+      {/* MOBILE BOTTOM NAVIGATION BAR */}
+      <nav className="mobile-bottom-nav">
+        {[
+          { tab: 'Overview', icon: '📊', label: language === 'my' ? 'ခြုံငုံ' : 'Overview' },
+          { tab: 'Distribution', icon: '🚚', label: language === 'my' ? 'ဖြန့်ဖြူး' : 'Distribute' },
+          { tab: 'Returns', icon: '🔄', label: language === 'my' ? 'ပြန်အပ်' : 'Returns' },
+          { tab: 'Reconciliation', icon: '⚖️', label: language === 'my' ? 'မှတ်တမ်း' : 'Records' },
+          { tab: '__more__', icon: '☰', label: language === 'my' ? 'ထပ်ကြည့်' : 'More' },
+        ].map((item) => (
+          <button
+            key={item.tab}
+            type="button"
+            className={`bottom-nav-item ${activeTab === item.tab ? 'active' : ''}`}
+            onClick={() => {
+              if (item.tab === '__more__') {
+                setIsSidebarOpen(true);
+              } else {
+                router.push(`?tab=${encodeURIComponent(item.tab)}`);
+              }
+            }}
+          >
+            <span className="nav-icon">{item.icon}</span>
+            <span className="nav-label">{item.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
