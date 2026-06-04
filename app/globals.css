@@ -825,6 +825,9 @@ table input[type="number"] {
   flex-direction: column;
   gap: 12px;
   margin-bottom: 24px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 6px;
 }
 
 .notification-item {
@@ -1784,6 +1787,7 @@ button.secondary:active:not(:disabled) {
   .notifications-widget {
     gap: 8px !important;
     margin-bottom: 16px !important;
+    max-height: 200px !important;
   }
 
   .notification-item {

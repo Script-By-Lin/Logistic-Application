@@ -687,6 +687,12 @@ export default function InventoryApp() {
   const [filterBatchId, setFilterBatchId] = useState('All');
   const [filterReconType, setFilterReconType] = useState<'All' | 'Distributions' | 'Returns'>('All');
   const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all'>('month');
+  
+  // --- Cash Flow Search & Filtering States ---
+  const [filterFundingVillage, setFilterFundingVillage] = useState('All');
+  const [filterFundingType, setFilterFundingType] = useState('All');
+  const [filterFundingStartDate, setFilterFundingStartDate] = useState('');
+  const [filterFundingEndDate, setFilterFundingEndDate] = useState('');
 
   // --- Form Input States ---
   const [productionForm, setProductionForm] = useState({
@@ -743,6 +749,169 @@ export default function InventoryApp() {
   const [isBackupCreating, setIsBackupCreating] = useState(false);
   const [isBackupRestoring, setIsBackupRestoring] = useState(false);
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
+
+  // --- Pagination State & Helpers ---
+  const [pages, setPages] = useState<Record<string, number>>({});
+  const [pageSizes, setPageSizes] = useState<Record<string, number>>({});
+  const [isPrinting, setIsPrinting] = useState(false);
+
+  const getPage = (key: string) => pages[key] || 1;
+  const setPage = (key: string, pageNum: number) => {
+    setPages((prev) => ({ ...prev, [key]: pageNum }));
+  };
+
+  const getPageSize = (key: string) => pageSizes[key] || 10;
+  const setPageSize = (key: string, size: number) => {
+    setPageSizes((prev) => ({ ...prev, [key]: size }));
+    setPage(key, 1); // Reset page to 1 when changing page size
+  };
+
+  useEffect(() => {
+    const handleBeforePrint = () => setIsPrinting(true);
+    const handleAfterPrint = () => setIsPrinting(false);
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
+  useEffect(() => {
+    setPage('modalProd', 1);
+    setPage('modalDist', 1);
+    setPage('modalRet', 1);
+  }, [viewingBatchId]);
+
+  const PaginationControls = ({ tableKey, totalItems }: { tableKey: string; totalItems: number }) => {
+    const currentPage = getPage(tableKey);
+    const pageSize = getPageSize(tableKey);
+    const totalPages = Math.ceil(totalItems / pageSize) || 1;
+
+    // Generate page numbers to display
+    const pagesToShow: (number | string)[] = [];
+    if (totalPages <= 5) {
+      for (let i = 1; i <= totalPages; i++) pagesToShow.push(i);
+    } else {
+      pagesToShow.push(1);
+      if (currentPage > 3) {
+        pagesToShow.push('...');
+      }
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+      for (let i = start; i <= end; i++) {
+        if (!pagesToShow.includes(i)) pagesToShow.push(i);
+      }
+      if (currentPage < totalPages - 2) {
+        pagesToShow.push('...');
+      }
+      if (!pagesToShow.includes(totalPages)) pagesToShow.push(totalPages);
+    }
+
+    return (
+      <div className="pagination-container no-print" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '16px 24px',
+        borderTop: '1px solid var(--border-color)',
+        backgroundColor: 'var(--bg-secondary)',
+        borderRadius: '0 0 12px 12px',
+        flexWrap: 'wrap',
+        gap: '12px'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {language === 'my' ? 'ပြသမည် -' : 'Show'}
+          </span>
+          <select
+            value={pageSize}
+            onChange={(e) => setPageSize(tableKey, Number(e.target.value))}
+            style={{
+              padding: '6px 12px',
+              fontSize: '0.85rem',
+              borderRadius: '6px',
+              border: '1px solid var(--border-color)',
+              backgroundColor: 'var(--bg-primary)',
+              color: 'var(--text-primary)',
+              width: 'auto',
+              cursor: 'pointer'
+            }}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+            <option value={999999}>{language === 'my' ? 'အားလုံး' : 'All'}</option>
+          </select>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {language === 'my' ? 'တန်း' : 'rows'}
+          </span>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+            {language === 'my' 
+              ? `စုစုပေါင်းမှတ်တမ်း ${totalItems} ခုအနက် စာမျက်နှာ ${currentPage} / ${totalPages}`
+              : `Showing page ${currentPage} of ${totalPages} (${totalItems} items)`}
+          </span>
+          
+          {totalPages > 1 && (
+            <div style={{ display: 'flex', gap: '4px' }}>
+              <button
+                type="button"
+                className="pagination-btn"
+                disabled={currentPage === 1}
+                onClick={() => setPage(tableKey, currentPage - 1)}
+              >
+                {language === 'my' ? 'ယခင်' : 'Prev'}
+              </button>
+              {pagesToShow.map((p, idx) => {
+                if (p === '...') {
+                  return (
+                    <span
+                      key={idx}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        minWidth: '32px',
+                        height: '32px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem',
+                        userSelect: 'none'
+                      }}
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    className={`pagination-btn ${p === currentPage ? 'active' : ''}`}
+                    onClick={() => typeof p === 'number' && setPage(tableKey, p)}
+                  >
+                    {p}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                className="pagination-btn"
+                disabled={currentPage === totalPages}
+                onClick={() => setPage(tableKey, currentPage + 1)}
+              >
+                {language === 'my' ? 'နောက်သို့' : 'Next'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   // --- Tab Dynamic Text ---
   const PAGE_TITLES: Record<string, Record<'en' | 'my', string>> = {
@@ -3176,6 +3345,19 @@ export default function InventoryApp() {
     }));
   }, [distributions]);
 
+  // --- Cash Flow (Funding) Client-Side Filtering ---
+  const filteredFundingList = useMemo(() => {
+    return fundingList.filter((f) => {
+      const matchVillage = filterFundingVillage === 'All' || f.village === filterFundingVillage;
+      const matchType = filterFundingType === 'All' || f.type === filterFundingType;
+      
+      const matchStart = !filterFundingStartDate || f.date >= filterFundingStartDate;
+      const matchEnd = !filterFundingEndDate || f.date <= filterFundingEndDate;
+      
+      return matchVillage && matchType && matchStart && matchEnd;
+    });
+  }, [fundingList, filterFundingVillage, filterFundingType, filterFundingStartDate, filterFundingEndDate]);
+
   // --- Finance Parsing & Client-Side Filtering ---
   const parseLocalDate = (dateStr: string) => {
     if (!dateStr) return new Date(0);
@@ -3900,7 +4082,10 @@ export default function InventoryApp() {
                   placeholder={t.searchBatchId}
                   style={{ width: '180px', padding: '6px 10px', fontSize: '0.85rem' }}
                   value={searchBatchId}
-                  onChange={(e) => setSearchBatchId(e.target.value)}
+                  onChange={(e) => {
+                    setSearchBatchId(e.target.value);
+                    setPage('production', 1);
+                  }}
                 />
               </div>
               <div className="table-wrapper">
@@ -3925,9 +4110,9 @@ export default function InventoryApp() {
                         </td>
                       </tr>
                     ) : (
-                      productions
-                        .filter(p => (p.batch_id || '').toLowerCase().includes(searchBatchId.toLowerCase()))
-                        .map((prod) => {
+                      (() => {
+                        const filtered = productions.filter(p => (p.batch_id || '').toLowerCase().includes(searchBatchId.toLowerCase()));
+                        return (isPrinting ? filtered : filtered.slice((getPage('production') - 1) * getPageSize('production'), getPage('production') * getPageSize('production'))).map((prod) => {
                           const pipeName = pipeTypes.find((p) => p.id === prod.pipe_type_id)?.name || 'Unknown Pipe';
                           const hasDamaged = returnsList.some((r) => r.pipe_type_id === prod.pipe_type_id && r.status === 'damaged');
                           return (
@@ -3983,11 +4168,16 @@ export default function InventoryApp() {
                               )}
                             </tr>
                           );
-                        })
+                        });
+                      })()
                     )}
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                tableKey="production"
+                totalItems={productions.filter(p => (p.batch_id || '').toLowerCase().includes(searchBatchId.toLowerCase())).length}
+              />
             </div>
           )}
 
@@ -4001,7 +4191,10 @@ export default function InventoryApp() {
                   <select
                     id="filter-village-select"
                     value={filterVillage}
-                    onChange={(e) => setFilterVillage(e.target.value)}
+                    onChange={(e) => {
+                      setFilterVillage(e.target.value);
+                      setPage('distribution', 1);
+                    }}
                   >
                     <option value="All">{t.allVillages}</option>
                     {villages.map((v) => (
@@ -4015,7 +4208,10 @@ export default function InventoryApp() {
                   <select
                     id="filter-pipe-select"
                     value={filterPipeType}
-                    onChange={(e) => setFilterPipeType(e.target.value)}
+                    onChange={(e) => {
+                      setFilterPipeType(e.target.value);
+                      setPage('distribution', 1);
+                    }}
                   >
                     <option value="All">{t.allPipeModels}</option>
                     {pipeTypes.map((p) => (
@@ -4029,7 +4225,10 @@ export default function InventoryApp() {
                   <select
                     id="filter-batch-id-select"
                     value={filterBatchId}
-                    onChange={(e) => setFilterBatchId(e.target.value)}
+                    onChange={(e) => {
+                      setFilterBatchId(e.target.value);
+                      setPage('distribution', 1);
+                    }}
                   >
                     <option value="All">{t.allBatches}</option>
                     {registeredBatchesList.map((b) => (
@@ -4044,7 +4243,10 @@ export default function InventoryApp() {
                     id="filter-start-date"
                     type="date"
                     value={filterStartDate}
-                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setFilterStartDate(e.target.value);
+                      setPage('distribution', 1);
+                    }}
                   />
                 </div>
 
@@ -4054,7 +4256,10 @@ export default function InventoryApp() {
                     id="filter-end-date"
                     type="date"
                     value={filterEndDate}
-                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setFilterEndDate(e.target.value);
+                      setPage('distribution', 1);
+                    }}
                   />
                 </div>
               </div>
@@ -4085,7 +4290,7 @@ export default function InventoryApp() {
                           </td>
                         </tr>
                       ) : (
-                        filteredDistributions.map((item) => (
+                        (isPrinting ? filteredDistributions : filteredDistributions.slice((getPage('distribution') - 1) * getPageSize('distribution'), getPage('distribution') * getPageSize('distribution'))).map((item) => (
                           <tr key={item.id}>
                             <td>{item.date}</td>
                             <td>{item.village}</td>
@@ -4131,6 +4336,10 @@ export default function InventoryApp() {
                     </tbody>
                   </table>
                 </div>
+                <PaginationControls
+                  tableKey="distribution"
+                  totalItems={filteredDistributions.length}
+                />
               </div>
             </>
           )}
@@ -4145,7 +4354,10 @@ export default function InventoryApp() {
                   <select
                     id="return-village-filter"
                     value={filterVillage}
-                    onChange={(e) => setFilterVillage(e.target.value)}
+                    onChange={(e) => {
+                      setFilterVillage(e.target.value);
+                      setPage('returns', 1);
+                    }}
                   >
                     <option value="All">{t.allVillages}</option>
                     {villages.map((v) => (
@@ -4159,7 +4371,10 @@ export default function InventoryApp() {
                   <select
                     id="return-pipe-filter"
                     value={filterPipeType}
-                    onChange={(e) => setFilterPipeType(e.target.value)}
+                    onChange={(e) => {
+                      setFilterPipeType(e.target.value);
+                      setPage('returns', 1);
+                    }}
                   >
                     <option value="All">{t.allPipeModels}</option>
                     {pipeTypes.map((p) => (
@@ -4173,7 +4388,10 @@ export default function InventoryApp() {
                   <select
                     id="return-batch-id-filter"
                     value={filterBatchId}
-                    onChange={(e) => setFilterBatchId(e.target.value)}
+                    onChange={(e) => {
+                      setFilterBatchId(e.target.value);
+                      setPage('returns', 1);
+                    }}
                   >
                     <option value="All">{t.allBatches}</option>
                     {registeredBatchesList.map((b) => (
@@ -4187,7 +4405,10 @@ export default function InventoryApp() {
                   <select
                     id="return-status-filter"
                     value={filterStatus}
-                    onChange={(e) => setFilterStatus(e.target.value)}
+                    onChange={(e) => {
+                      setFilterStatus(e.target.value);
+                      setPage('returns', 1);
+                    }}
                   >
                     <option value="All">{t.allStatuses}</option>
                     <option value="production_grade">{language === 'my' ? 'ထုတ်လုပ်မှု အဆင့်မီ' : 'Production Grade'}</option>
@@ -4201,7 +4422,10 @@ export default function InventoryApp() {
                     id="return-start-date"
                     type="date"
                     value={filterStartDate}
-                    onChange={(e) => setFilterStartDate(e.target.value)}
+                    onChange={(e) => {
+                      setFilterStartDate(e.target.value);
+                      setPage('returns', 1);
+                    }}
                   />
                 </div>
 
@@ -4211,7 +4435,10 @@ export default function InventoryApp() {
                     id="return-end-date"
                     type="date"
                     value={filterEndDate}
-                    onChange={(e) => setFilterEndDate(e.target.value)}
+                    onChange={(e) => {
+                      setFilterEndDate(e.target.value);
+                      setPage('returns', 1);
+                    }}
                   />
                 </div>
               </div>
@@ -4245,7 +4472,7 @@ export default function InventoryApp() {
                           </td>
                         </tr>
                       ) : (
-                        filteredReturns.map((item) => (
+                        (isPrinting ? filteredReturns : filteredReturns.slice((getPage('returns') - 1) * getPageSize('returns'), getPage('returns') * getPageSize('returns'))).map((item) => (
                           <tr key={item.id}>
                             <td>{item.date}</td>
                             <td>{item.village}</td>
@@ -4315,6 +4542,10 @@ export default function InventoryApp() {
                     </tbody>
                   </table>
                 </div>
+                <PaginationControls
+                  tableKey="returns"
+                  totalItems={filteredReturns.length}
+                />
               </div>
             </>
           )}
@@ -4329,7 +4560,10 @@ export default function InventoryApp() {
                   <select
                     id="recon-village-select"
                     value={filterVillage}
-                    onChange={(e) => setFilterVillage(e.target.value)}
+                    onChange={(e) => {
+                      setFilterVillage(e.target.value);
+                      setPage('reconciliation', 1);
+                    }}
                   >
                     <option value="All">{t.allVillages}</option>
                     {villages.map((v) => (
@@ -4343,7 +4577,10 @@ export default function InventoryApp() {
                   <select
                     id="recon-batch-id-select"
                     value={filterBatchId}
-                    onChange={(e) => setFilterBatchId(e.target.value)}
+                    onChange={(e) => {
+                      setFilterBatchId(e.target.value);
+                      setPage('reconciliation', 1);
+                    }}
                   >
                     <option value="All">{t.allBatches}</option>
                     {registeredBatchesList.map((b) => (
@@ -4357,7 +4594,10 @@ export default function InventoryApp() {
                   <select
                     id="recon-type-select"
                     value={filterReconType}
-                    onChange={(e) => setFilterReconType(e.target.value as 'All' | 'Distributions' | 'Returns')}
+                    onChange={(e) => {
+                      setFilterReconType(e.target.value as 'All' | 'Distributions' | 'Returns');
+                      setPage('reconciliation', 1);
+                    }}
                   >
                     <option value="All">{language === 'my' ? 'အားလုံး' : 'All'}</option>
                     <option value="Distributions">{language === 'my' ? 'ဖြန့်ဖြူးမှုများသာ' : 'Distributions Only'}</option>
@@ -4396,7 +4636,7 @@ export default function InventoryApp() {
                           </td>
                         </tr>
                       ) : (
-                        filteredReconciliation.map((item) => (
+                        (isPrinting ? filteredReconciliation : filteredReconciliation.slice((getPage('reconciliation') - 1) * getPageSize('reconciliation'), getPage('reconciliation') * getPageSize('reconciliation'))).map((item) => (
                           <tr key={item.id}>
                             <td>{item.village}</td>
                             <td>{item.pipeName}</td>
@@ -4459,6 +4699,10 @@ export default function InventoryApp() {
                     </tbody>
                   </table>
                 </div>
+                <PaginationControls
+                  tableKey="reconciliation"
+                  totalItems={filteredReconciliation.length}
+                />
               </div>
             </>
           )}
@@ -4474,7 +4718,13 @@ export default function InventoryApp() {
                     <button
                       type="button"
                       className={`tab-btn-mini ${financePeriod === 'day' ? 'active' : ''}`}
-                      onClick={() => setFinancePeriod('day')}
+                      onClick={() => {
+                        setFinancePeriod('day');
+                        setPage('finRebuyProd', 1);
+                        setPage('finRatio', 1);
+                        setPage('finFunding', 1);
+                        setPage('finCashFlow', 1);
+                      }}
                       style={{
                         padding: '6px 12px',
                         borderRadius: '6px',
@@ -4490,7 +4740,13 @@ export default function InventoryApp() {
                     <button
                       type="button"
                       className={`tab-btn-mini ${financePeriod === 'week' ? 'active' : ''}`}
-                      onClick={() => setFinancePeriod('week')}
+                      onClick={() => {
+                        setFinancePeriod('week');
+                        setPage('finRebuyProd', 1);
+                        setPage('finRatio', 1);
+                        setPage('finFunding', 1);
+                        setPage('finCashFlow', 1);
+                      }}
                       style={{
                         padding: '6px 12px',
                         borderRadius: '6px',
@@ -4506,7 +4762,13 @@ export default function InventoryApp() {
                     <button
                       type="button"
                       className={`tab-btn-mini ${financePeriod === 'month' ? 'active' : ''}`}
-                      onClick={() => setFinancePeriod('month')}
+                      onClick={() => {
+                        setFinancePeriod('month');
+                        setPage('finRebuyProd', 1);
+                        setPage('finRatio', 1);
+                        setPage('finFunding', 1);
+                        setPage('finCashFlow', 1);
+                      }}
                       style={{
                         padding: '6px 12px',
                         borderRadius: '6px',
@@ -4522,7 +4784,13 @@ export default function InventoryApp() {
                     <button
                       type="button"
                       className={`tab-btn-mini ${financePeriod === 'all' ? 'active' : ''}`}
-                      onClick={() => setFinancePeriod('all')}
+                      onClick={() => {
+                        setFinancePeriod('all');
+                        setPage('finRebuyProd', 1);
+                        setPage('finRatio', 1);
+                        setPage('finFunding', 1);
+                        setPage('finCashFlow', 1);
+                      }}
                       style={{
                         padding: '6px 12px',
                         borderRadius: '6px',
@@ -4593,7 +4861,7 @@ export default function InventoryApp() {
                             </td>
                           </tr>
                         ) : (
-                          modelFinanceData.map((item) => {
+                          (isPrinting ? modelFinanceData : modelFinanceData.slice((getPage('finRebuyProd') - 1) * getPageSize('finRebuyProd'), getPage('finRebuyProd') * getPageSize('finRebuyProd'))).map((item) => {
                             const isPositiveDiff = item.priceDiff > 0;
                             return (
                               <tr key={item.id}>
@@ -4627,6 +4895,10 @@ export default function InventoryApp() {
                       </tbody>
                     </table>
                   </div>
+                  <PaginationControls
+                    tableKey="finRebuyProd"
+                    totalItems={modelFinanceData.length}
+                  />
                 </div>
 
                 {/* BATCH-SPECIFIC RE-BUY & PRODUCTION RATIO TABLE */}
@@ -4654,7 +4926,7 @@ export default function InventoryApp() {
                             </td>
                           </tr>
                         ) : (
-                          batchFinanceData.map((item) => {
+                          (isPrinting ? batchFinanceData : batchFinanceData.slice((getPage('finRatio') - 1) * getPageSize('finRatio'), getPage('finRatio') * getPageSize('finRatio'))).map((item) => {
                             return (
                               <tr key={item.batchId}>
                                 <td style={{ fontWeight: '600' }}>{item.batchId}</td>
@@ -4680,6 +4952,10 @@ export default function InventoryApp() {
                       </tbody>
                     </table>
                   </div>
+                  <PaginationControls
+                    tableKey="finRatio"
+                    totalItems={batchFinanceData.length}
+                  />
                 </div>
               </div>
 
@@ -4708,7 +4984,7 @@ export default function InventoryApp() {
                             <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No outposts registered.</td>
                           </tr>
                         ) : (
-                          villages.map((v) => {
+                          (isPrinting ? villages : villages.slice((getPage('finFunding') - 1) * getPageSize('finFunding'), getPage('finFunding') * getPageSize('finFunding'))).map((v) => {
                              const sum = villageFundingSummaryMap[v.name] || { disbursements: 0, repayments: 0, balance: 0 };
                              return (
                                <tr key={v.id}>
@@ -4730,6 +5006,10 @@ export default function InventoryApp() {
                       </tbody>
                     </table>
                   </div>
+                  <PaginationControls
+                    tableKey="finFunding"
+                    totalItems={villages.length}
+                  />
                 </div>
 
                 {/* LOG FORM (Admin Only) */}
@@ -4811,6 +5091,73 @@ export default function InventoryApp() {
               {/* TRANSACTION HISTORY LOG */}
               <div className="table-panel" style={{ width: '100%', marginBottom: '24px' }}>
                 <h2>{language === 'my' ? 'ငွေကြေးစီးဆင်းမှု မှတ်တမ်း' : 'Cash Flow Ledger History'}</h2>
+                
+                {/* Reactive Search & Filters Header for Cash Flow */}
+                <div className="filter-bar no-print" style={{ margin: '16px 0', borderRadius: '8px', padding: '16px 20px', gap: '16px', display: 'flex', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div className="filter-group">
+                    <label htmlFor="cf-filter-village-select">{language === 'my' ? 'ကျေးရွာ:' : 'Outpost:'}</label>
+                    <select
+                      id="cf-filter-village-select"
+                      value={filterFundingVillage}
+                      onChange={(e) => {
+                        setFilterFundingVillage(e.target.value);
+                        setPage('finCashFlow', 1);
+                      }}
+                      style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                    >
+                      <option value="All">{language === 'my' ? 'ကျေးရွာအားလုံး' : 'All villages'}</option>
+                      {villages.map((v) => (
+                        <option key={v.id} value={v.name}>{v.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="cf-filter-type-select">{language === 'my' ? 'အမျိုးအစား:' : 'Type:'}</label>
+                    <select
+                      id="cf-filter-type-select"
+                      value={filterFundingType}
+                      onChange={(e) => {
+                        setFilterFundingType(e.target.value);
+                        setPage('finCashFlow', 1);
+                      }}
+                      style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                    >
+                      <option value="All">{language === 'my' ? 'အားလုံး' : 'All'}</option>
+                      <option value="disbursement">{language === 'my' ? 'ထုတ်ပေးငွေ' : 'Disbursement'}</option>
+                      <option value="repayment">{language === 'my' ? 'ပြန်ဆပ်ငွေ' : 'Repayment'}</option>
+                    </select>
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="cf-filter-start-date">{language === 'my' ? 'စတင်မည့်ရက်:' : 'Start Date:'}</label>
+                    <input
+                      id="cf-filter-start-date"
+                      type="date"
+                      value={filterFundingStartDate}
+                      onChange={(e) => {
+                        setFilterFundingStartDate(e.target.value);
+                        setPage('finCashFlow', 1);
+                      }}
+                      style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+
+                  <div className="filter-group">
+                    <label htmlFor="cf-filter-end-date">{language === 'my' ? 'ပြီးဆုံးမည့်ရက်:' : 'End Date:'}</label>
+                    <input
+                      id="cf-filter-end-date"
+                      type="date"
+                      value={filterFundingEndDate}
+                      onChange={(e) => {
+                        setFilterFundingEndDate(e.target.value);
+                        setPage('finCashFlow', 1);
+                      }}
+                      style={{ padding: '6px 10px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+
                 <div className="table-wrapper" style={{ marginTop: '12px' }}>
                   <table>
                     <thead>
@@ -4826,14 +5173,14 @@ export default function InventoryApp() {
                     <tbody>
                       {isDataLoading ? (
                         renderTableSkeleton(user.role === 'admin' ? 6 : 5)
-                      ) : fundingList.length === 0 ? (
+                      ) : filteredFundingList.length === 0 ? (
                         <tr>
                           <td colSpan={user.role === 'admin' ? 6 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                             {language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှုမှတ်တမ်း မရှိသေးပါ။' : 'No transactions recorded yet.'}
                           </td>
                         </tr>
                       ) : (
-                        fundingList.map((f) => (
+                        (isPrinting ? filteredFundingList : filteredFundingList.slice((getPage('finCashFlow') - 1) * getPageSize('finCashFlow'), getPage('finCashFlow') * getPageSize('finCashFlow'))).map((f) => (
                           <tr key={f.id}>
                             <td>{f.date}</td>
                             <td style={{ fontWeight: '600' }}>{f.village}</td>
@@ -4863,6 +5210,10 @@ export default function InventoryApp() {
                     </tbody>
                   </table>
                 </div>
+                <PaginationControls
+                  tableKey="finCashFlow"
+                  totalItems={filteredFundingList.length}
+                />
               </div>
             </>
           )}
@@ -4878,7 +5229,13 @@ export default function InventoryApp() {
                     id="report-type"
                     value={reportType}
                     disabled={reportType !== 'distribution_left' && filterBatchId !== 'All'}
-                    onChange={(e) => setReportType(e.target.value as any)}
+                    onChange={(e) => {
+                      setReportType(e.target.value as any);
+                      setPage('repRecon', 1);
+                      setPage('repProd', 1);
+                      setPage('repDist', 1);
+                      setPage('repRet', 1);
+                    }}
                   >
                     <option value="daily">{t.daily}</option>
                     <option value="weekly">{t.weekly}</option>
@@ -4894,7 +5251,10 @@ export default function InventoryApp() {
                       <select
                         id="report-village-select"
                         value={reportVillage}
-                        onChange={(e) => setReportVillage(e.target.value)}
+                        onChange={(e) => {
+                          setReportVillage(e.target.value);
+                          setPage('repRecon', 1);
+                        }}
                       >
                         <option value="All">{t.allVillages}</option>
                         {villages.map((v) => (
@@ -4908,7 +5268,10 @@ export default function InventoryApp() {
                       <select
                         id="report-model-select"
                         value={reportPipeTypeId}
-                        onChange={(e) => setReportPipeTypeId(e.target.value)}
+                        onChange={(e) => {
+                          setReportPipeTypeId(e.target.value);
+                          setPage('repRecon', 1);
+                        }}
                       >
                         <option value="All">{t.allPipeModels}</option>
                         {pipeTypes.map((p) => (
@@ -4922,7 +5285,10 @@ export default function InventoryApp() {
                       <select
                         id="report-batch-select"
                         value={reportBatchId}
-                        onChange={(e) => setReportBatchId(e.target.value)}
+                        onChange={(e) => {
+                          setReportBatchId(e.target.value);
+                          setPage('repRecon', 1);
+                        }}
                       >
                         <option value="All">{t.allBatches}</option>
                         {registeredBatchesList.map((b) => (
@@ -4937,7 +5303,10 @@ export default function InventoryApp() {
                         id="report-date-select"
                         type="date"
                         value={reportDate}
-                        onChange={(e) => setReportDate(e.target.value)}
+                        onChange={(e) => {
+                          setReportDate(e.target.value);
+                          setPage('repRecon', 1);
+                        }}
                       />
                     </div>
                   </>
@@ -4954,7 +5323,12 @@ export default function InventoryApp() {
                         type={reportType === 'monthly' ? 'month' : 'date'}
                         value={reportDate}
                         disabled={filterBatchId !== 'All'}
-                        onChange={(e) => setReportDate(e.target.value)}
+                        onChange={(e) => {
+                          setReportDate(e.target.value);
+                          setPage('repProd', 1);
+                          setPage('repDist', 1);
+                          setPage('repRet', 1);
+                        }}
                       />
                     </div>
 
@@ -4963,7 +5337,12 @@ export default function InventoryApp() {
                       <select
                         id="report-batch-id-select"
                         value={filterBatchId}
-                        onChange={(e) => setFilterBatchId(e.target.value)}
+                        onChange={(e) => {
+                          setFilterBatchId(e.target.value);
+                          setPage('repProd', 1);
+                          setPage('repDist', 1);
+                          setPage('repRet', 1);
+                        }}
                       >
                         <option value="All">{t.allBatches}</option>
                         {registeredBatchesList.map((b) => (
@@ -5086,7 +5465,7 @@ export default function InventoryApp() {
                             {isDataLoading ? (
                               renderTableSkeleton(9)
                             ) : (
-                              reportFilteredRecon.map((item: any) => (
+                              (isPrinting ? reportFilteredRecon : reportFilteredRecon.slice((getPage('repRecon') - 1) * getPageSize('repRecon'), getPage('repRecon') * getPageSize('repRecon'))).map((item: any) => (
                                 <tr key={item.id}>
                                   <td>{item.village}</td>
                                   <td>{item.pipeName}</td>
@@ -5132,6 +5511,10 @@ export default function InventoryApp() {
                           </tbody>
                         </table>
                       </div>
+                      <PaginationControls
+                        tableKey="repRecon"
+                        totalItems={reportFilteredRecon.length}
+                      />
                     </div>
                   )
                 ) : (
@@ -5163,7 +5546,7 @@ export default function InventoryApp() {
                                 {isDataLoading ? (
                                   renderTableSkeleton(4)
                                 ) : (
-                                  reportData.productions.map((item: any) => (
+                                  (isPrinting ? reportData.productions : reportData.productions.slice((getPage('repProd') - 1) * getPageSize('repProd'), getPage('repProd') * getPageSize('repProd'))).map((item: any) => (
                                     <tr key={item.id}>
                                       <td>{item.date}</td>
                                       <td>
@@ -5188,6 +5571,10 @@ export default function InventoryApp() {
                               </tbody>
                             </table>
                           </div>
+                          <PaginationControls
+                            tableKey="repProd"
+                            totalItems={reportData.productions.length}
+                          />
                         </div>
                       )}
 
@@ -5213,7 +5600,7 @@ export default function InventoryApp() {
                                 {isDataLoading ? (
                                   renderTableSkeleton(8)
                                 ) : (
-                                  reportData.distributions.map((item: any) => (
+                                  (isPrinting ? reportData.distributions : reportData.distributions.slice((getPage('repDist') - 1) * getPageSize('repDist'), getPage('repDist') * getPageSize('repDist'))).map((item: any) => (
                                     <tr key={item.id}>
                                       <td>{item.date}</td>
                                       <td>{item.village}</td>
@@ -5242,6 +5629,10 @@ export default function InventoryApp() {
                               </tbody>
                             </table>
                           </div>
+                          <PaginationControls
+                            tableKey="repDist"
+                            totalItems={reportData.distributions.length}
+                          />
                         </div>
                       )}
 
@@ -5267,7 +5658,7 @@ export default function InventoryApp() {
                                 {isDataLoading ? (
                                   renderTableSkeleton(8)
                                 ) : (
-                                  reportData.returns.map((item: any) => (
+                                  (isPrinting ? reportData.returns : reportData.returns.slice((getPage('repRet') - 1) * getPageSize('repRet'), getPage('repRet') * getPageSize('repRet'))).map((item: any) => (
                                     <tr key={item.id}>
                                       <td>{item.date}</td>
                                       <td>{item.village}</td>
@@ -5302,6 +5693,10 @@ export default function InventoryApp() {
                               </tbody>
                             </table>
                           </div>
+                          <PaginationControls
+                            tableKey="repRet"
+                            totalItems={reportData.returns.length}
+                          />
                         </div>
                       )}
                     </div>
@@ -5338,7 +5733,7 @@ export default function InventoryApp() {
                           </td>
                         </tr>
                       ) : (
-                        pipeTypes.map((pipe) => (
+                        (isPrinting ? pipeTypes : pipeTypes.slice((getPage('catalogPipes') - 1) * getPageSize('catalogPipes'), getPage('catalogPipes') * getPageSize('catalogPipes'))).map((pipe) => (
                           <tr key={pipe.id}>
                             <td>{pipe.name}</td>
                             <td>
@@ -5378,6 +5773,10 @@ export default function InventoryApp() {
                     </tbody>
                   </table>
                 </div>
+                <PaginationControls
+                  tableKey="catalogPipes"
+                  totalItems={pipeTypes.length}
+                />
               </div>
 
               {/* Right Column: Outpost Registry CRUD */}
@@ -5403,7 +5802,7 @@ export default function InventoryApp() {
                           </td>
                         </tr>
                       ) : (
-                        villages.map((v) => (
+                        (isPrinting ? villages : villages.slice((getPage('catalogVillages') - 1) * getPageSize('catalogVillages'), getPage('catalogVillages') * getPageSize('catalogVillages'))).map((v) => (
                           <tr key={v.id}>
                             <td>{v.name}</td>
                             <td>
@@ -5426,6 +5825,10 @@ export default function InventoryApp() {
                     </tbody>
                   </table>
                 </div>
+                <PaginationControls
+                  tableKey="catalogVillages"
+                  totalItems={villages.length}
+                />
               </div>
 
             </div>
@@ -5456,7 +5859,7 @@ export default function InventoryApp() {
                         </td>
                       </tr>
                     ) : (
-                      auditLogs.map((log) => (
+                      (isPrinting ? auditLogs : auditLogs.slice((getPage('auditLogs') - 1) * getPageSize('auditLogs'), getPage('auditLogs') * getPageSize('auditLogs'))).map((log) => (
                         <tr key={log.id}>
                           <td style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                             {new Date(log.timestamp).toLocaleString()}
@@ -5476,6 +5879,10 @@ export default function InventoryApp() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                tableKey="auditLogs"
+                totalItems={auditLogs.length}
+              />
             </div>
           )}
 
@@ -5565,7 +5972,7 @@ export default function InventoryApp() {
                         </td>
                       </tr>
                     ) : (
-                      backups.map((b) => (
+                      (isPrinting ? backups : backups.slice((getPage('backups') - 1) * getPageSize('backups'), getPage('backups') * getPageSize('backups'))).map((b) => (
                         <tr key={b.filename}>
                           <td style={{ fontFamily: 'monospace', fontSize: '0.9rem', color: 'var(--text-primary)' }}>{b.filename}</td>
                           <td>{new Date(b.createdAt).toLocaleString()}</td>
@@ -5603,6 +6010,10 @@ export default function InventoryApp() {
                   </tbody>
                 </table>
               </div>
+              <PaginationControls
+                tableKey="backups"
+                totalItems={backups.length}
+              />
             </div>
           )}
         </div>
@@ -6635,26 +7046,32 @@ export default function InventoryApp() {
                   {viewingBatchDetails.productions.length === 0 ? (
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{language === 'my' ? 'ထုတ်လုပ်မှု မှတ်တမ်း မရှိပါ။' : 'No production records found.'}</p>
                   ) : (
-                    <div className="table-wrapper">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>{language === 'my' ? 'ထုတ်လုပ်သည့် ရက်စွဲ' : 'Production Date'}</th>
-                            <th>{language === 'my' ? 'အရေအတွက်' : 'Quantity'}</th>
-                            <th>{language === 'my' ? 'အခြေခံဈေးနှုန်း' : 'Base Price'}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {viewingBatchDetails.productions.map((p) => (
-                            <tr key={p.id}>
-                              <td>{p.date}</td>
-                              <td>{p.quantity} {language === 'my' ? 'လုံး' : 'units'}</td>
-                              <td>{formatCurrency(viewingBatchDetails.basePrice)}</td>
+                    <>
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>{language === 'my' ? 'ထုတ်လုပ်သည့် ရက်စွဲ' : 'Production Date'}</th>
+                              <th>{language === 'my' ? 'အရေအတွက်' : 'Quantity'}</th>
+                              <th>{language === 'my' ? 'အခြေခံဈေးနှုန်း' : 'Base Price'}</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {(isPrinting ? viewingBatchDetails.productions : viewingBatchDetails.productions.slice((getPage('modalProd') - 1) * getPageSize('modalProd'), getPage('modalProd') * getPageSize('modalProd'))).map((p) => (
+                              <tr key={p.id}>
+                                <td>{p.date}</td>
+                                <td>{p.quantity} {language === 'my' ? 'လုံး' : 'units'}</td>
+                                <td>{formatCurrency(viewingBatchDetails.basePrice)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <PaginationControls
+                        tableKey="modalProd"
+                        totalItems={viewingBatchDetails.productions.length}
+                      />
+                    </>
                   )}
                 </div>
 
@@ -6665,32 +7082,38 @@ export default function InventoryApp() {
                   {viewingBatchDetails.distributions.length === 0 ? (
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{language === 'my' ? 'ဖြန့်ဖြူးမှု မှတ်တမ်း မရှိပါ။' : 'No distribution records found.'}</p>
                   ) : (
-                    <div className="table-wrapper">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</th>
-                            <th>{language === 'my' ? 'ကျေးရွာ' : 'Outpost / Destination'}</th>
-                            <th>{language === 'my' ? 'မှ - သို့ (တည်နေရာ)' : 'From - To (Location)'}</th>
-                            <th>{language === 'my' ? 'အရေအတွက်' : 'Quantity'}</th>
-                            <th>{language === 'my' ? 'ဖြန့်ဖြူးဈေးနှုန်း' : 'Price'}</th>
-                            <th>{language === 'my' ? 'မှတ်ချက်' : 'Remarks'}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {viewingBatchDetails.distributions.map((d) => (
-                            <tr key={d.id}>
-                              <td>{d.date}</td>
-                              <td>{d.village}</td>
-                              <td>{d.from_location || 'Factory'} &rarr; {d.to_location || 'Village Store'}</td>
-                              <td>{d.quantity} {language === 'my' ? 'လုံး' : 'units'}</td>
-                              <td>{formatCurrency(d.price)}</td>
-                              <td style={{ fontSize: '0.85rem' }}>{d.remark || '-'}</td>
+                    <>
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</th>
+                              <th>{language === 'my' ? 'ကျေးရွာ' : 'Outpost / Destination'}</th>
+                              <th>{language === 'my' ? 'မှ - သို့ (တည်နေရာ)' : 'From - To (Location)'}</th>
+                              <th>{language === 'my' ? 'အရေအတွက်' : 'Quantity'}</th>
+                              <th>{language === 'my' ? 'ဖြန့်ဖြူးဈေးနှုန်း' : 'Price'}</th>
+                              <th>{language === 'my' ? 'မှတ်ချက်' : 'Remarks'}</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {(isPrinting ? viewingBatchDetails.distributions : viewingBatchDetails.distributions.slice((getPage('modalDist') - 1) * getPageSize('modalDist'), getPage('modalDist') * getPageSize('modalDist'))).map((d) => (
+                              <tr key={d.id}>
+                                <td>{d.date}</td>
+                                <td>{d.village}</td>
+                                <td>{d.from_location || 'Factory'} &rarr; {d.to_location || 'Village Store'}</td>
+                                <td>{d.quantity} {language === 'my' ? 'လုံး' : 'units'}</td>
+                                <td>{formatCurrency(d.price)}</td>
+                                <td style={{ fontSize: '0.85rem' }}>{d.remark || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <PaginationControls
+                        tableKey="modalDist"
+                        totalItems={viewingBatchDetails.distributions.length}
+                      />
+                    </>
                   )}
                 </div>
 
@@ -6701,38 +7124,44 @@ export default function InventoryApp() {
                   {viewingBatchDetails.returns.length === 0 ? (
                     <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{language === 'my' ? 'ပြန်လည်အပ်နှံမှု မှတ်တမ်း မရှိပါ။' : 'No return records found.'}</p>
                   ) : (
-                    <div className="table-wrapper">
-                      <table>
-                        <thead>
-                          <tr>
-                            <th>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</th>
-                            <th>{language === 'my' ? 'ကျေးရွာ' : 'Outpost'}</th>
-                            <th>{language === 'my' ? 'အမျိုးအစား' : 'Classification'}</th>
-                            <th>{language === 'my' ? 'အရေအတွက်' : 'Quantity'}</th>
-                            <th>{language === 'my' ? 'ဝယ်ယူသည့်ဈေးနှုန်း' : 'Re-buy Price'}</th>
-                            <th>{language === 'my' ? 'မှတ်ချက်' : 'Remarks'}</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {viewingBatchDetails.returns.map((r) => (
-                            <tr key={r.id}>
-                              <td>{r.date}</td>
-                              <td>{r.village}</td>
-                              <td>
-                                <span className={`badge ${r.status === 'damaged' ? 'badge-danger' : 'badge-success'}`}>
-                                  {r.status === 'damaged' 
-                                    ? (language === 'my' ? 'ပျက်စီး' : 'DAMAGED') 
-                                    : (language === 'my' ? 'ထုတ်လုပ်မှု အဆင့်မီ' : 'PRODUCTION GRADE')}
-                                </span>
-                              </td>
-                              <td>{r.quantity} {language === 'my' ? 'လုံး' : 'units'}</td>
-                              <td>{r.status === 'damaged' ? '-' : formatCurrency(r.price || 0)}</td>
-                              <td style={{ fontSize: '0.85rem' }}>{r.remark || '-'}</td>
+                    <>
+                      <div className="table-wrapper">
+                        <table>
+                          <thead>
+                            <tr>
+                              <th>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</th>
+                              <th>{language === 'my' ? 'ကျေးရွာ' : 'Outpost'}</th>
+                              <th>{language === 'my' ? 'အမျိုးအစား' : 'Classification'}</th>
+                              <th>{language === 'my' ? 'အရေအတွက်' : 'Quantity'}</th>
+                              <th>{language === 'my' ? 'ဝယ်ယူသည့်ဈေးနှုန်း' : 'Re-buy Price'}</th>
+                              <th>{language === 'my' ? 'မှတ်ချက်' : 'Remarks'}</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                          </thead>
+                          <tbody>
+                            {(isPrinting ? viewingBatchDetails.returns : viewingBatchDetails.returns.slice((getPage('modalRet') - 1) * getPageSize('modalRet'), getPage('modalRet') * getPageSize('modalRet'))).map((r) => (
+                              <tr key={r.id}>
+                                <td>{r.date}</td>
+                                <td>{r.village}</td>
+                                <td>
+                                  <span className={`badge ${r.status === 'damaged' ? 'badge-danger' : 'badge-success'}`}>
+                                    {r.status === 'damaged' 
+                                      ? (language === 'my' ? 'ပျက်စီး' : 'DAMAGED') 
+                                      : (language === 'my' ? 'ထုတ်လုပ်မှု အဆင့်မီ' : 'PRODUCTION GRADE')}
+                                  </span>
+                                </td>
+                                <td>{r.quantity} {language === 'my' ? 'လုံး' : 'units'}</td>
+                                <td>{r.status === 'damaged' ? '-' : formatCurrency(r.price || 0)}</td>
+                                <td style={{ fontSize: '0.85rem' }}>{r.remark || '-'}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      <PaginationControls
+                        tableKey="modalRet"
+                        totalItems={viewingBatchDetails.returns.length}
+                      />
+                    </>
                   )}
                 </div>
               </div>
