@@ -91,9 +91,11 @@ main {
 
 .logo-block {
   display: flex;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  gap: 2px;
   margin-bottom: 17px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .logo-mark {
@@ -128,6 +130,29 @@ main {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.sidebar nav::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+}
+
+.sidebar nav::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
 }
 
 .sidebar-link {
@@ -159,7 +184,7 @@ main {
 
 .sidebar-footer {
   margin-top: auto;
-  padding-top: 24px;
+  padding: 16px 20px;
   border-top: 1px solid var(--border-color);
 }
 
@@ -586,6 +611,10 @@ button.primary:active:not(:disabled) {
   flex: 1;
   min-height: 480px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.overview-grid > .pane-column {
+  min-width: 0;
 }
 
 .pane-column {
@@ -1111,15 +1140,18 @@ table input[type="number"] {
   grid-template-columns: 1.1fr 1fr;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .split-pane-wrapper > form {
   border-right: 1px solid var(--border-color);
   overflow-y: auto;
+  min-width: 0;
 }
 
 .split-pane-wrapper > .table-panel {
   overflow-y: auto;
+  min-width: 0;
 }
 
 .split-pane-wrapper > .table-panel:first-child {
@@ -1452,7 +1484,13 @@ td.remarks-col, td.details-col {
   .table-wrapper.mobile-cards thead {
     display: none;
   }
+  .table-wrapper{
+    margin-top: 10px;
+  }
 
+  .mobile-cards tbody{
+     height:170px;
+  }
   .table-wrapper.mobile-cards tbody {
     display: flex;
     flex-direction: column;
@@ -2357,7 +2395,7 @@ button.secondary:active:not(:disabled) {
 
   /* --- PAGINATION: Mobile optimized --- */
   .pagination-container {
-    flex-direction: column !important;
+    flex-direction: row !important;
     gap: 8px !important;
     padding: 12px 16px !important;
   }
@@ -2669,6 +2707,165 @@ button.secondary:active:not(:disabled) {
   background-color: var(--bg-tertiary);
   color: var(--text-muted);
 }
+
+/* --- DESKTOP AND LAPTOP COMPACT RESPONSIVENESS (14" laptop screens) --- */
+@media (max-width: 1400px) and (min-width: 769px) {
+  .dashboard-layout {
+    grid-template-columns: 240px 1fr;
+  }
+  
+  .sidebar {
+    padding: 20px 16px;
+  }
+  
+  .logo-block {
+    padding: 16px 18px;
+    margin-bottom: 12px;
+  }
+  
+  .sidebar-footer {
+    padding: 12px 14px;
+  }
+  
+  .sidebar-profile-trigger {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+  }
+  
+  .profile-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .sidebar-link {
+    padding: 10px 12px;
+    font-size: 0.88rem;
+  }
+  
+  .dashboard-header {
+    padding: 16px 24px;
+    gap: 16px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.6rem;
+  }
+  
+  .dashboard-header .subheading {
+    font-size: 0.85rem;
+    margin-top: 2px;
+  }
+  
+  .filter-bar {
+    padding: 16px 24px;
+    gap: 16px;
+  }
+  
+  .table-panel {
+    padding: 24px;
+  }
+  
+  .table-panel h2 {
+    font-size: 1.25rem;
+  }
+  
+  .table-panel p {
+    margin-bottom: 16px;
+  }
+  
+  .summary-card {
+    padding: 20px 24px;
+  }
+  
+  .summary-card h3 {
+    font-size: 2rem;
+  }
+  
+  .pane-column {
+    padding: 24px;
+  }
+  
+  .overview-grid {
+    min-height: 360px;
+  }
+  
+  .split-pane-wrapper {
+    gap: 16px;
+  }
+}
+
+/* --- VERTICAL HEIGHT RESPONSIVENESS (Short laptop viewports) --- */
+@media (max-height: 800px) {
+  .sidebar {
+    padding: 15px 12px;
+  }
+  
+  .logo-block {
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  
+  .sidebar-link {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+  
+  .sidebar-footer {
+    padding: 10px 12px;
+  }
+  
+  .sidebar-profile-trigger {
+    padding: 6px 10px !important;
+    gap: 8px !important;
+    border-radius: 8px !important;
+  }
+  
+  .profile-avatar {
+    width: 28px;
+    height: 28px;
+    font-size: 0.75rem;
+  }
+  
+  .profile-info-text .profile-name {
+    font-size: 0.8rem;
+  }
+  
+  .profile-info-text .profile-role {
+    font-size: 0.65rem;
+  }
+  
+  .dashboard-header {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  
+  .dashboard-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .filter-bar {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+  
+  .summary-card {
+    padding: 16px 24px;
+  }
+  
+  .summary-card h3 {
+    font-size: 1.8rem;
+  }
+  
+  .pane-column {
+    padding: 20px;
+  }
+  
+  .overview-grid {
+    min-height: 320px;
+  }
+}
+
 
 
 

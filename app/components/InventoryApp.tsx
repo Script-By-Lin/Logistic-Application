@@ -751,6 +751,9 @@ export default function InventoryApp() {
   const [searchBatchId, setSearchBatchId] = useState(''); // For production QC search
   const [filterBatchId, setFilterBatchId] = useState('All');
   const [filterReconType, setFilterReconType] = useState<'All' | 'Distributions' | 'Returns'>('All');
+  const [searchDistributionQuery, setSearchDistributionQuery] = useState('');
+  const [searchReturnsQuery, setSearchReturnsQuery] = useState('');
+  const [searchReconciliationQuery, setSearchReconciliationQuery] = useState('');
   const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all'>('month');
   
   // --- Cash Flow Search & Filtering States ---
@@ -886,9 +889,9 @@ export default function InventoryApp() {
         gap: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+          {/* <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             {language === 'my' ? 'ပြသမည် -' : 'Show'}
-          </span>
+          </span> */}
           <select
             value={pageSize}
             onChange={(e) => setPageSize(tableKey, Number(e.target.value))}
@@ -919,7 +922,7 @@ export default function InventoryApp() {
           <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             {language === 'my' 
               ? `စုစုပေါင်းမှတ်တမ်း ${totalItems} ခုအနက် စာမျက်နှာ ${currentPage} / ${totalPages}`
-              : `Showing page ${currentPage} of ${totalPages} (${totalItems} items)`}
+              : ` ${currentPage} of ${totalPages} (${totalItems} items)`}
           </span>
           
           {totalPages > 1 && (
@@ -932,7 +935,7 @@ export default function InventoryApp() {
               >
                 {language === 'my' ? 'ယခင်' : 'Prev'}
               </button>
-              {pagesToShow.map((p, idx) => {
+              {/* {pagesToShow.map((p, idx) => {
                 if (p === '...') {
                   return (
                     <span
@@ -962,7 +965,7 @@ export default function InventoryApp() {
                     {p}
                   </button>
                 );
-              })}
+              })} */}
               <button
                 type="button"
                 className="pagination-btn"
@@ -1948,9 +1951,18 @@ export default function InventoryApp() {
       const matchType = filterReconType === 'All'
         || (filterReconType === 'Distributions' && Number(item.distributedQty) > 0)
         || (filterReconType === 'Returns' && (Number(item.returnedDamagedQty) > 0 || Number(item.returnedProductionGradeQty) > 0));
-      return matchVillage && matchBatchId && matchType;
+      
+      const query = searchReconciliationQuery.toLowerCase();
+      const matchSearch = !query ||
+        item.village.toLowerCase().includes(query) ||
+        (item.batchId || '').toLowerCase().includes(query) ||
+        (item.pipeName || '').toLowerCase().includes(query) ||
+        (item.distDate || '').toLowerCase().includes(query) ||
+        (item.returnDate || '').toLowerCase().includes(query);
+
+      return matchVillage && matchBatchId && matchType && matchSearch;
     });
-  }, [reconciliationLedger, filterVillage, filterBatchId, filterReconType]);
+  }, [reconciliationLedger, filterVillage, filterBatchId, filterReconType, searchReconciliationQuery]);
 
   // --- Charts Data Selectors ---
   const mostDamagedVillageData = useMemo(() => {
@@ -3365,9 +3377,17 @@ export default function InventoryApp() {
       const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
       const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
 
-      return matchVillage && matchPipeType && matchBatchId && matchStart && matchEnd;
+      const pipeName = pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || '';
+      const query = searchDistributionQuery.toLowerCase();
+      const matchSearch = !query ||
+        item.village.toLowerCase().includes(query) ||
+        (item.batch_id || '').toLowerCase().includes(query) ||
+        pipeName.toLowerCase().includes(query) ||
+        (item.remark || '').toLowerCase().includes(query);
+
+      return matchVillage && matchPipeType && matchBatchId && matchStart && matchEnd && matchSearch;
     });
-  }, [distributions, filterVillage, filterPipeType, filterBatchId, filterStartDate, filterEndDate]);
+  }, [distributions, filterVillage, filterPipeType, filterBatchId, filterStartDate, filterEndDate, searchDistributionQuery, pipeTypes]);
 
   const filteredReturns = useMemo(() => {
     return returnsList.filter((item) => {
@@ -3380,9 +3400,17 @@ export default function InventoryApp() {
       const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
       const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
 
-      return matchVillage && matchPipeType && matchStatus && matchBatchId && matchStart && matchEnd;
+      const pipeName = pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || '';
+      const query = searchReturnsQuery.toLowerCase();
+      const matchSearch = !query ||
+        item.village.toLowerCase().includes(query) ||
+        (item.batch_id || '').toLowerCase().includes(query) ||
+        pipeName.toLowerCase().includes(query) ||
+        (item.remark || '').toLowerCase().includes(query);
+
+      return matchVillage && matchPipeType && matchStatus && matchBatchId && matchStart && matchEnd && matchSearch;
     });
-  }, [returnsList, filterVillage, filterPipeType, filterStatus, filterBatchId, filterStartDate, filterEndDate]);
+  }, [returnsList, filterVillage, filterPipeType, filterStatus, filterBatchId, filterStartDate, filterEndDate, searchReturnsQuery, pipeTypes]);
 
   // --- Weekly Delivery Velocity Calculation ---
   const weeklyVelocity = useMemo(() => {
@@ -3472,7 +3500,7 @@ export default function InventoryApp() {
 
     const totalRevenue = dists.reduce((sum, d) => sum + (Number(d.quantity || 0) * Number(d.price || 0)), 0);
     const totalRefunds = rets.reduce((sum, r) => sum + (Number(r.quantity || 0) * Number(r.price || 0)), 0);
-    const netProfit = totalRefunds - totalRevenue;
+    const netProfit = (totalRefunds - totalRevenue) * (-1);
     const totalProductionCostOfReturns = rets.reduce((sum, r) => {
       const pt = pipeTypes.find((p) => p.id === r.pipe_type_id);
       const prodPrice = pt ? Number(pt.unit_price || 0) : 0;
@@ -3657,7 +3685,7 @@ export default function InventoryApp() {
       )}
       <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
         {/* Logo block */}
-        <div className="logo-block" style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: '2px', borderBottom: '1px solid var(--border-color, rgba(255,255,255,0.08))' }}>
+        <div className="logo-block" style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <div style={{ fontSize: '1.5rem', fontWeight: '800', letterSpacing: '0.05em', color: 'var(--accent, #4f46e5)' }}>
             TrammelNet
           </div>
@@ -3716,7 +3744,7 @@ export default function InventoryApp() {
           })}
         </nav>
 
-        <div className="sidebar-footer" style={{ padding: '16px 20px', borderTop: '1px solid var(--border-color, rgba(255,255,255,0.08))' }}>
+        <div className="sidebar-footer">
           {/* SIDEBAR PROFILE WIDGET */}
           <div className="sidebar-profile-container" style={{ position: 'relative', width: '100%' }}>
             <button 
@@ -4413,8 +4441,22 @@ export default function InventoryApp() {
 
               {/* DISTRIBUTION HISTORY TABLE */}
               <div className="table-panel">
-                <h2>{t.filteredDistributionLogs}</h2>
-                <p style={{ marginBottom: '16px' }}>{t.listOfAllOutgoingOutpostDeliveries}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h2 style={{ margin: 0 }}>{t.filteredDistributionLogs}</h2>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{t.listOfAllOutgoingOutpostDeliveries}</p>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={language === 'my' ? 'ကျေးရွာ၊ Batch ID၊ မော်ဒယ်ဖြင့် ရှာဖွေရန်...' : 'Search by village, batch, model...'}
+                    style={{ width: '240px', padding: '8px 12px', fontSize: '0.85rem' }}
+                    value={searchDistributionQuery}
+                    onChange={(e) => {
+                      setSearchDistributionQuery(e.target.value);
+                      setPage('distribution', 1);
+                    }}
+                  />
+                </div>
                 <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
@@ -4592,8 +4634,22 @@ export default function InventoryApp() {
 
               {/* RETURNS HISTORY TABLE */}
               <div className="table-panel">
-                <h2>{t.filteredReturnsLogs}</h2>
-                <p style={{ marginBottom: '16px' }}>{t.listOfIncomingReturns}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h2 style={{ margin: 0 }}>{t.filteredReturnsLogs}</h2>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{t.listOfIncomingReturns}</p>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={language === 'my' ? 'ကျေးရွာ၊ Batch ID၊ မော်ဒယ်ဖြင့် ရှာဖွေရန်...' : 'Search by village, batch, model...'}
+                    style={{ width: '240px', padding: '8px 12px', fontSize: '0.85rem' }}
+                    value={searchReturnsQuery}
+                    onChange={(e) => {
+                      setSearchReturnsQuery(e.target.value);
+                      setPage('returns', 1);
+                    }}
+                  />
+                </div>
                 <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
@@ -4755,8 +4811,22 @@ export default function InventoryApp() {
 
               {/* RECONCILIATION SUMMARY TABLE */}
               <div className="table-panel">
-                <h2>{t.overallDistributeSummary}</h2>
-                <p style={{ marginBottom: '16px' }}>{t.whenAndWhenReturn}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h2 style={{ margin: 0 }}>{t.overallDistributeSummary}</h2>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{t.whenAndWhenReturn}</p>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={language === 'my' ? 'ကျေးရွာ၊ Batch ID၊ မော်ဒယ်ဖြင့် ရှာဖွေရန်...' : 'Search by village, batch, model...'}
+                    style={{ width: '240px', padding: '8px 12px', fontSize: '0.85rem' }}
+                    value={searchReconciliationQuery}
+                    onChange={(e) => {
+                      setSearchReconciliationQuery(e.target.value);
+                      setPage('reconciliation', 1);
+                    }}
+                  />
+                </div>
                 <div className="table-wrapper mobile-cards">
                   <table>
                     <thead>
@@ -4964,7 +5034,7 @@ export default function InventoryApp() {
                 </div>
                 <div className="summary-card" style={{ borderLeft: '4px solid var(--accent-red, #ef4444)' }}>
                   <p>{t.totalRefunds}</p>
-                  <h3 style={{ color: 'var(--accent-red, #ef4444)', marginTop: '8px' }}>
+                  <h3 style={{ color: 'var(--accent-red, #47d620ff)', marginTop: '8px' }}>
                     {isDataLoading ? renderSkeleton({ height: '2.5rem', width: '60%' }) : formatCurrency(financeKPIs.totalRefunds)}
                   </h3>
                 </div>
@@ -5137,7 +5207,7 @@ export default function InventoryApp() {
                                <tr key={v.id}>
                                  <td style={{ fontWeight: '600' }}>{v.name}</td>
                                  <td style={{ color: 'var(--primary)' }}>{formatCurrency(sum.disbursements)}</td>
-                                 <td style={{ color: 'var(--accent-green, #10b981)' }}>{formatCurrency(sum.repayments)}</td>
+                                 <td style={{ color: 'var(--accent-green, #b92c10ff)' }}>{formatCurrency(sum.repayments)}</td>
                                  <td>
                                    <span style={{ 
                                      fontWeight: '600', 
@@ -5907,7 +5977,7 @@ export default function InventoryApp() {
                                       disabled={isSubmitting}
                                       onClick={() => openEditPriceModal(pipe)}
                                     >
-                                      {t.editPrice}
+                                       {t.editPrice}
                                     </button>
                                     <button
                                       type="button"
