@@ -419,6 +419,22 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatAuditTimestamp(timestampStr: string) {
+  if (!timestampStr) return '';
+  const dateStr = (timestampStr.includes('Z') || timestampStr.match(/[+-]\d{2}:?\d{2}$/))
+    ? timestampStr
+    : `${timestampStr.replace(' ', 'T')}Z`;
+  try {
+    return new Date(dateStr).toLocaleString(undefined, { timeZone: 'Asia/Yangon' });
+  } catch (e) {
+    try {
+      return new Date(dateStr).toLocaleString();
+    } catch {
+      return timestampStr;
+    }
+  }
+}
+
 function sumQuantity(records: { quantity: number }[]) {
   return records.reduce((sum, record) => sum + Number(record.quantity || 0), 0);
 }
@@ -5906,7 +5922,7 @@ export default function InventoryApp() {
                       (isPrinting ? auditLogs : auditLogs.slice((getPage('auditLogs') - 1) * getPageSize('auditLogs'), getPage('auditLogs') * getPageSize('auditLogs'))).map((log) => (
                         <tr key={log.id}>
                           <td style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                            {new Date(log.timestamp).toLocaleString()}
+                            {formatAuditTimestamp(log.timestamp)}
                           </td>
                           <td>{log.user_email}</td>
                           <td>
