@@ -471,7 +471,7 @@ export default function InventoryApp() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | null>(null);
+  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | null>(null);
 
   useEffect(() => {
     if (activeModal === null) {
@@ -516,6 +516,16 @@ export default function InventoryApp() {
     price: 0,
     remark: '',
     batchId: '',
+  });
+
+  const [editingFunding, setEditingFunding] = useState<VillageFundingRecord | null>(null);
+  const [editFundingForm, setEditFundingForm] = useState({
+    id: 0,
+    date: '',
+    village: '',
+    type: 'disbursement' as 'disbursement' | 'repayment',
+    amount: 0,
+    remark: '',
   });
 
   const openEditPriceModal = (pipe: PipeType) => {
@@ -567,6 +577,19 @@ export default function InventoryApp() {
       batchId: ret.batch_id || '',
     });
     setActiveModal('edit_return');
+  };
+
+  const openEditFundingModal = (record: VillageFundingRecord) => {
+    setEditingFunding(record);
+    setEditFundingForm({
+      id: record.id,
+      date: record.date,
+      village: record.village,
+      type: record.type,
+      amount: record.amount,
+      remark: record.remark || '',
+    });
+    setActiveModal('edit_funding');
   };
 
   const submitEditForm = async (url: string, body: object, reset?: () => void) => {
@@ -669,6 +692,18 @@ export default function InventoryApp() {
     }, () => {
       setActiveModal(null);
       setEditingReturn(null);
+    });
+  };
+
+  const handleFundingEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editFundingForm.date || !editFundingForm.village || !editFundingForm.type || !editFundingForm.amount) {
+      alert(language === 'my' ? 'အချက်အလက်များ ပြည့်စုံစွာ ဖြည့်စွက်ပါ' : 'Please fill all required fields.');
+      return;
+    }
+    await submitEditForm('/api/village-funding', editFundingForm, () => {
+      setActiveModal(null);
+      setEditingFunding(null);
     });
   };
 
@@ -3407,7 +3442,7 @@ export default function InventoryApp() {
 
     const totalRevenue = dists.reduce((sum, d) => sum + (Number(d.quantity || 0) * Number(d.price || 0)), 0);
     const totalRefunds = rets.reduce((sum, r) => sum + (Number(r.quantity || 0) * Number(r.price || 0)), 0);
-    const netProfit = totalRevenue - totalRefunds;
+    const netProfit = totalRefunds - totalRevenue;
     const totalProductionCostOfReturns = rets.reduce((sum, r) => {
       const pt = pipeTypes.find((p) => p.id === r.pipe_type_id);
       const prodPrice = pt ? Number(pt.unit_price || 0) : 0;
@@ -5195,13 +5230,22 @@ export default function InventoryApp() {
                             <td>{f.remark || '-'}</td>
                             {user.role === 'admin' && (
                               <td>
-                                <button
-                                  type="button"
-                                  className="action-btn delete"
-                                  onClick={() => deleteFundingRecord(f.id)}
-                                >
-                                  {t.delete}
-                                </button>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    type="button"
+                                    className="action-btn edit"
+                                    onClick={() => openEditFundingModal(f)}
+                                  >
+                                    {t.edit}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="action-btn delete"
+                                    onClick={() => deleteFundingRecord(f.id)}
+                                  >
+                                    {t.delete}
+                                  </button>
+                                </div>
                               </td>
                             )}
                           </tr>
@@ -6033,6 +6077,7 @@ export default function InventoryApp() {
                   {activeModal === 'edit_production' && t.editProductionTitle}
                   {activeModal === 'edit_distribution' && t.editDistributionTitle}
                   {activeModal === 'edit_return' && t.editReturnTitle}
+                  {activeModal === 'edit_funding' && (language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှု ပြင်ဆင်ရန်' : 'Edit Cash Transaction')}
                 </h2>
                 <button 
                   type="button" 
@@ -6991,6 +7036,89 @@ export default function InventoryApp() {
                     ) : (
                       <div className="notification-item alert-info" style={{ marginTop: '16px' }}>
                         {t.viewOnlyModeReturns}
+                      </div>
+                    )}
+                  </form>
+                )}
+
+                {activeModal === 'edit_funding' && editingFunding && (
+                  <form onSubmit={handleFundingEditSubmit}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှုမှတ်တမ်း အချက်အလက်များကို ပြင်ဆင်ပါ။' : 'Update the cash transaction details.'}
+                    </p>
+                    <div className="form-grid">
+                      <div className="form-group">
+                        <label htmlFor="edit-funding-date">{language === 'my' ? 'ရက်စွဲ' : 'Date'}</label>
+                        <input
+                          id="edit-funding-date"
+                          type="date"
+                          required
+                          disabled={user.role !== 'admin'}
+                          value={editFundingForm.date}
+                          onChange={(event) => setEditFundingForm({ ...editFundingForm, date: event.target.value })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-funding-village">{language === 'my' ? 'ကျေးရွာ' : 'Outpost Village'}</label>
+                        <select
+                          id="edit-funding-village"
+                          disabled={user.role !== 'admin'}
+                          value={editFundingForm.village}
+                          onChange={(event) => setEditFundingForm({ ...editFundingForm, village: event.target.value })}
+                        >
+                          {villages.map((v) => (
+                            <option key={v.id} value={v.name}>
+                              {v.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-funding-type">{language === 'my' ? 'အမျိုးအစား' : 'Transaction Type'}</label>
+                        <select
+                          id="edit-funding-type"
+                          disabled={user.role !== 'admin'}
+                          value={editFundingForm.type}
+                          onChange={(event) => setEditFundingForm({ ...editFundingForm, type: event.target.value as any })}
+                        >
+                          <option value="disbursement">{language === 'my' ? 'ကုမ္ပဏီမှ ကျေးရွာသို့ ထုတ်ပေးငွေ' : 'Disbursement (Company to Village)'}</option>
+                          <option value="repayment">{language === 'my' ? 'ကျေးရွာမှ ကုမ္ပဏီသို့ ပြန်ဆပ်ငွေ' : 'Repayment (Village to Company)'}</option>
+                        </select>
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-funding-amount">{language === 'my' ? 'ပမာဏ (MMK)' : 'Amount (MMK)'}</label>
+                        <input
+                          id="edit-funding-amount"
+                          type="number"
+                          min="1"
+                          required
+                          disabled={user.role !== 'admin'}
+                          value={editFundingForm.amount === 0 ? '' : (editFundingForm.amount || '')}
+                          onChange={(event) => setEditFundingForm({ ...editFundingForm, amount: Number(event.target.value) })}
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label htmlFor="edit-funding-remark">{language === 'my' ? 'မှတ်ချက်' : 'Remarks / Reference'}</label>
+                        <input
+                          id="edit-funding-remark"
+                          type="text"
+                          disabled={user.role !== 'admin'}
+                          value={editFundingForm.remark}
+                          onChange={(event) => setEditFundingForm({ ...editFundingForm, remark: event.target.value })}
+                        />
+                      </div>
+                    </div>
+                    {user.role === 'admin' ? (
+                      <button className="primary" type="submit" disabled={isSubmitting} style={{ marginTop: '16px' }}>
+                        {isSubmitting ? (language === 'my' ? 'သိမ်းဆည်းနေပါသည်...' : 'Saving...') : (language === 'my' ? 'သိမ်းဆည်းမည်' : 'Save Transaction')}
+                      </button>
+                    ) : (
+                      <div className="notification-item alert-info" style={{ marginTop: '16px' }}>
+                        {language === 'my' ? 'ဖတ်ရန်သာ (ပြင်ဆင်ခွင့်မရှိပါ)' : 'View only mode (No edit permission)'}
                       </div>
                     )}
                   </form>
