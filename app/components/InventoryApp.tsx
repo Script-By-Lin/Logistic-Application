@@ -10,6 +10,8 @@ import {
   ReturnRecord,
   VillageFundingRecord,
 } from '@/types';
+import SearchableSelect from './SearchableSelect';
+import * as XLSX from 'xlsx';
 
 // Dynamic sidebar tabs depending on user role
 const ADMIN_TABS = ['Overview', 'Production', 'Distribution', 'Returns', 'Reconciliation', 'Reports', 'Finance', 'Catalog Settings', 'Audit Logs', 'Backup & Recovery'] as const;
@@ -2676,97 +2678,121 @@ export default function InventoryApp() {
   // --- Reports Export Handlers ---
   const handleExportExcel = () => {
     const t = TRANSLATIONS[language];
+    const { label } = reportFilterRange;
+
+    // Create a new workbook
+    const wb = XLSX.utils.book_new();
+
     if (reportType === 'distribution_left') {
-      let csvContent = '\uFEFF';
-      const { label } = reportFilterRange;
+      // 1. Create Summary Sheet Data
+      const summaryData = [
+        ["TrammelNet - Outpost Distribution & Left Return Report"],
+        ["Filters", label],
+        ["Generated On", new Date().toLocaleString()],
+        [],
+        ["Summary Metrics"],
+        [language === 'my' ? 'စုစုပေါင်း ဖြန့်ဖြူးပြီး အရေအတွက်' : 'Total Distributed Units', reportData.totals.distributed],
+        [language === 'my' ? 'စုစုပေါင်း ပြန်အပ်နှံပြီး အရေအတွက်' : 'Total Returned Units', reportData.totals.returned],
+        [language === 'my' ? 'ပြန်အပ်ရန် ကျန်ရှိသော အရေအတွက်' : 'Left to Return to Company', reportData.totals.balance]
+      ];
+      const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+      XLSX.utils.book_append_sheet(wb, wsSummary, "Summary");
 
-      csvContent += `TrammelNet - Village Distribution & Left Return Report\n`;
-      csvContent += `Filters: ${label}\n`;
-      csvContent += `Generated On: ${new Date().toLocaleString()}\n\n`;
+      // 2. Create Details Sheet Data
+      const detailsHeaders = [
+        language === 'my' ? "ကျေးရွာ" : "Village Outpost",
+        t.pipeModel,
+        "Batch ID",
+        language === 'my' ? "ဖြန့်ဖြူးသည့်ရက်စွဲ" : "Dist Date",
+        language === 'my' ? "ဖြန့်ဖြူးပြီး အရေအတွက်" : "Distributed Qty (Units)",
+        language === 'my' ? "ချို့ယွင်းချက် (Error)" : "Returned Damaged (Units)",
+        language === 'my' ? "ထုတ်လုပ်မှု အဆင့်မီ" : "Production Grade (Units)",
+        language === 'my' ? "ကျန်ရှိသော အရေအတွက်" : "Left Qty (Units)",
+        language === 'my' ? "ပြန်အပ်သည့်ရက်စွဲ" : "Return Date"
+      ];
 
-      csvContent += `Summary Metrics\n`;
-      csvContent += `Metric,Value\n`;
-      csvContent += `"${language === 'my' ? 'စုစုပေါင်း ဖြန့်ဖြူးပြီး အရေအတွက်' : 'Total Distributed Units'}",${reportData.totals.distributed}\n`;
-      csvContent += `"${language === 'my' ? 'စုစုပေါင်း ပြန်အပ်နှံပြီး အရေအတွက်' : 'Total Returned Units'}",${reportData.totals.returned}\n`;
-      csvContent += `"${language === 'my' ? 'ပြန်အပ်ရန် ကျန်ရှိသော အရေအတွက်' : 'Left to Return'}",${reportData.totals.balance}\n\n`;
+      const detailsRows = reportFilteredRecon.map((item: any) => [
+        item.village,
+        item.pipeName,
+        item.batchId || 'N/A',
+        item.distDate,
+        item.distributedQty,
+        item.returnedDamagedQty,
+        item.returnedProductionGradeQty || 0,
+        item.leftQty,
+        item.returnDate || 'N/A'
+      ]);
 
-      csvContent += `Distribution & Left to Return Details\n`;
-      csvContent += `Village Outpost,Pipe Model,Batch ID,Dist Date,Distributed Qty,Returned Damaged,Production Grade,Left Qty,Return Date\n`;
-      reportFilteredRecon.forEach((item: any) => {
-        csvContent += `"${item.village}","${item.pipeName}","${item.batchId || ''}","${item.distDate}",${item.distributedQty},${item.returnedDamagedQty},${item.returnedProductionGradeQty},${item.leftQty},"${item.returnDate}"\n`;
-      });
+      const wsDetails = XLSX.utils.aoa_to_sheet([detailsHeaders, ...detailsRows]);
+      XLSX.utils.book_append_sheet(wb, wsDetails, "Details");
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `distribution_left_report_${getLocalTodayDateString()}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Save the workbook
+      XLSX.writeFile(wb, `distribution_left_report_${getLocalTodayDateString()}.xlsx`);
       return;
     }
 
+    // For Daily / Weekly / Monthly reports
     if (!reportDate && filterBatchId === 'All') {
       alert(language === 'my' ? 'အစီရင်ခံစာ ကာလ ရွေးချယ်ပေးပါ' : 'Please select a report date/period first.');
       return;
     }
 
-    let csvContent = '\uFEFF';
-    const { label } = reportFilterRange;
+    // 1. Create Overview Sheet
+    const overviewData = [
+      ["TrammelNet Centralized Inventory Report"],
+      ["Period", label],
+      ["Generated On", new Date().toLocaleString()],
+      [],
+      ["Summary Metrics"],
+      [t.totalProducedUnits, reportData.totals.produced],
+      [t.totalDistributedUnits, reportData.totals.distributed],
+      [t.totalReturnedUnits, reportData.totals.returned],
+      [t.netInventoryChange, reportData.totals.balance]
+    ];
+    const wsOverview = XLSX.utils.aoa_to_sheet(overviewData);
+    XLSX.utils.book_append_sheet(wb, wsOverview, "Overview");
 
-    csvContent += `TrammelNet Centralized Inventory Report\n`;
-    csvContent += `Period: ${label}\n`;
-    csvContent += `Generated On: ${new Date().toLocaleString()}\n\n`;
-
-    csvContent += `Summary Metrics\n`;
-    csvContent += `Metric,Value\n`;
-    csvContent += `"${t.totalProducedUnits}",${reportData.totals.produced}\n`;
-    csvContent += `"${t.totalDistributedUnits}",${reportData.totals.distributed}\n`;
-    csvContent += `"${t.totalReturnedUnits}",${reportData.totals.returned}\n`;
-    csvContent += `"${t.netInventoryChange}",${reportData.totals.balance}\n\n`;
-
+    // 2. Create Productions Sheet
     if (reportData.productions.length > 0) {
-      csvContent += `Production Activity Summary\n`;
-      csvContent += `Date,Batch ID,Pipe Model,Quantity (Units)\n`;
-      reportData.productions.forEach((p: any) => {
-        const pipeName = pipeTypes.find((pt) => pt.id === p.pipe_type_id)?.name || 'Unknown';
-        csvContent += `"${p.date}","${p.batch_id || ''}","${pipeName}",${p.quantity}\n`;
+      const prodHeaders = ["Date", "Batch ID", "Pipe Model", "Quantity (Units)", "Unit Price (MMK)", "Total Price (MMK)"];
+      const prodRows = reportData.productions.map((p: any) => {
+        const pipe = pipeTypes.find((pt) => pt.id === p.pipe_type_id);
+        const pipeName = pipe?.name || 'Unknown';
+        const unitPrice = pipe?.unit_price || 0;
+        const totalPrice = p.quantity * unitPrice;
+        return [p.date, p.batch_id || 'N/A', pipeName, p.quantity, unitPrice, totalPrice];
       });
-      csvContent += `\n`;
+      const wsProd = XLSX.utils.aoa_to_sheet([prodHeaders, ...prodRows]);
+      XLSX.utils.book_append_sheet(wb, wsProd, "Productions");
     }
 
+    // 3. Create Distributions Sheet
     if (reportData.distributions.length > 0) {
-      csvContent += `Distribution Outbound Summary\n`;
-      csvContent += `Date,Outpost Node,Pipe Model,Batch ID,Quantity (Units),Unit Price (MMK),Total (MMK),Remarks\n`;
-      reportData.distributions.forEach((d: any) => {
+      const distHeaders = ["Date", "Outpost Node", "Pipe Model", "Batch ID", "Quantity (Units)", "Unit Price (MMK)", "Total Price (MMK)", "Remarks"];
+      const distRows = reportData.distributions.map((d: any) => {
         const pipeName = pipeTypes.find((pt) => pt.id === d.pipe_type_id)?.name || 'Unknown';
-        csvContent += `"${d.date}","${d.village}","${pipeName}","${d.batch_id || ''}",${d.quantity},${d.price},${d.quantity * d.price},"${d.remark || ''}"\n`;
+        return [d.date, d.village, pipeName, d.batch_id || 'N/A', d.quantity, d.price, d.quantity * d.price, d.remark || ''];
       });
-      csvContent += `\n`;
+      const wsDist = XLSX.utils.aoa_to_sheet([distHeaders, ...distRows]);
+      XLSX.utils.book_append_sheet(wb, wsDist, "Distributions");
     }
 
+    // 4. Create Returns Sheet
     if (reportData.returns.length > 0) {
-      csvContent += `Outpost Returns Summary\n`;
-      csvContent += `Date,Outpost Node,Pipe Model,Batch ID,Quantity (Units),Classification\n`;
-      reportData.returns.forEach((r: any) => {
+      const retHeaders = ["Date", "Outpost Node", "Pipe Model", "Batch ID", "Quantity (Units)", "Classification"];
+      const retRows = reportData.returns.map((r: any) => {
         const pipeName = pipeTypes.find((pt) => pt.id === r.pipe_type_id)?.name || 'Unknown';
-        csvContent += `"${r.date}","${r.village}","${pipeName}","${r.batch_id || ''}",${r.quantity},"${r.status === 'damaged' ? 'DAMAGED' : 'PRODUCTION GRADE'}"\n`;
+        return [r.date, r.village, pipeName, r.batch_id || 'N/A', r.quantity, r.status === 'damaged' ? 'DAMAGED' : 'PRODUCTION GRADE'];
       });
-      csvContent += `\n`;
+      const wsRet = XLSX.utils.aoa_to_sheet([retHeaders, ...retRows]);
+      XLSX.utils.book_append_sheet(wb, wsRet, "Returns");
     }
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
+    // Save the workbook
     const downloadName = filterBatchId !== 'All' 
-      ? `inventory_report_batch_${filterBatchId}.csv`
-      : `inventory_report_${reportType}_${label.replace(/\s+/g, '_')}.csv`;
-    link.setAttribute('download', downloadName);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      ? `inventory_report_batch_${filterBatchId}.xlsx`
+      : `inventory_report_${reportType}_${label.replace(/\s+/g, '_')}.xlsx`;
+    XLSX.writeFile(wb, downloadName);
   };
 
   const handleExportPdf = () => {
@@ -2774,7 +2800,21 @@ export default function InventoryApp() {
       alert(language === 'my' ? 'အစီရင်ခံစာ ကာလ ရွေးချယ်ပေးပါ' : 'Please select a report date/period first.');
       return;
     }
-    window.print();
+    setIsPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+    }, 150);
+  };
+
+  const handleExportBatchPdf = () => {
+    document.body.classList.add('printing-batch-details');
+    setIsPrinting(true);
+    setTimeout(() => {
+      window.print();
+      setIsPrinting(false);
+      document.body.classList.remove('printing-batch-details');
+    }, 150);
   };
 
   const handleLogFundingTransaction = async (e: React.FormEvent) => {
@@ -4397,19 +4437,20 @@ export default function InventoryApp() {
 
                 <div className="filter-group">
                   <label htmlFor="filter-batch-id-select">{t.batchIdLabel}</label>
-                  <select
+                  <SearchableSelect
                     id="filter-batch-id-select"
                     value={filterBatchId}
-                    onChange={(e) => {
-                      setFilterBatchId(e.target.value);
+                    onChange={(val) => {
+                      setFilterBatchId(val);
                       setPage('distribution', 1);
                     }}
-                  >
-                    <option value="All">{t.allBatches}</option>
-                    {registeredBatchesList.map((b) => (
-                      <option key={b.batchId} value={b.batchId}>{b.batchId}</option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: 'All', label: t.allBatches },
+                      ...registeredBatchesList.map((b) => ({ value: b.batchId, label: b.batchId }))
+                    ]}
+                    placeholder={t.allBatches}
+                    language={language}
+                  />
                 </div>
 
                 <div className="filter-group">
@@ -4574,19 +4615,20 @@ export default function InventoryApp() {
 
                 <div className="filter-group">
                   <label htmlFor="return-batch-id-filter">{t.batchIdLabel}</label>
-                  <select
+                  <SearchableSelect
                     id="return-batch-id-filter"
                     value={filterBatchId}
-                    onChange={(e) => {
-                      setFilterBatchId(e.target.value);
+                    onChange={(val) => {
+                      setFilterBatchId(val);
                       setPage('returns', 1);
                     }}
-                  >
-                    <option value="All">{t.allBatches}</option>
-                    {registeredBatchesList.map((b) => (
-                      <option key={b.batchId} value={b.batchId}>{b.batchId}</option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: 'All', label: t.allBatches },
+                      ...registeredBatchesList.map((b) => ({ value: b.batchId, label: b.batchId }))
+                    ]}
+                    placeholder={t.allBatches}
+                    language={language}
+                  />
                 </div>
 
                 <div className="filter-group">
@@ -4777,19 +4819,20 @@ export default function InventoryApp() {
 
                 <div className="filter-group">
                   <label htmlFor="recon-batch-id-select">{t.batchIdLabel}</label>
-                  <select
+                  <SearchableSelect
                     id="recon-batch-id-select"
                     value={filterBatchId}
-                    onChange={(e) => {
-                      setFilterBatchId(e.target.value);
+                    onChange={(val) => {
+                      setFilterBatchId(val);
                       setPage('reconciliation', 1);
                     }}
-                  >
-                    <option value="All">{t.allBatches}</option>
-                    {registeredBatchesList.map((b) => (
-                      <option key={b.batchId} value={b.batchId}>{b.batchId}</option>
-                    ))}
-                  </select>
+                    options={[
+                      { value: 'All', label: t.allBatches },
+                      ...registeredBatchesList.map((b) => ({ value: b.batchId, label: b.batchId }))
+                    ]}
+                    placeholder={t.allBatches}
+                    language={language}
+                  />
                 </div>
 
                 <div className="filter-group">
@@ -5508,19 +5551,20 @@ export default function InventoryApp() {
 
                     <div className="filter-group">
                       <label htmlFor="report-batch-select">{t.batchIdLabel}</label>
-                      <select
+                      <SearchableSelect
                         id="report-batch-select"
                         value={reportBatchId}
-                        onChange={(e) => {
-                          setReportBatchId(e.target.value);
+                        onChange={(val) => {
+                          setReportBatchId(val);
                           setPage('repRecon', 1);
                         }}
-                      >
-                        <option value="All">{t.allBatches}</option>
-                        {registeredBatchesList.map((b) => (
-                          <option key={b.batchId} value={b.batchId}>{b.batchId}</option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: 'All', label: t.allBatches },
+                          ...registeredBatchesList.map((b) => ({ value: b.batchId, label: b.batchId }))
+                        ]}
+                        placeholder={t.allBatches}
+                        language={language}
+                      />
                     </div>
 
                     <div className="filter-group">
@@ -5560,21 +5604,22 @@ export default function InventoryApp() {
 
                     <div className="filter-group">
                       <label htmlFor="report-batch-id-select">{t.batchIdLabel}</label>
-                      <select
+                      <SearchableSelect
                         id="report-batch-id-select"
                         value={filterBatchId}
-                        onChange={(e) => {
-                          setFilterBatchId(e.target.value);
+                        onChange={(val) => {
+                          setFilterBatchId(val);
                           setPage('repProd', 1);
                           setPage('repDist', 1);
                           setPage('repRet', 1);
                         }}
-                      >
-                        <option value="All">{t.allBatches}</option>
-                        {registeredBatchesList.map((b) => (
-                          <option key={b.batchId} value={b.batchId}>{b.batchId}</option>
-                        ))}
-                      </select>
+                        options={[
+                          { value: 'All', label: t.allBatches },
+                          ...registeredBatchesList.map((b) => ({ value: b.batchId, label: b.batchId }))
+                        ]}
+                        placeholder={t.allBatches}
+                        language={language}
+                      />
                     </div>
                   </>
                 )}
@@ -6247,7 +6292,7 @@ export default function InventoryApp() {
         {/* MODAL OVERLAYS */}
         {activeModal && (
           <div className="modal-overlay" onClick={() => setActiveModal(null)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className={`modal-content ${['distribution', 'edit_distribution', 'return', 'edit_return'].includes(activeModal) ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>
                   {activeModal === 'production' && t.recordCentralProduction}
@@ -6430,13 +6475,13 @@ export default function InventoryApp() {
 
                       <div className="form-group">
                         <label htmlFor="distribution-batch-id">{language === 'my' ? 'ထုတ်လုပ်မှုအသုတ် ရွေးချယ်ရန်' : 'Select Production Batch'}</label>
-                        <select
+                        <SearchableSelect
                           id="distribution-batch-id"
-                          required
                           disabled={user.role !== 'admin' || distType === 'resend_damaged'}
+                          required
                           value={distributionForm.batchId}
-                          onChange={(event) => {
-                            const selectedBatchId = event.target.value;
+                          onChange={(val) => {
+                            const selectedBatchId = val;
                             const selectedBatch = registeredBatchesList.find(b => b.batchId === selectedBatchId);
                             if (selectedBatch) {
                               setDistributionForm({ 
@@ -6452,26 +6497,19 @@ export default function InventoryApp() {
                               });
                             }
                           }}
-                        >
-                          {distType === 'resend_damaged' ? (
-                            distributionForm.batchId ? (
-                              <option value={distributionForm.batchId}>{distributionForm.batchId}</option>
-                            ) : (
-                              <option value="">{language === 'my' ? '-- အသုတ်မရှိပါ --' : '-- No Batch --'}</option>
-                            )
-                          ) : (
-                            <>
-                              <option value="">{language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}</option>
-                              {registeredBatchesList
+                          options={distType === 'resend_damaged'
+                            ? (distributionForm.batchId ? [{ value: distributionForm.batchId, label: distributionForm.batchId, shortLabel: distributionForm.batchId }] : [])
+                            : registeredBatchesList
                                 .filter((batch) => !batchStatusMap[batch.batchId]?.isFullyReturned)
-                                .map((batch) => (
-                                  <option key={batch.batchId} value={batch.batchId}>
-                                    {batch.batchId} ({batch.pipeName})
-                                  </option>
-                                ))}
-                            </>
-                          )}
-                        </select>
+                                .map((batch) => ({
+                                  value: batch.batchId,
+                                  label: `${batch.batchId} (${batch.pipeName})`,
+                                  shortLabel: batch.batchId,
+                                }))
+                          }
+                          placeholder={distType === 'resend_damaged' ? (distributionForm.batchId ? distributionForm.batchId : (language === 'my' ? '-- အသုတ်မရှိပါ --' : '-- No Batch --')) : (language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --')}
+                          language={language}
+                        />
                       </div>
 
                       <div className="form-group">
@@ -6595,13 +6633,13 @@ export default function InventoryApp() {
 
                       <div className="form-group">
                         <label htmlFor="return-batch-id">{language === 'my' ? 'ထုတ်လုပ်မှုအသုတ် ရွေးချယ်ရန်' : 'Select Deployed Batch'}</label>
-                        <select
+                        <SearchableSelect
                           id="return-batch-id"
-                          required
                           disabled={user.role !== 'admin'}
+                          required
                           value={returnForm.batchId}
-                          onChange={(event) => {
-                            const selectedBatchId = event.target.value;
+                          onChange={(val) => {
+                            const selectedBatchId = val;
                             const selectedBatch = deployedBatchesForSelectedVillage.find(b => b.batchId === selectedBatchId);
                             if (selectedBatch) {
                               setReturnForm({
@@ -6617,14 +6655,14 @@ export default function InventoryApp() {
                               });
                             }
                           }}
-                        >
-                          <option value="">{language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}</option>
-                          {deployedBatchesForSelectedVillage.map((batch) => (
-                            <option key={batch.batchId} value={batch.batchId}>
-                              {batch.batchId} ({batch.pipeName}) - {batch.balance} {language === 'my' ? 'လုံး ဖြန့်ထားသည်' : 'deployed'}
-                            </option>
-                          ))}
-                        </select>
+                          options={deployedBatchesForSelectedVillage.map((batch) => ({
+                            value: batch.batchId,
+                            label: `${batch.batchId} (${batch.pipeName}) - ${batch.balance} ${language === 'my' ? 'လုံး ဖြန့်ထားသည်' : 'deployed'}`,
+                            shortLabel: batch.batchId,
+                          }))}
+                          placeholder={language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}
+                          language={language}
+                        />
                       </div>
 
                       <div className="form-group">
@@ -6955,12 +6993,13 @@ export default function InventoryApp() {
 
                       <div className="form-group">
                         <label htmlFor="edit-distribution-batch-id">{language === 'my' ? 'ထုတ်လုပ်မှုအသုတ် ရွေးချယ်ရန်' : 'Select Production Batch'}</label>
-                        <select
+                        <SearchableSelect
                           id="edit-distribution-batch-id"
                           disabled={user.role !== 'admin'}
+                          required
                           value={editDistributionForm.batchId}
-                          onChange={(event) => {
-                            const selectedBatchId = event.target.value;
+                          onChange={(val) => {
+                            const selectedBatchId = val;
                             const selectedBatch = registeredBatchesList.find(b => b.batchId === selectedBatchId);
                             if (selectedBatch) {
                               setEditDistributionForm({ 
@@ -6976,16 +7015,17 @@ export default function InventoryApp() {
                               });
                             }
                           }}
-                        >
-                          <option value="">{language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}</option>
-                          {registeredBatchesList
+                          options={registeredBatchesList
                             .filter((batch) => !batchStatusMap[batch.batchId]?.isFullyReturned || batch.batchId === editDistributionForm.batchId)
-                            .map((batch) => (
-                              <option key={batch.batchId} value={batch.batchId}>
-                                {batch.batchId} ({batch.pipeName}) - {batch.availableStock} {language === 'my' ? 'လက်ကျန်' : 'available'}
-                              </option>
-                            ))}
-                        </select>
+                            .map((batch) => ({
+                              value: batch.batchId,
+                              label: `${batch.batchId} (${batch.pipeName}) - ${batch.availableStock} ${language === 'my' ? 'လက်ကျန်' : 'available'}`,
+                              shortLabel: batch.batchId,
+                            }))
+                          }
+                          placeholder={language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}
+                          language={language}
+                        />
                       </div>
 
                       <div className="form-group">
@@ -7101,12 +7141,13 @@ export default function InventoryApp() {
 
                       <div className="form-group">
                         <label htmlFor="edit-return-batch-id">{language === 'my' ? 'ထုတ်လုပ်မှုအသုတ် ရွေးချယ်ရန်' : 'Select Deployed Batch'}</label>
-                        <select
+                        <SearchableSelect
                           id="edit-return-batch-id"
                           disabled={user.role !== 'admin'}
+                          required
                           value={editReturnForm.batchId}
-                          onChange={(event) => {
-                            const selectedBatchId = event.target.value;
+                          onChange={(val) => {
+                            const selectedBatchId = val;
                             const selectedBatch = deployedBatchesForEditVillage.find(b => b.batchId === selectedBatchId);
                             if (selectedBatch) {
                               setEditReturnForm({
@@ -7122,14 +7163,14 @@ export default function InventoryApp() {
                               });
                             }
                           }}
-                        >
-                          <option value="">{language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}</option>
-                          {deployedBatchesForEditVillage.map((batch) => (
-                            <option key={batch.batchId} value={batch.batchId}>
-                              {batch.batchId} ({batch.pipeName}) - {batch.balance} {language === 'my' ? 'လုံး ဖြန့်ထားသည်' : 'deployed'}
-                            </option>
-                          ))}
-                        </select>
+                          options={deployedBatchesForEditVillage.map((batch) => ({
+                            value: batch.batchId,
+                            label: `${batch.batchId} (${batch.pipeName}) - ${batch.balance} ${language === 'my' ? 'လုံး ဖြန့်ထားသည်' : 'deployed'}`,
+                            shortLabel: batch.batchId,
+                          }))}
+                          placeholder={language === 'my' ? '-- အသုတ်ရွေးချယ်ပါ --' : '-- Select Batch --'}
+                          language={language}
+                        />
                       </div>
 
                       <div className="form-group">
@@ -7314,11 +7355,21 @@ export default function InventoryApp() {
           <div className="modal-overlay" onClick={() => setViewingBatchId(null)}>
             <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '800px', width: '95%' }}>
               <div className="modal-header">
-                <h2>
-                  {language === 'my' 
-                    ? `အသုတ် အချက်အလက် - ${viewingBatchId}` 
-                    : `Batch Details - ${viewingBatchId}`}
-                </h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <h2 style={{ margin: 0 }}>
+                    {language === 'my' 
+                      ? `အသုတ် အချက်အလက် - ${viewingBatchId}` 
+                      : `Batch Details - ${viewingBatchId}`}
+                  </h2>
+                  <button
+                    type="button"
+                    className="secondary no-print"
+                    style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '6px', height: '32px' }}
+                    onClick={handleExportBatchPdf}
+                  >
+                    🖨️ {language === 'my' ? 'PDF ထုတ်ယူရန်' : 'Export PDF'}
+                  </button>
+                </div>
                 <button 
                   type="button" 
                   className="modal-close-btn"

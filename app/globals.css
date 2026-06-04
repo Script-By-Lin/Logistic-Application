@@ -829,7 +829,7 @@ label {
   color: var(--text-secondary);
 }
 
-input,
+input:not([type="radio"]):not([type="checkbox"]),
 select,
 textarea {
   width: 100%;
@@ -845,7 +845,7 @@ textarea {
   outline: none;
 }
 
-input:focus,
+input:not([type="radio"]):not([type="checkbox"]):focus,
 select:focus,
 textarea:focus {
   background-color: var(--bg-primary);
@@ -853,10 +853,21 @@ textarea:focus {
   box-shadow: 0 0 0 4px var(--accent-glow);
 }
 
-input:disabled {
+input:not([type="radio"]):not([type="checkbox"]):disabled {
   background-color: var(--bg-tertiary);
   color: var(--text-muted);
   cursor: not-allowed;
+}
+
+input[type="radio"],
+input[type="checkbox"] {
+  width: 18px !important;
+  height: 18px !important;
+  min-height: 18px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 textarea {
@@ -1708,6 +1719,10 @@ td.remarks-col, td.details-col {
   animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-content.wide {
+  max-width: 800px;
+}
+
 .modal-header {
   display: flex;
   justify-content: space-between;
@@ -1842,6 +1857,7 @@ button.secondary:active:not(:disabled) {
   .reports-controls,
   .quick-metrics-stack,
   .overview-grid,
+  .mobile-bottom-nav,
   .table-panel:not(.report-table-panel) {
     display: none !important;
   }
@@ -1914,8 +1930,10 @@ button.secondary:active:not(:disabled) {
 
   th, td {
     border: 1px solid #cbd5e1 !important;
-    padding: 10px 12px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
     white-space: normal !important;
+    word-break: break-all !important;
   }
 
   th {
@@ -1923,9 +1941,115 @@ button.secondary:active:not(:disabled) {
     color: #0f172a !important;
   }
 
+  table button,
+  table a,
+  table span {
+    white-space: normal !important;
+    word-break: break-all !important;
+    font-size: 11px !important;
+    text-align: left !important;
+  }
+
   @page {
-    size: A4 portrait;
-    margin: 15mm;
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  body {
+    padding: 15mm 20mm !important;
+  }
+
+  /* --- BATCH DETAILS MODAL PRINT STYLES --- */
+  body.printing-batch-details .workspace-scrollable {
+    display: none !important;
+  }
+
+  body.printing-batch-details .modal-overlay {
+    display: flex !important;
+    position: static !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    z-index: auto !important;
+  }
+
+  body.printing-batch-details .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    animation: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+  }
+
+  body.printing-batch-details .modal-header {
+    border-bottom: 2px solid var(--border-color) !important;
+    padding: 10px 0 !important;
+    background: transparent !important;
+  }
+
+  body.printing-batch-details .modal-header h2 {
+    font-size: 20px !important;
+    color: black !important;
+  }
+
+  body.printing-batch-details .modal-close-btn {
+    display: none !important;
+  }
+
+  body.printing-batch-details .modal-body {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 20px 0 !important;
+  }
+
+  /* Force standard tabular layout for tables during print to prevent mobile card conversion */
+  .table-wrapper.mobile-cards thead {
+    display: table-header-group !important;
+  }
+
+  .table-wrapper.mobile-cards tbody {
+    display: table-row-group !important;
+    padding: 0 !important;
+    gap: 0 !important;
+    height: auto !important;
+  }
+
+  .table-wrapper.mobile-cards tr {
+    display: table-row !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .table-wrapper.mobile-cards td {
+    display: table-cell !important;
+    padding: 10px 12px !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+    text-align: left !important;
+  }
+
+  /* Hide mobile data label prefixes */
+  .table-wrapper.mobile-cards td::before {
+    display: none !important;
+    content: none !important;
+  }
+
+  .table-wrapper.mobile-cards td:first-child,
+  .table-wrapper.mobile-cards td:last-child {
+    padding: 10px 12px !important;
+  }
+
+  .table-wrapper {
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    overflow: visible !important;
   }
 }
 
@@ -1958,7 +2082,7 @@ button.secondary:active:not(:disabled) {
 }
 
 /* Adjust layout paddings slightly for height differences */
-.lang-my input,
+.lang-my input:not([type="radio"]):not([type="checkbox"]),
 .lang-my select,
 .lang-my textarea,
 .lang-my button.primary,
@@ -2274,7 +2398,7 @@ button.secondary:active:not(:disabled) {
     margin-bottom: 4px !important;
   }
 
-  .form-group input,
+  .form-group input:not([type="radio"]):not([type="checkbox"]),
   .form-group select,
   .form-group textarea {
     padding: 10px 12px !important;
@@ -2865,6 +2989,34 @@ button.secondary:active:not(:disabled) {
     min-height: 320px;
   }
 }
+
+/* --- Searchable Select Component Styles --- */
+.searchable-select-trigger:focus,
+.searchable-select-container.open .searchable-select-trigger {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 4px var(--accent-glow) !important;
+}
+
+.searchable-select-dropdown input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 4px var(--accent-glow) !important;
+}
+
+.filter-group .searchable-select-trigger {
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+  border-radius: 8px !important;
+  min-height: 33px !important;
+  width: 220px !important;
+  background-color: var(--bg-primary) !important;
+}
+
+.filter-group .searchable-select-dropdown {
+  width: 220px !important;
+}
+
+
 
 
 
