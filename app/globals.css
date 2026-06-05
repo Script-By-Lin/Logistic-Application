@@ -1432,7 +1432,7 @@ td.remarks-col, td.details-col {
   
   .pane-column,
   .table-panel {
-    padding: 16px 20px;
+    padding: 16px 20px 80px;
   }
   
   .filter-bar {

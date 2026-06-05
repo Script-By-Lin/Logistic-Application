@@ -6335,18 +6335,18 @@ export default function InventoryApp() {
 
                       <div className="form-group">
                         <label htmlFor="production-pipe-type">{t.selectPipeModel}</label>
-                        <select
+                        <SearchableSelect
                           id="production-pipe-type"
                           disabled={user.role !== 'admin'}
-                          value={productionForm.pipeTypeId}
-                          onChange={(event) => setProductionForm({ ...productionForm, pipeTypeId: Number(event.target.value) })}
-                        >
-                          {pipeTypes.map((pipe) => (
-                            <option key={pipe.id} value={pipe.id}>
-                              {pipe.name} ({formatCurrency(pipe.unit_price)} / unit)
-                            </option>
-                          ))}
-                        </select>
+                          value={String(productionForm.pipeTypeId)}
+                          onChange={(val) => setProductionForm({ ...productionForm, pipeTypeId: Number(val) })}
+                          options={pipeTypes.map((pipe) => ({
+                            value: String(pipe.id),
+                            label: `${pipe.name} (${formatCurrency(pipe.unit_price)} / unit)`,
+                            shortLabel: pipe.name
+                          }))}
+                          language={language}
+                        />
                       </div>
 
                       <div className="form-group">
@@ -6908,18 +6908,18 @@ export default function InventoryApp() {
 
                       <div className="form-group">
                         <label htmlFor="edit-production-pipe-type">{t.selectPipeModel}</label>
-                        <select
+                        <SearchableSelect
                           id="edit-production-pipe-type"
                           disabled={user.role !== 'admin'}
-                          value={editProductionForm.pipeTypeId}
-                          onChange={(event) => setEditProductionForm({ ...editProductionForm, pipeTypeId: Number(event.target.value) })}
-                        >
-                          {pipeTypes.map((pipe) => (
-                            <option key={pipe.id} value={pipe.id}>
-                              {pipe.name} ({formatCurrency(pipe.unit_price)} / unit)
-                            </option>
-                          ))}
-                        </select>
+                          value={String(editProductionForm.pipeTypeId)}
+                          onChange={(val) => setEditProductionForm({ ...editProductionForm, pipeTypeId: Number(val) })}
+                          options={pipeTypes.map((pipe) => ({
+                            value: String(pipe.id),
+                            label: `${pipe.name} (${formatCurrency(pipe.unit_price)} / unit)`,
+                            shortLabel: pipe.name
+                          }))}
+                          language={language}
+                        />
                       </div>
 
                       <div className="form-group">
