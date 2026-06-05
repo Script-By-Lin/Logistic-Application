@@ -1432,7 +1432,7 @@ td.remarks-col, td.details-col {
   
   .pane-column,
   .table-panel {
-    padding: 16px 20px 80px;
+    padding: 16px 20px;
   }
   
   .filter-bar {
@@ -3016,8 +3016,9 @@ button.secondary:active:not(:disabled) {
   width: 220px !important;
 }
 
-
-
-
-
-
+@media (max-width: 768px) {
+  .pane-column,
+  .table-panel {
+    padding-bottom: 80px !important;
+  }
+}
