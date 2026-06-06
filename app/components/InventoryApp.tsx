@@ -6885,7 +6885,7 @@ export default function InventoryApp() {
                   >
                     {isBackupCreating 
                       ? (language === 'my' ? 'သိမ်းဆည်းနေပါသည်...' : 'Creating Snapshot...') 
-                      : (language === 'my' ? 'အသစ်သိမ်းဆည်းမည်' : 'Create Database Snapshot')}
+                      : (language === 'my' ? 'အသစ်သိမ်းဆည်းမည်' : 'Backup Database ')}
                   </button>
                   <label 
                     className="action-btn edit" 
@@ -6960,7 +6960,7 @@ export default function InventoryApp() {
                   </label>
 
                   {autoBackupEnabled && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' , textWrap: 'nowrap'}}>
                       <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                         {language === 'my' ? 'ရက်အပိုင်းအခြား:' : 'Backup Every:'}
                       </span>
