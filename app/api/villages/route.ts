@@ -128,3 +128,89 @@ export const DELETE = withAuth(
   },
   { requireAdmin: true }
 );
+
+export const PUT = withAuth(
+  async (req, { user }) => {
+    const body = await req.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
+    }
+
+    const { id, name } = body;
+    if (!id || isNaN(Number(id))) {
+      return NextResponse.json({ error: 'A valid numeric village ID is required.' }, { status: 400 });
+    }
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return NextResponse.json({ error: 'Village name is required and must be a string.' }, { status: 400 });
+    }
+
+    const villageId = Number(id);
+    const newName = name.trim();
+
+    // 1. Fetch current village details
+    const { data: village, error: fetchErr } = await supabase!
+      .from('villages')
+      .select('name')
+      .eq('id', villageId)
+      .maybeSingle();
+
+    if (fetchErr) {
+      throw fetchErr;
+    }
+
+    if (!village) {
+      return NextResponse.json({ error: 'Village not found.' }, { status: 404 });
+    }
+
+    const oldName = village.name;
+
+    if (oldName === newName) {
+      return NextResponse.json({ success: true, village: { id: villageId, name: newName } });
+    }
+
+    // 2. Check if new name already exists
+    const { data: existingVillage, error: checkErr } = await supabase!
+      .from('villages')
+      .select('id')
+      .eq('name', newName)
+      .maybeSingle();
+
+    if (checkErr) {
+      throw checkErr;
+    }
+
+    if (existingVillage) {
+      return NextResponse.json({ error: 'An outpost with this name already exists.' }, { status: 400 });
+    }
+
+    // 3. Update villages table
+    const { error: updateErr } = await supabase!
+      .from('villages')
+      .update({ name: newName })
+      .eq('id', villageId);
+
+    if (updateErr) {
+      throw updateErr;
+    }
+
+    // 4. Cascade name changes to related transaction logs
+    const [distUpdate, returnsUpdate, fundingUpdate] = await Promise.all([
+      supabase!.from('distributions').update({ village: newName }).eq('village', oldName),
+      supabase!.from('returns').update({ village: newName }).eq('village', oldName),
+      supabase!.from('village_funding').update({ village: newName }).eq('village', oldName),
+    ]);
+
+    if (distUpdate.error) console.error('Failed to update distributions for renamed village:', distUpdate.error);
+    if (returnsUpdate.error) console.error('Failed to update returns for renamed village:', returnsUpdate.error);
+    if (fundingUpdate.error) console.error('Failed to update village_funding for renamed village:', fundingUpdate.error);
+
+    // 5. Invalidate caches and log
+    invalidateCache('villages');
+    invalidateCache('audit_logs');
+    await logAction(user.email, 'UPDATE_VILLAGE', `Renamed outpost node from "${oldName}" to "${newName}"`);
+
+    return NextResponse.json({ success: true, village: { id: villageId, name: newName } });
+  },
+  { requireAdmin: true }
+);
+

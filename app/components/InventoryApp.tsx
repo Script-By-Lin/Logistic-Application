@@ -107,7 +107,7 @@ const TRANSLATIONS = {
     filteredReturnsLogs: 'Filtered Returns Logs',
     listOfIncomingReturns: 'List of incoming returns from outpost centers.',
     noReturnLogsMatch: 'No return logs match your current filters.',
-    centralPipesCatalog: 'Central Pipes Catalog',
+    centralPipesCatalog: 'Pipe Models',
     configureStandardRates: 'Configure standard model rates or register and delete pipe models.',
     modelName: 'Model Name',
     currentPrice: 'Current Price',
@@ -120,7 +120,7 @@ const TRANSLATIONS = {
     pipeModelName: 'Pipe Model Name',
     basePricePerUnit: 'Base Price per Unit (MMK)',
     addCatalogModel: 'Add Catalog Model',
-    villageOutpostRegistry: 'Village Outpost Registry',
+    villageOutpostRegistry: 'Village Names',
     manageActiveNodes: 'Manage active nodes and outposts inside your distribution network.',
     outpostNode: 'Outpost Node',
     deleteOutpost: 'Delete Outpost',
@@ -143,7 +143,7 @@ const TRANSLATIONS = {
     addReturn: 'Record Return',
     addCatalogItem: 'Add Catalog Item',
     newPipeModel: 'New Pipe Model',
-    newOutpostNode: 'New Outpost Node',
+    newOutpostNode: 'Add Village Name',
     editPrice: 'Edit Price',
     updatePrice: 'Update Price',
     savePrice: 'Save Price',
@@ -541,7 +541,7 @@ export default function InventoryApp() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | null>(null);
+  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | 'edit_village' | null>(null);
 
   useEffect(() => {
     if (activeModal === null) {
@@ -602,6 +602,52 @@ export default function InventoryApp() {
     setEditingPipe(pipe);
     setEditPriceValue(pipe.unit_price);
     setActiveModal('edit_price');
+  };
+
+  const openEditVillageModal = (village: Village) => {
+    setEditingVillage(village);
+    setEditVillageName(village.name);
+    setActiveModal('edit_village');
+  };
+
+  const handleVillageEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingVillage || !editVillageName.trim()) return;
+    const trimmedName = editVillageName.trim();
+    if (trimmedName === editingVillage.name) {
+      setActiveModal(null);
+      setEditingVillage(null);
+      return;
+    }
+
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/villages', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingVillage.id, name: trimmedName }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update village name.');
+      }
+      setMessage(language === 'my' ? 'ကျေးရွာအမည် ပြင်ဆင်ပြီးပါပြီ။' : 'Village name successfully updated.');
+      
+      // Refresh villages list and other references
+      await Promise.all([
+        loadVillages(),
+        loadData(),
+      ]);
+
+      setActiveModal(null);
+      setEditingVillage(null);
+    } catch (err: any) {
+      console.error(err);
+      alert(err.message || 'Error updating village.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const openEditProductionModal = (prod: ProductionRecord) => {
@@ -862,6 +908,11 @@ export default function InventoryApp() {
   const [backupIntervalDays, setBackupIntervalDays] = useState(15);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
 
+  // --- Catalog Settings Sub-Tabs & Editing States ---
+  const [catalogSubTab, setCatalogSubTab] = useState<'pipes' | 'villages'>('pipes');
+  const [editingVillage, setEditingVillage] = useState<Village | null>(null);
+  const [editVillageName, setEditVillageName] = useState<string>('');
+
   // --- Pagination State & Helpers ---
   const [pages, setPages] = useState<Record<string, number>>({});
   const [pageSizes, setPageSizes] = useState<Record<string, number>>({});
@@ -979,7 +1030,7 @@ export default function InventoryApp() {
               >
                 {language === 'my' ? 'ယခင်' : 'Prev'}
               </button>
-              {/* {pagesToShow.map((p, idx) => {
+              {pagesToShow.map((p, idx) => {
                 if (p === '...') {
                   return (
                     <span
@@ -1009,7 +1060,7 @@ export default function InventoryApp() {
                     {p}
                   </button>
                 );
-              })} */}
+              })}
               <button
                 type="button"
                 className="pagination-btn"
@@ -6517,130 +6568,206 @@ export default function InventoryApp() {
 
           {/* DYNAMIC CATALOG Settings TAB RENDER */}
           {activeTab === 'Catalog Settings' && (
-            <div className="split-pane-wrapper">
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
               
-              {/* Left Column: Pipe Models CRUD */}
-              <div className="table-panel">
-                <h2>{t.centralPipesCatalog}</h2>
-                <p style={{ marginBottom: '24px' }}>{t.configureStandardRates}</p>
+              {/* Segmented Control for Mobile */}
+              <div className="mobile-only-catalog-tabs" style={{ padding: '0 20px 16px' , marginTop: '5px' }}>
+                <div className="segmented-control" style={{
+                  display: 'flex',
+                  backgroundColor: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  padding: '4px',
+                  width: '100%'
+                }}>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${catalogSubTab === 'pipes' ? 'active' : ''}`}
+                    onClick={() => setCatalogSubTab('pipes')}
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      border: 'none',
+                      backgroundColor: catalogSubTab === 'pipes' ? 'var(--bg-primary)' : 'transparent',
+                      color: catalogSubTab === 'pipes' ? 'var(--accent)' : 'var(--text-secondary)',
+                      boxShadow: catalogSubTab === 'pipes' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span>🛠️</span>
+                    <span>{t.centralPipesCatalog}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={`segmented-btn ${catalogSubTab === 'villages' ? 'active' : ''}`}
+                    onClick={() => setCatalogSubTab('villages')}
+                    style={{
+                      flex: 1,
+                      padding: '10px 16px',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      border: 'none',
+                      backgroundColor: catalogSubTab === 'villages' ? 'var(--bg-primary)' : 'transparent',
+                      color: catalogSubTab === 'villages' ? 'var(--accent)' : 'var(--text-secondary)',
+                      boxShadow: catalogSubTab === 'villages' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <span>🏡</span>
+                    <span>{t.villageOutpostRegistry}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="split-pane-wrapper catalog-split-pane">
                 
-                <div className="table-wrapper mobile-cards">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t.modelName}</th>
-                        <th>{t.currentPrice}</th>
-                        <th>{t.action}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {isDataLoading ? (
-                        renderTableSkeleton(3)
-                      ) : pipeTypes.length === 0 ? (
+                {/* Left Column: Pipe Models CRUD */}
+                <div className={`table-panel ${catalogSubTab === 'pipes' ? 'active-panel' : 'inactive-panel'}`}>
+                  <h2>{t.centralPipesCatalog}</h2>
+                  <p style={{ marginBottom: '24px' }}>{t.configureStandardRates}</p>
+                  
+                  <div className="table-wrapper mobile-cards">
+                    <table>
+                      <thead>
                         <tr>
-                          <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                            No pipe models registered in the catalog.
-                          </td>
+                          <th>{t.modelName}</th>
+                          <th>{t.currentPrice}</th>
+                          <th>{t.action}</th>
                         </tr>
-                      ) : (
-                        (isPrinting ? pipeTypes : pipeTypes.slice((getPage('catalogPipes') - 1) * getPageSize('catalogPipes'), getPage('catalogPipes') * getPageSize('catalogPipes'))).map((pipe) => (
-                          <tr key={pipe.id}>
-                            <td>{pipe.name}</td>
-                            <td>
-                              <span className="badge badge-success">
-                                {formatCurrency(pipe.unit_price)}
-                              </span>
+                      </thead>
+                      <tbody>
+                        {isDataLoading ? (
+                          renderTableSkeleton(3)
+                        ) : pipeTypes.length === 0 ? (
+                          <tr>
+                            <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                              No pipe models registered in the catalog.
                             </td>
-                            <td>
-                              <div style={{ display: 'flex', gap: '8px' }}>
+                          </tr>
+                        ) : (
+                          (isPrinting ? pipeTypes : pipeTypes.slice((getPage('catalogPipes') - 1) * getPageSize('catalogPipes'), getPage('catalogPipes') * getPageSize('catalogPipes'))).map((pipe) => (
+                            <tr key={pipe.id}>
+                              <td>{pipe.name}</td>
+                              <td>
+                                <span className="badge badge-success">
+                                  {formatCurrency(pipe.unit_price)}
+                                </span>
+                              </td>
+                              <td>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  {user.role === 'admin' ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="action-btn edit"
+                                        disabled={isSubmitting}
+                                        onClick={() => openEditPriceModal(pipe)}
+                                      >
+                                         {t.editPrice}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="action-btn delete"
+                                        disabled={isSubmitting}
+                                        onClick={() => handleDeletePipeType(pipe.id)}
+                                      >
+                                        {t.delete}
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t.locked}</span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <PaginationControls
+                    tableKey="catalogPipes"
+                    totalItems={pipeTypes.length}
+                  />
+                </div>
+
+                {/* Right Column: Outpost Registry CRUD */}
+                <div className={`table-panel ${catalogSubTab === 'villages' ? 'active-panel' : 'inactive-panel'}`}>
+                  <h2>{t.villageOutpostRegistry}</h2>
+                  <p style={{ marginBottom: '24px' }}>{t.manageActiveNodes}</p>
+
+                  <div className="table-wrapper mobile-cards">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{t.outpostNode}</th>
+                          <th>{t.action}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {isDataLoading ? (
+                          renderTableSkeleton(2)
+                        ) : villages.length === 0 ? (
+                          <tr>
+                            <td colSpan={2} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                              {t.noVillageNodesRegistered}
+                            </td>
+                          </tr>
+                        ) : (
+                          (isPrinting ? villages : villages.slice((getPage('catalogVillages') - 1) * getPageSize('catalogVillages'), getPage('catalogVillages') * getPageSize('catalogVillages'))).map((v) => (
+                            <tr key={v.id}>
+                              <td>{v.name}</td>
+                              <td>
                                 {user.role === 'admin' ? (
-                                  <>
+                                  <div style={{ display: 'flex', gap: '8px' }}>
                                     <button
                                       type="button"
                                       className="action-btn edit"
                                       disabled={isSubmitting}
-                                      onClick={() => openEditPriceModal(pipe)}
+                                      onClick={() => openEditVillageModal(v)}
                                     >
-                                       {t.editPrice}
+                                      {language === 'my' ? 'ပြင်ဆင်ရန်' : 'Edit'}
                                     </button>
                                     <button
                                       type="button"
                                       className="action-btn delete"
                                       disabled={isSubmitting}
-                                      onClick={() => handleDeletePipeType(pipe.id)}
+                                      onClick={() => handleDeleteVillage(v.id)}
                                     >
                                       {t.delete}
                                     </button>
-                                  </>
+                                  </div>
                                 ) : (
                                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t.locked}</span>
                                 )}
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <PaginationControls
+                    tableKey="catalogVillages"
+                    totalItems={villages.length}
+                  />
                 </div>
-                <PaginationControls
-                  tableKey="catalogPipes"
-                  totalItems={pipeTypes.length}
-                />
+
               </div>
-
-              {/* Right Column: Outpost Registry CRUD */}
-              <div className="table-panel">
-                <h2>{t.villageOutpostRegistry}</h2>
-                <p style={{ marginBottom: '24px' }}>{t.manageActiveNodes}</p>
-
-                <div className="table-wrapper mobile-cards">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{t.outpostNode}</th>
-                        <th>{t.action}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {isDataLoading ? (
-                        renderTableSkeleton(2)
-                      ) : villages.length === 0 ? (
-                        <tr>
-                          <td colSpan={2} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                            {t.noVillageNodesRegistered}
-                          </td>
-                        </tr>
-                      ) : (
-                        (isPrinting ? villages : villages.slice((getPage('catalogVillages') - 1) * getPageSize('catalogVillages'), getPage('catalogVillages') * getPageSize('catalogVillages'))).map((v) => (
-                          <tr key={v.id}>
-                            <td>{v.name}</td>
-                            <td>
-                              {user.role === 'admin' ? (
-                                <button
-                                  type="button"
-                                  className="action-btn delete"
-                                  disabled={isSubmitting}
-                                  onClick={() => handleDeleteVillage(v.id)}
-                                >
-                                  {t.delete}
-                                </button>
-                              ) : (
-                                <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{t.locked}</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <PaginationControls
-                  tableKey="catalogVillages"
-                  totalItems={villages.length}
-                />
-              </div>
-
             </div>
           )}
 
@@ -6962,6 +7089,7 @@ export default function InventoryApp() {
                   {activeModal === 'edit_distribution' && t.editDistributionTitle}
                   {activeModal === 'edit_return' && t.editReturnTitle}
                   {activeModal === 'edit_funding' && (language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှု ပြင်ဆင်ရန်' : 'Edit Cash Transaction')}
+                  {activeModal === 'edit_village' && (language === 'my' ? 'ကျေးရွာ အမည်ပြင်ဆင်ရန်' : 'Edit Outpost Village Name')}
                 </h2>
                 <button 
                   type="button" 
@@ -7504,6 +7632,36 @@ export default function InventoryApp() {
                     </div>
                     <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting}>
                       {t.addOutpostNode}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'edit_village' && editingVillage && (
+                  <form onSubmit={handleVillageEditSubmit}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {language === 'my' ? `"${editingVillage.name}" ၏ အမည်ကို ပြင်ဆင်ရန် အောက်တွင် အသစ်ဖြည့်သွင်းပါ။` : `Update the name of outpost village "${editingVillage.name}".`}
+                    </p>
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                      <div className="form-group">
+                        <label>{language === 'my' ? 'လက်ရှိအမည်' : 'Current Name'}</label>
+                        <div style={{ padding: '12px 16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: '500' }}>
+                          {editingVillage.name}
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="edit-village-name">{language === 'my' ? 'အမည်သစ်' : 'New Name'}</label>
+                        <input
+                          id="edit-village-name"
+                          type="text"
+                          required
+                          placeholder="e.g. Village A Edited"
+                          value={editVillageName}
+                          onChange={(e) => setEditVillageName(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting}>
+                      {language === 'my' ? 'သိမ်းဆည်းမည်' : 'Save Changes'}
                     </button>
                   </form>
                 )}
