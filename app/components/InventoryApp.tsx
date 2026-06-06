@@ -499,11 +499,28 @@ export default function InventoryApp() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      if (window.deferredPwaPrompt) {
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+      const isIosChrome = isIos && /CriOS/i.test(navigator.userAgent);
+      const isIosFirefox = isIos && /FxiOS/i.test(navigator.userAgent);
+
+      // Only set installable initially if deferredPwaPrompt exists and not on iOS Chrome/Firefox,
+      // or if it's iOS Safari (not standalone, and not Chrome/Firefox on iOS)
+      if (window.deferredPwaPrompt && !isIosChrome && !isIosFirefox) {
+        setIsInstallable(true);
+      } else if (isIos && !isStandalone && !isIosChrome && !isIosFirefox) {
         setIsInstallable(true);
       }
       
-      const handleInstallReady = () => setIsInstallable(true);
+      const handleInstallReady = () => {
+        const currentIsIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+        const currentIsIosChrome = currentIsIos && /CriOS/i.test(navigator.userAgent);
+        const currentIsIosFirefox = currentIsIos && /FxiOS/i.test(navigator.userAgent);
+        if (!currentIsIosChrome && !currentIsIosFirefox) {
+          setIsInstallable(true);
+        }
+      };
+      
       const handleInstallSuccess = () => setIsInstallable(false);
       
       const handleNetworkStatus = (e: any) => {

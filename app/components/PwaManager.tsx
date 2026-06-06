@@ -50,8 +50,13 @@ export default function PwaManager() {
       e.preventDefault();
       // Store event globally for other components to access
       window.deferredPwaPrompt = e;
-      // Dispatch event to notify components that the app is installable
-      window.dispatchEvent(new Event('pwa-install-ready'));
+      // Dispatch event to notify components that the app is installable (excluding iOS Chrome/Firefox)
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      const isIosChrome = isIos && /CriOS/i.test(navigator.userAgent);
+      const isIosFirefox = isIos && /FxiOS/i.test(navigator.userAgent);
+      if (!isIosChrome && !isIosFirefox) {
+        window.dispatchEvent(new Event('pwa-install-ready'));
+      }
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -74,19 +79,41 @@ export default function PwaManager() {
         // Fallback or iOS detection
         const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+        const isIosChrome = isIos && /CriOS/i.test(navigator.userAgent);
+        const isIosFirefox = isIos && /FxiOS/i.test(navigator.userAgent);
         
         if (isIos && !isStandalone) {
-          setShowIosGuide(true);
+          if (isIosChrome || isIosFirefox) {
+            alert('PWA installation is not supported on Chrome/Firefox for iOS. Please open this page in Safari to install the app.');
+          } else {
+            setShowIosGuide(true);
+          }
         } else {
           alert('To install this app, search for the Install option in your browser settings menu (usually top right three dots).');
         }
       }
     };
 
+    // 4. iOS Safari Auto-Detection
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || (navigator as any).standalone;
+    const isIosChrome = isIos && /CriOS/i.test(navigator.userAgent);
+    const isIosFirefox = isIos && /FxiOS/i.test(navigator.userAgent);
+
+    let iosTimer: NodeJS.Timeout;
+    if (isIos && !isStandalone && !isIosChrome && !isIosFirefox) {
+      iosTimer = setTimeout(() => {
+        window.dispatchEvent(new Event('pwa-install-ready'));
+      }, 500);
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      if (iosTimer) {
+        clearTimeout(iosTimer);
+      }
     };
   }, []);
 
