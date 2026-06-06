@@ -220,6 +220,10 @@ const TRANSLATIONS = {
     batchFinanceRatio: 'Batch-Specific Production & Re-buy Price Ratio',
     rebuyRatio: 'Re-buy Price Ratio',
     batchId: 'Batch ID',
+    installApp: 'Install Mobile App',
+    appInstalled: 'Installed Successfully',
+    isOffline: 'Offline Mode',
+    isOnline: 'Online',
   },
   my: {
     overview: 'ခြုံငုံသုံးသပ်ချက်',
@@ -409,6 +413,10 @@ const TRANSLATIONS = {
     batchFinanceRatio: 'ထုတ်လုပ်မှုအစုလိုက် (Batch) ထုတ်လုပ်မှုစျေးနှုန်းနှင့် ပြန်လည်ဝယ်ယူမှုစျေးနှုန်းအချိုး',
     rebuyRatio: 'ပြန်လည်ဝယ်ယူမှု စျေးနှုန်းအချိုး',
     batchId: 'အသုတ်နံပါတ် (Batch ID)',
+    installApp: 'မိုဘိုင်းလ်အပ်ပ် ထည့်သွင်းရန်',
+    appInstalled: 'ထည့်သွင်းမှု အောင်မြင်သည်',
+    isOffline: 'အော့ဖ်လိုင်းမုဒ်',
+    isOnline: 'အွန်လိုင်း',
   }
 };
 
@@ -485,6 +493,36 @@ export default function InventoryApp() {
     window.addEventListener('click', handleOutsideClick);
     return () => window.removeEventListener('click', handleOutsideClick);
   }, [isProfileOpen]);
+
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.deferredPwaPrompt) {
+        setIsInstallable(true);
+      }
+      
+      const handleInstallReady = () => setIsInstallable(true);
+      const handleInstallSuccess = () => setIsInstallable(false);
+      
+      const handleNetworkStatus = (e: any) => {
+        setIsOffline(!e.detail.online);
+      };
+
+      window.addEventListener('pwa-install-ready', handleInstallReady);
+      window.addEventListener('pwa-installed-success', handleInstallSuccess);
+      window.addEventListener('pwa-network-status', handleNetworkStatus as EventListener);
+
+      setIsOffline(!navigator.onLine);
+
+      return () => {
+        window.removeEventListener('pwa-install-ready', handleInstallReady);
+        window.removeEventListener('pwa-installed-success', handleInstallSuccess);
+        window.removeEventListener('pwa-network-status', handleNetworkStatus as EventListener);
+      };
+    }
+  }, []);
 
   // --- Inventory, Outpost & Log Data States ---
   const [pipeTypes, setPipeTypes] = useState<PipeType[]>([]);
@@ -3935,6 +3973,31 @@ export default function InventoryApp() {
               </button>
             );
           })}
+          {isInstallable && (
+            <button
+              type="button"
+              className="sidebar-link install-sidebar-btn"
+              style={{
+                marginTop: '16px',
+                background: 'linear-gradient(135deg, var(--accent, #4f46e5) 0%, #7c3aed 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '12px',
+                padding: '12px 16px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                fontWeight: '600',
+                boxShadow: '0 4px 12px rgba(124, 58, 237, 0.25)',
+                width: 'calc(100% - 24px)',
+                margin: '16px 12px 0 12px',
+              }}
+              onClick={() => window.promptPwaInstall()}
+            >
+              <span style={{ marginRight: '10px', fontSize: '1.1rem' }}>📱</span>
+              <span className="link-text">{t.installApp}</span>
+            </button>
+          )}
         </nav>
 
         <div className="sidebar-footer">
@@ -4027,6 +4090,38 @@ export default function InventoryApp() {
                     </button>
                   </div>
                 </div>
+                {isInstallable && (
+                  <>
+                    <div className="dropdown-divider"></div>
+                    <button 
+                      type="button" 
+                      className="dropdown-install-btn" 
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        window.promptPwaInstall();
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        width: '100%',
+                        padding: '10px 14px',
+                        background: 'var(--accent-light, rgba(79, 70, 229, 0.08))',
+                        color: 'var(--accent, #4f46e5)',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.82rem',
+                        transition: 'all 0.2s ease',
+                        boxSizing: 'border-box'
+                      }}
+                    >
+                      <span>📱</span>
+                      <span>{t.installApp}</span>
+                    </button>
+                  </>
+                )}
                 
                 <div className="dropdown-divider"></div>
                 <button type="button" className="dropdown-logout-btn" onClick={handleLogout}>
@@ -4042,8 +4137,12 @@ export default function InventoryApp() {
       <section className="dashboard-content">
         <div className="dashboard-header">
           <div className="header-left-side">
-            <div className="header-title-row">
+            <div className="header-title-row" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <h1>{PAGE_TITLES[activeTab]?.[language] || activeTab}</h1>
+              <span className={`network-badge ${isOffline ? 'offline' : 'online'}`}>
+                <span className="dot"></span>
+                <span className="text">{isOffline ? t.isOffline : t.isOnline}</span>
+              </span>
             </div>
             {PAGE_SUBHEADINGS[activeTab]?.[language] && (
               <p className="subheading">
