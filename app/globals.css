@@ -3022,3 +3022,30 @@ button.secondary:active:not(:disabled) {
     padding-bottom: 80px !important;
   }
 }
+
+/* Specific Date Only Label Custom Responsive Styles */
+@media (max-width: 768px) {
+  .specific-date-label {
+    height: auto !important;
+    margin: 4px 0 0 0 !important;
+    padding: 6px 12px !important;
+    background-color: var(--bg-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: 8px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: fit-content !important;
+    font-size: 0.8rem !important;
+    color: var(--text-primary) !important;
+  }
+  .specific-date-label input[type="checkbox"] {
+    width: 14px !important;
+    height: 14px !important;
+    min-height: 14px !important;
+  }
+  .filter-bar .filter-group:has(.specific-date-label) {
+    margin: 0 !important;
+    align-self: flex-start !important;
+  }
+}

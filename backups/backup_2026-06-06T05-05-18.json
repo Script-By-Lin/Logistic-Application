@@ -1,0 +1,3744 @@
+{
+  "timestamp": "2026-06-06T05:05:18.034Z",
+  "version": "1.0",
+  "data": {
+    "pipe_types": [
+      {
+        "id": 11,
+        "name": "0.16 4.2 60 100 WTM01",
+        "unit_price": 14500
+      },
+      {
+        "id": 12,
+        "name": "0.15 1.1/2\" 50 70 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 13,
+        "name": "110/2 2\" 50 100 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 14,
+        "name": "110/2 1.3/4\" 50 1510 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 15,
+        "name": "0.18 1.5/8\" 50 1552 BLL02",
+        "unit_price": 8000
+      },
+      {
+        "id": 16,
+        "name": "0.16 4.2 60 100 SWM01",
+        "unit_price": 14500
+      },
+      {
+        "id": 17,
+        "name": "0.15 4.2 50 1510 WTM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 18,
+        "name": "110/2 4.0 50 1510 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 19,
+        "name": "0.16 4.2 60 100 BLL02",
+        "unit_price": 14500
+      },
+      {
+        "id": 20,
+        "name": "110/2 3.5 50 1510 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 21,
+        "name": "0.15 3.8 50 1510 WTM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 22,
+        "name": "0.16 4.3 60 2400 SWM01",
+        "unit_price": 14500
+      },
+      {
+        "id": 23,
+        "name": "110/2 4.5 50 1510 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 24,
+        "name": "0.16 4.0 60 100 WTM01",
+        "unit_price": 14500
+      },
+      {
+        "id": 25,
+        "name": "0.15 4.2 50 1435 BLL02",
+        "unit_price": 8000
+      },
+      {
+        "id": 26,
+        "name": "110/2 4.5 50 1435 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 27,
+        "name": "0.18 4.5 50 1475 BLL01",
+        "unit_price": 8000
+      },
+      {
+        "id": 28,
+        "name": "110/2 4.5 50 1475 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 29,
+        "name": "110/2 4.5 50 1435 BLL02",
+        "unit_price": 8000
+      },
+      {
+        "id": 30,
+        "name": "110/2 4.2 50 1510 SWM01",
+        "unit_price": 8000
+      },
+      {
+        "id": 31,
+        "name": "110/2 5.5 50 100 SWM01",
+        "unit_price": 8000
+      }
+    ],
+    "villages": [
+      {
+        "id": 13,
+        "name": "ငပုတော"
+      },
+      {
+        "id": 14,
+        "name": "ပမ္မဝတီ"
+      },
+      {
+        "id": 15,
+        "name": "ခြံကွင်း"
+      },
+      {
+        "id": 16,
+        "name": "ရွှေဝါထွန်း"
+      },
+      {
+        "id": 18,
+        "name": "ငါးမြင်းချောင်း"
+      },
+      {
+        "id": 19,
+        "name": "ကြာကွင်း"
+      },
+      {
+        "id": 20,
+        "name": "သမ္မာဒေဝ"
+      },
+      {
+        "id": 21,
+        "name": "လိပ်ချောင်း"
+      },
+      {
+        "id": 22,
+        "name": "ငွေသောင်ယံ"
+      },
+      {
+        "id": 23,
+        "name": "ရွှေမြကွင်း"
+      },
+      {
+        "id": 24,
+        "name": "ကံသစ်"
+      },
+      {
+        "id": 25,
+        "name": "ကွယ်လွယ်"
+      },
+      {
+        "id": 26,
+        "name": "ဘုရားကြီးကုန်း"
+      },
+      {
+        "id": 29,
+        "name": "ထန်ပင်ကွင်း"
+      },
+      {
+        "id": 30,
+        "name": "ကိုညို"
+      },
+      {
+        "id": 32,
+        "name": "ဘိုးကလေး"
+      },
+      {
+        "id": 33,
+        "name": "‌ဖျာပုံ"
+      },
+      {
+        "id": 34,
+        "name": "ကွမ်းခြံကုန်း"
+      },
+      {
+        "id": 35,
+        "name": "ကျားချောင်း"
+      },
+      {
+        "id": 36,
+        "name": "ဖျန်ရေကျော်"
+      },
+      {
+        "id": 37,
+        "name": "မော်ကျွန်း"
+      },
+      {
+        "id": 38,
+        "name": "လပ္ပတ္တာ"
+      }
+    ],
+    "productions": [
+      {
+        "id": 31,
+        "date": "2026-06-04",
+        "pipe_type_id": 12,
+        "quantity": 44,
+        "batch_id": "2026-06-04-0.15-1.1/2\"-50-70-SWM01"
+      },
+      {
+        "id": 33,
+        "date": "2026-06-04",
+        "pipe_type_id": 25,
+        "quantity": 1,
+        "batch_id": "2026-06-04-0.15-4.2-50-1435-BLL02"
+      },
+      {
+        "id": 35,
+        "date": "2026-06-04",
+        "pipe_type_id": 24,
+        "quantity": 145,
+        "batch_id": "2026-06-04-0.16-4.0-60-100-WTM01"
+      },
+      {
+        "id": 36,
+        "date": "2026-06-04",
+        "pipe_type_id": 19,
+        "quantity": 2,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-BLL02"
+      },
+      {
+        "id": 38,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 301,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 39,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 408,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 40,
+        "date": "2026-06-04",
+        "pipe_type_id": 15,
+        "quantity": 27,
+        "batch_id": "2026-06-04-0.18-1.5/8\"-50-1552-BLL02"
+      },
+      {
+        "id": 41,
+        "date": "2026-06-04",
+        "pipe_type_id": 27,
+        "quantity": 1,
+        "batch_id": "2026-06-04-0.18-4.5-50-1475-BLL01"
+      },
+      {
+        "id": 42,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 455,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 43,
+        "date": "2026-06-04",
+        "pipe_type_id": 13,
+        "quantity": 11,
+        "batch_id": "2026-06-04-110/2-2\"-50-100-SWM01"
+      },
+      {
+        "id": 44,
+        "date": "2026-06-04",
+        "pipe_type_id": 20,
+        "quantity": 16,
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 45,
+        "date": "2026-06-04",
+        "pipe_type_id": 18,
+        "quantity": 100,
+        "batch_id": "2026-06-04-110/2-4.0-50-1510-SWM01"
+      },
+      {
+        "id": 46,
+        "date": "2026-06-04",
+        "pipe_type_id": 30,
+        "quantity": 350,
+        "batch_id": "2026-06-04-110/2-4.2-50-1510-SWM01"
+      },
+      {
+        "id": 47,
+        "date": "2026-06-04",
+        "pipe_type_id": 29,
+        "quantity": 1,
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-BLL02"
+      },
+      {
+        "id": 48,
+        "date": "2026-06-04",
+        "pipe_type_id": 26,
+        "quantity": 107,
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-SWM01"
+      },
+      {
+        "id": 49,
+        "date": "2026-06-04",
+        "pipe_type_id": 28,
+        "quantity": 2,
+        "batch_id": "2026-06-04-110/2-4.5-50-1475-SWM01"
+      },
+      {
+        "id": 34,
+        "date": "2026-06-04",
+        "pipe_type_id": 17,
+        "quantity": 25,
+        "batch_id": "2026-06-04-0.15-4.2-50-1510-WTM01"
+      },
+      {
+        "id": 32,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 600,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 37,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 281,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 50,
+        "date": "2026-06-04",
+        "pipe_type_id": 23,
+        "quantity": 354,
+        "batch_id": "2026-06-04-110/2-4.5-50-1510-SWM01"
+      },
+      {
+        "id": 51,
+        "date": "2026-06-04",
+        "pipe_type_id": 31,
+        "quantity": 128,
+        "batch_id": "2026-06-04-110/2-5.5-50-100-SWM01"
+      }
+    ],
+    "distributions": [
+      {
+        "id": 62,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 60,
+        "village": "ကံသစ်",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 86,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 135,
+        "village": "ငါးမြင်းချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 87,
+        "date": "2026-06-04",
+        "pipe_type_id": 18,
+        "quantity": 15,
+        "village": "ငါးမြင်းချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.0-50-1510-SWM01"
+      },
+      {
+        "id": 88,
+        "date": "2026-06-04",
+        "pipe_type_id": 23,
+        "quantity": 100,
+        "village": "ငါးမြင်းချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1510-SWM01"
+      },
+      {
+        "id": 89,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 70,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 90,
+        "date": "2026-06-04",
+        "pipe_type_id": 25,
+        "quantity": 1,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-4.2-50-1435-BLL02"
+      },
+      {
+        "id": 60,
+        "date": "2026-06-04",
+        "pipe_type_id": 12,
+        "quantity": 41,
+        "village": "ကံသစ်",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "4.6.2026 All Opening Stock",
+        "batch_id": "2026-06-04-0.15-1.1/2\"-50-70-SWM01"
+      },
+      {
+        "id": 91,
+        "date": "2026-06-04",
+        "pipe_type_id": 17,
+        "quantity": 3,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-4.2-50-1510-WTM01"
+      },
+      {
+        "id": 92,
+        "date": "2026-06-04",
+        "pipe_type_id": 24,
+        "quantity": 22,
+        "village": "ရွှေဝါထွန်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.0-60-100-WTM01"
+      },
+      {
+        "id": 93,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 50,
+        "village": "ရွှေဝါထွန်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 94,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 7,
+        "village": "ရွှေဝါထွန်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 61,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 8,
+        "village": "ကံသစ်",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 95,
+        "date": "2026-06-05",
+        "pipe_type_id": 11,
+        "quantity": 3,
+        "village": "ရွှေဝါထွန်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 86)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 65,
+        "date": "2026-06-04",
+        "pipe_type_id": 15,
+        "quantity": 20,
+        "village": "ဘုရားကြီးကုန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.18-1.5/8\"-50-1552-BLL02"
+      },
+      {
+        "id": 64,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 180,
+        "village": "ဘုရားကြီးကုန်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 66,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 40,
+        "village": "ကွယ်လွယ်",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 67,
+        "date": "2026-06-04",
+        "pipe_type_id": 12,
+        "quantity": 3,
+        "village": "လိပ်ချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-1.1/2\"-50-70-SWM01"
+      },
+      {
+        "id": 68,
+        "date": "2026-06-05",
+        "pipe_type_id": 12,
+        "quantity": 3,
+        "village": "လိပ်ချောင်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 79)",
+        "batch_id": "2026-06-04-0.15-1.1/2\"-50-70-SWM01"
+      },
+      {
+        "id": 69,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 40,
+        "village": "လိပ်ချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 70,
+        "date": "2026-06-04",
+        "pipe_type_id": 17,
+        "quantity": 14,
+        "village": "လိပ်ချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-4.2-50-1510-WTM01"
+      },
+      {
+        "id": 71,
+        "date": "2026-06-05",
+        "pipe_type_id": 17,
+        "quantity": 1,
+        "village": "လိပ်ချောင်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 80)",
+        "batch_id": "2026-06-04-0.15-4.2-50-1510-WTM01"
+      },
+      {
+        "id": 72,
+        "date": "2026-06-04",
+        "pipe_type_id": 19,
+        "quantity": 1,
+        "village": "လိပ်ချောင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-BLL02"
+      },
+      {
+        "id": 73,
+        "date": "2026-06-05",
+        "pipe_type_id": 19,
+        "quantity": 1,
+        "village": "လိပ်ချောင်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 81)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-BLL02"
+      },
+      {
+        "id": 74,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 11,
+        "village": "လိပ်ချောင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 75,
+        "date": "2026-06-05",
+        "pipe_type_id": 16,
+        "quantity": 2,
+        "village": "လိပ်ချောင်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 82)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 76,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 42,
+        "village": "လိပ်ချောင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 77,
+        "date": "2026-06-04",
+        "pipe_type_id": 15,
+        "quantity": 6,
+        "village": "လိပ်ချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.18-1.5/8\"-50-1552-BLL02"
+      },
+      {
+        "id": 78,
+        "date": "2026-06-04",
+        "pipe_type_id": 20,
+        "quantity": 2,
+        "village": "လိပ်ချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 79,
+        "date": "2026-06-05",
+        "pipe_type_id": 11,
+        "quantity": 4,
+        "village": "လိပ်ချောင်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 83)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 80,
+        "date": "2026-06-05",
+        "pipe_type_id": 20,
+        "quantity": 2,
+        "village": "လိပ်ချောင်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 84)",
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 81,
+        "date": "2026-06-04",
+        "pipe_type_id": 18,
+        "quantity": 27,
+        "village": "လိပ်ချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.0-50-1510-SWM01"
+      },
+      {
+        "id": 82,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 45,
+        "village": "ငါးမြင်းချောင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 83,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 70,
+        "village": "ငါးမြင်းချောင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 84,
+        "date": "2026-06-04",
+        "pipe_type_id": 15,
+        "quantity": 1,
+        "village": "ငါးမြင်းချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.18-1.5/8\"-50-1552-BLL02"
+      },
+      {
+        "id": 85,
+        "date": "2026-06-05",
+        "pipe_type_id": 15,
+        "quantity": 1,
+        "village": "ငါးမြင်းချောင်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 85)",
+        "batch_id": "2026-06-04-0.18-1.5/8\"-50-1552-BLL02"
+      },
+      {
+        "id": 96,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 20,
+        "village": "ရွှေဝါထွန်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 97,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 50,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 98,
+        "date": "2026-06-04",
+        "pipe_type_id": 20,
+        "quantity": 1,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 99,
+        "date": "2026-06-04",
+        "pipe_type_id": 18,
+        "quantity": 40,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.0-50-1510-SWM01"
+      },
+      {
+        "id": 101,
+        "date": "2026-06-04",
+        "pipe_type_id": 23,
+        "quantity": 46,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1510-SWM01"
+      },
+      {
+        "id": 102,
+        "date": "2026-06-04",
+        "pipe_type_id": 19,
+        "quantity": 1,
+        "village": "ငွေသောင်ယံ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-BLL02"
+      },
+      {
+        "id": 103,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 55,
+        "village": "ငွေသောင်ယံ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 104,
+        "date": "2026-06-05",
+        "pipe_type_id": 20,
+        "quantity": 1,
+        "village": "ရွှေဝါထွန်း",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 87)",
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 105,
+        "date": "2026-06-05",
+        "pipe_type_id": 16,
+        "quantity": 2,
+        "village": "ငွေသောင်ယံ",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 89)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 106,
+        "date": "2026-06-05",
+        "pipe_type_id": 19,
+        "quantity": 1,
+        "village": "ငွေသောင်ယံ",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 88)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-BLL02"
+      },
+      {
+        "id": 107,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 38,
+        "village": "ငွေသောင်ယံ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 108,
+        "date": "2026-06-04",
+        "pipe_type_id": 27,
+        "quantity": 1,
+        "village": "ငွေသောင်ယံ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.18-4.5-50-1475-BLL01"
+      },
+      {
+        "id": 109,
+        "date": "2026-06-05",
+        "pipe_type_id": 27,
+        "quantity": 1,
+        "village": "ငွေသောင်ယံ",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 90)",
+        "batch_id": "2026-06-04-0.18-4.5-50-1475-BLL01"
+      },
+      {
+        "id": 63,
+        "date": "2026-06-04",
+        "pipe_type_id": 13,
+        "quantity": 11,
+        "village": "ကံသစ်",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-2\"-50-100-SWM01"
+      },
+      {
+        "id": 110,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 27,
+        "village": "ငွေသောင်ယံ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 111,
+        "date": "2026-06-04",
+        "pipe_type_id": 29,
+        "quantity": 1,
+        "village": "ငွေသောင်ယံ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-BLL02"
+      },
+      {
+        "id": 112,
+        "date": "2026-06-04",
+        "pipe_type_id": 28,
+        "quantity": 2,
+        "village": "ငွေသောင်ယံ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1475-SWM01"
+      },
+      {
+        "id": 113,
+        "date": "2026-06-05",
+        "pipe_type_id": 29,
+        "quantity": 1,
+        "village": "ငွေသောင်ယံ",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 91)",
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-BLL02"
+      },
+      {
+        "id": 114,
+        "date": "2026-06-04",
+        "pipe_type_id": 23,
+        "quantity": 78,
+        "village": "ငွေသောင်ယံ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1510-SWM01"
+      },
+      {
+        "id": 115,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 80,
+        "village": "ပမ္မဝတီ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 116,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 3,
+        "village": "ပမ္မဝတီ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 117,
+        "date": "2026-06-05",
+        "pipe_type_id": 16,
+        "quantity": 1,
+        "village": "ပမ္မဝတီ",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 93)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 118,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 2,
+        "village": "ပမ္မဝတီ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 119,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 90,
+        "village": "ပမ္မဝတီ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 120,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 74,
+        "village": "ပမ္မဝတီ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 121,
+        "date": "2026-06-04",
+        "pipe_type_id": 18,
+        "quantity": 2,
+        "village": "ပမ္မဝတီ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.0-50-1510-SWM01"
+      },
+      {
+        "id": 122,
+        "date": "2026-06-04",
+        "pipe_type_id": 30,
+        "quantity": 100,
+        "village": "ပမ္မဝတီ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.2-50-1510-SWM01"
+      },
+      {
+        "id": 123,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 60,
+        "village": "ငပုတော",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 124,
+        "date": "2026-06-04",
+        "pipe_type_id": 24,
+        "quantity": 81,
+        "village": "ငပုတော",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.0-60-100-WTM01"
+      },
+      {
+        "id": 125,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 23,
+        "village": "ငပုတော",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 126,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 6,
+        "village": "ငပုတော",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 127,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 40,
+        "village": "ငပုတော",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 128,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 31,
+        "village": "ငပုတော",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 129,
+        "date": "2026-06-04",
+        "pipe_type_id": 20,
+        "quantity": 13,
+        "village": "ငပုတော",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 130,
+        "date": "2026-06-05",
+        "pipe_type_id": 20,
+        "quantity": 12,
+        "village": "ငပုတော",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 94)",
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 131,
+        "date": "2026-06-05",
+        "pipe_type_id": 28,
+        "quantity": 2,
+        "village": "ငွေသောင်ယံ",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 92)",
+        "batch_id": "2026-06-04-110/2-4.5-50-1475-SWM01"
+      },
+      {
+        "id": 132,
+        "date": "2026-06-04",
+        "pipe_type_id": 30,
+        "quantity": 100,
+        "village": "ငပုတော",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.2-50-1510-SWM01"
+      },
+      {
+        "id": 134,
+        "date": "2026-06-04",
+        "pipe_type_id": 23,
+        "quantity": 129,
+        "village": "ငပုတော",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1510-SWM01"
+      },
+      {
+        "id": 135,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 50,
+        "village": "ခြံကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 136,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 28,
+        "village": "ခြံကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 137,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 70,
+        "village": "ခြံကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 138,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 4,
+        "village": "ခြံကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 140,
+        "date": "2026-06-04",
+        "pipe_type_id": 30,
+        "quantity": 80,
+        "village": "ခြံကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.2-50-1510-SWM01"
+      },
+      {
+        "id": 141,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 30,
+        "village": "ရွှေမြကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 142,
+        "date": "2026-06-04",
+        "pipe_type_id": 24,
+        "quantity": 1,
+        "village": "ရွှေမြကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.0-60-100-WTM01"
+      },
+      {
+        "id": 143,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 21,
+        "village": "ရွှေမြကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 144,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 20,
+        "village": "ရွှေမြကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 145,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 30,
+        "village": "ရွှေမြကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 146,
+        "date": "2026-06-04",
+        "pipe_type_id": 18,
+        "quantity": 15,
+        "village": "ရွှေမြကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.0-50-1510-SWM01"
+      },
+      {
+        "id": 147,
+        "date": "2026-06-04",
+        "pipe_type_id": 17,
+        "quantity": 8,
+        "village": "ရွှေမြကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-4.2-50-1510-WTM01"
+      },
+      {
+        "id": 148,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 70,
+        "village": "သမ္မာဒေဝ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 149,
+        "date": "2026-06-04",
+        "pipe_type_id": 24,
+        "quantity": 40,
+        "village": "သမ္မာဒေဝ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.0-60-100-WTM01"
+      },
+      {
+        "id": 150,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 4,
+        "village": "သမ္မာဒေဝ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 151,
+        "date": "2026-06-05",
+        "pipe_type_id": 16,
+        "quantity": 3,
+        "village": "သမ္မာဒေဝ",
+        "price": 0,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": "is-resent (Resent from damaged return ID: 96)",
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 152,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 20,
+        "village": "သမ္မာဒေဝ",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 153,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 6,
+        "village": "သမ္မာဒေဝ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 154,
+        "date": "2026-06-04",
+        "pipe_type_id": 30,
+        "quantity": 50,
+        "village": "သမ္မာဒေဝ",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.2-50-1510-SWM01"
+      },
+      {
+        "id": 155,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 50,
+        "village": "ကြာကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 156,
+        "date": "2026-06-04",
+        "pipe_type_id": 24,
+        "quantity": 1,
+        "village": "ကြာကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.0-60-100-WTM01"
+      },
+      {
+        "id": 157,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 30,
+        "village": "ကြာကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 158,
+        "date": "2026-06-04",
+        "pipe_type_id": 11,
+        "quantity": 16,
+        "village": "ကြာကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 159,
+        "date": "2026-06-04",
+        "pipe_type_id": 22,
+        "quantity": 40,
+        "village": "ကြာကွင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.3-60-2400-SWM01"
+      },
+      {
+        "id": 160,
+        "date": "2026-06-04",
+        "pipe_type_id": 14,
+        "quantity": 38,
+        "village": "ကြာကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 161,
+        "date": "2026-06-04",
+        "pipe_type_id": 30,
+        "quantity": 20,
+        "village": "ကြာကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.2-50-1510-SWM01"
+      },
+      {
+        "id": 162,
+        "date": "2026-06-04",
+        "pipe_type_id": 26,
+        "quantity": 29,
+        "village": "ကြာကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-SWM01"
+      },
+      {
+        "id": 163,
+        "date": "2026-06-04",
+        "pipe_type_id": 21,
+        "quantity": 150,
+        "village": "ကျားချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 164,
+        "date": "2026-06-04",
+        "pipe_type_id": 16,
+        "quantity": 11,
+        "village": "ကျားချောင်း",
+        "price": 14500,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 165,
+        "date": "2026-06-04",
+        "pipe_type_id": 23,
+        "quantity": 1,
+        "village": "ကျားချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1510-SWM01"
+      },
+      {
+        "id": 166,
+        "date": "2026-06-04",
+        "pipe_type_id": 31,
+        "quantity": 128,
+        "village": "ကျားချောင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-5.5-50-100-SWM01"
+      },
+      {
+        "id": 139,
+        "date": "2026-06-04",
+        "pipe_type_id": 18,
+        "quantity": 1,
+        "village": "ခြံကွင်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.0-50-1510-SWM01"
+      },
+      {
+        "id": 100,
+        "date": "2026-06-04",
+        "pipe_type_id": 26,
+        "quantity": 69,
+        "village": "ရွှေဝါထွန်း",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-SWM01"
+      },
+      {
+        "id": 167,
+        "date": "2026-06-04",
+        "pipe_type_id": 26,
+        "quantity": 9,
+        "village": "ငပုတော",
+        "price": 8000,
+        "from_location": "Factory",
+        "to_location": "Village Store",
+        "remark": null,
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-SWM01"
+      }
+    ],
+    "returns": [
+      {
+        "id": 91,
+        "date": "2026-06-04",
+        "village": "ငွေသောင်ယံ",
+        "pipe_type_id": 29,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-110/2-4.5-50-1435-BLL02"
+      },
+      {
+        "id": 93,
+        "date": "2026-06-04",
+        "village": "ပမ္မဝတီ",
+        "pipe_type_id": 16,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 94,
+        "date": "2026-06-04",
+        "village": "ငပုတော",
+        "pipe_type_id": 20,
+        "quantity": 12,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 92,
+        "date": "2026-06-04",
+        "village": "ငွေသောင်ယံ",
+        "pipe_type_id": 28,
+        "quantity": 2,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-110/2-4.5-50-1475-SWM01"
+      },
+      {
+        "id": 79,
+        "date": "2026-06-04",
+        "village": "လိပ်ချောင်း",
+        "pipe_type_id": 12,
+        "quantity": 3,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.15-1.1/2\"-50-70-SWM01"
+      },
+      {
+        "id": 80,
+        "date": "2026-06-04",
+        "village": "လိပ်ချောင်း",
+        "pipe_type_id": 17,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.15-4.2-50-1510-WTM01"
+      },
+      {
+        "id": 81,
+        "date": "2026-06-04",
+        "village": "လိပ်ချောင်း",
+        "pipe_type_id": 19,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-BLL02"
+      },
+      {
+        "id": 82,
+        "date": "2026-06-04",
+        "village": "လိပ်ချောင်း",
+        "pipe_type_id": 16,
+        "quantity": 2,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 83,
+        "date": "2026-06-04",
+        "village": "လိပ်ချောင်း",
+        "pipe_type_id": 11,
+        "quantity": 4,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 84,
+        "date": "2026-06-04",
+        "village": "လိပ်ချောင်း",
+        "pipe_type_id": 20,
+        "quantity": 2,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 85,
+        "date": "2026-06-04",
+        "village": "ငါးမြင်းချောင်း",
+        "pipe_type_id": 15,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.18-1.5/8\"-50-1552-BLL02"
+      },
+      {
+        "id": 86,
+        "date": "2026-06-04",
+        "village": "ရွှေဝါထွန်း",
+        "pipe_type_id": 11,
+        "quantity": 3,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 87,
+        "date": "2026-06-04",
+        "village": "ရွှေဝါထွန်း",
+        "pipe_type_id": 20,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-110/2-3.5-50-1510-SWM01"
+      },
+      {
+        "id": 89,
+        "date": "2026-06-04",
+        "village": "ငွေသောင်ယံ",
+        "pipe_type_id": 16,
+        "quantity": 2,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 88,
+        "date": "2026-06-04",
+        "village": "ငွေသောင်ယံ",
+        "pipe_type_id": 19,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-BLL02"
+      },
+      {
+        "id": 90,
+        "date": "2026-06-04",
+        "village": "ငွေသောင်ယံ",
+        "pipe_type_id": 27,
+        "quantity": 1,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.18-4.5-50-1475-BLL01"
+      },
+      {
+        "id": 95,
+        "date": "2026-06-04",
+        "village": "ငပုတော",
+        "pipe_type_id": 23,
+        "quantity": 2,
+        "status": "damaged",
+        "remark": null,
+        "price": 0,
+        "batch_id": "2026-06-04-110/2-4.5-50-1510-SWM01"
+      },
+      {
+        "id": 96,
+        "date": "2026-06-04",
+        "village": "သမ္မာဒေဝ",
+        "pipe_type_id": 16,
+        "quantity": 3,
+        "status": "damaged",
+        "remark": "is-resent",
+        "price": 0,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      },
+      {
+        "id": 97,
+        "date": "2026-06-08",
+        "village": "ကံသစ်",
+        "pipe_type_id": 11,
+        "quantity": 4,
+        "status": "production_grade",
+        "remark": null,
+        "price": 15950,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-WTM01"
+      },
+      {
+        "id": 98,
+        "date": "2026-06-08",
+        "village": "ကံသစ်",
+        "pipe_type_id": 14,
+        "quantity": 46,
+        "status": "production_grade",
+        "remark": null,
+        "price": 8800,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 99,
+        "date": "2026-06-08",
+        "village": "ကျားချောင်း",
+        "pipe_type_id": 21,
+        "quantity": 70,
+        "status": "production_grade",
+        "remark": null,
+        "price": 8800,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 100,
+        "date": "2026-06-08",
+        "village": "ကျားချောင်း",
+        "pipe_type_id": 21,
+        "quantity": 40,
+        "status": "production_grade",
+        "remark": null,
+        "price": 8800,
+        "batch_id": "2026-06-04-0.15-3.8-50-1510-WTM01"
+      },
+      {
+        "id": 101,
+        "date": "2026-06-08",
+        "village": "ငွေသောင်ယံ",
+        "pipe_type_id": 14,
+        "quantity": 15,
+        "status": "production_grade",
+        "remark": null,
+        "price": 8800,
+        "batch_id": "2026-06-04-110/2-1.3/4\"-50-1510-SWM01"
+      },
+      {
+        "id": 102,
+        "date": "2026-06-08",
+        "village": "ငွေသောင်ယံ",
+        "pipe_type_id": 16,
+        "quantity": 17,
+        "status": "production_grade",
+        "remark": null,
+        "price": 15950,
+        "batch_id": "2026-06-04-0.16-4.2-60-100-SWM01"
+      }
+    ],
+    "audit_logs": [
+      {
+        "id": 236,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ငပုတော",
+        "timestamp": "2026-06-04T04:44:18.75795"
+      },
+      {
+        "id": 240,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကြားကွင်း",
+        "timestamp": "2026-06-04T04:48:29.351207"
+      },
+      {
+        "id": 243,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကြာကွင်း",
+        "timestamp": "2026-06-04T04:50:02.921501"
+      },
+      {
+        "id": 245,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: သမ္မာဒေဝ",
+        "timestamp": "2026-06-04T04:50:16.891648"
+      },
+      {
+        "id": 248,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ရွှေမြကွင်း",
+        "timestamp": "2026-06-04T04:55:41.667"
+      },
+      {
+        "id": 251,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ဘုရားကြီးကုန်း",
+        "timestamp": "2026-06-04T04:58:14.357962"
+      },
+      {
+        "id": 255,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကိုညို",
+        "timestamp": "2026-06-04T05:00:22.034161"
+      },
+      {
+        "id": 260,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-04T08:55:43.344984"
+      },
+      {
+        "id": 263,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-04T09:00:53.102876"
+      },
+      {
+        "id": 266,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 2\" 50 100 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:15:35.141552"
+      },
+      {
+        "id": 270,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.15 4.2 50 1510 WTM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:16:36.552442"
+      },
+      {
+        "id": 273,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 3.5 50 1510 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:17:22.454539"
+      },
+      {
+        "id": 278,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.15 4.2 50 1435 BLL02 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:18:29.888596"
+      },
+      {
+        "id": 280,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.18 4.5 50 1475 BLL01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:18:57.617106"
+      },
+      {
+        "id": 282,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 4.5 50 1435 BLL02 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:19:23.82649"
+      },
+      {
+        "id": 286,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 1 units of pipe model ID 25 (Batch: 2026-06-04-0.15-4.2-50-1435-BLL02)",
+        "timestamp": "2026-06-04T09:21:34.162997"
+      },
+      {
+        "id": 290,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 270 units of pipe model ID 16 (Batch: 2026-06-04-0.16-4.2-60-100-SWM01)",
+        "timestamp": "2026-06-04T09:22:42.696276"
+      },
+      {
+        "id": 298,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 100 units of pipe model ID 18 (Batch: 2026-06-04-110/2-4.0-50-1510-SWM01)",
+        "timestamp": "2026-06-04T09:25:42.174263"
+      },
+      {
+        "id": 301,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 107 units of pipe model ID 26 (Batch: 2026-06-04-110/2-4.5-50-1435-SWM01)",
+        "timestamp": "2026-06-04T09:29:12.233793"
+      },
+      {
+        "id": 304,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 40 units of batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\" (model ID 12) to outpost: ကံသစ်",
+        "timestamp": "2026-06-04T09:32:21.292282"
+      },
+      {
+        "id": 307,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 10 units of batch \"2026-06-04-110/2-2\"-50-100-SWM01\" (model ID 13) to outpost: ကံသစ်",
+        "timestamp": "2026-06-05T03:35:44.944863"
+      },
+      {
+        "id": 310,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 60 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") to village \"ကံသစ်\". Original qty: 40, New qty: 40",
+        "timestamp": "2026-06-05T03:40:39.099624"
+      },
+      {
+        "id": 313,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 60 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") to village \"ကံသစ်\". Original qty: 40, New qty: 41",
+        "timestamp": "2026-06-05T03:50:57.58272"
+      },
+      {
+        "id": 318,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 61 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") to village \"ကံသစ်\". Original qty: 10, New qty: 8",
+        "timestamp": "2026-06-05T03:53:25.38612"
+      },
+      {
+        "id": 319,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 179 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ဘုရားကြီးကုန်း",
+        "timestamp": "2026-06-05T04:00:07.267714"
+      },
+      {
+        "id": 322,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 65 (batch \"2026-06-04-0.18-1.5/8\"-50-1552-BLL02\") to village \"ဘုရားကြီးကုန်း\". Original qty: 18, New qty: 20",
+        "timestamp": "2026-06-05T04:01:51.742073"
+      },
+      {
+        "id": 325,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 3 units of batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\" (model ID 12) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:07:42.395422"
+      },
+      {
+        "id": 328,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 3 units of batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\" (model ID 12) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:12:03.058282"
+      },
+      {
+        "id": 331,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 14 units of batch \"2026-06-04-0.15-4.2-50-1510-WTM01\" (model ID 17) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:14:09.163284"
+      },
+      {
+        "id": 332,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-0.15-4.2-50-1510-WTM01\" (model ID 17) from outpost: လိပ်ချောင်း at unit price: 0",
+        "timestamp": "2026-06-05T04:14:39.43669"
+      },
+      {
+        "id": 336,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-BLL02\" (model ID 19) from outpost: လိပ်ချောင်း at unit price: 0",
+        "timestamp": "2026-06-05T04:15:43.515802"
+      },
+      {
+        "id": 337,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.16-4.2-60-100-BLL02\" (model ID 19) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:15:53.100629"
+      },
+      {
+        "id": 338,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 81 (batch \"2026-06-04-0.16-4.2-60-100-BLL02\") from village \"လိပ်ချောင်း\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:15:54.732901"
+      },
+      {
+        "id": 342,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 82 (batch \"2026-06-04-0.16-4.2-60-100-SWM01\") from village \"လိပ်ချောင်း\". Original qty: 2, New qty: 2, price: 0",
+        "timestamp": "2026-06-05T04:16:57.508241"
+      },
+      {
+        "id": 349,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 83 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") from village \"လိပ်ချောင်း\". Original qty: 4, New qty: 4, price: 0",
+        "timestamp": "2026-06-05T04:19:18.538818"
+      },
+      {
+        "id": 350,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:19:23.391731"
+      },
+      {
+        "id": 353,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 45 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-05T04:20:38.504853"
+      },
+      {
+        "id": 356,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-0.18-1.5/8\"-50-1552-BLL02\" (model ID 15) from outpost: ငါးမြင်းချောင်း at unit price: 0",
+        "timestamp": "2026-06-05T04:22:00.667749"
+      },
+      {
+        "id": 357,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.18-1.5/8\"-50-1552-BLL02\" (model ID 15) to outpost: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-05T04:22:08.333705"
+      },
+      {
+        "id": 358,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 85 (batch \"2026-06-04-0.18-1.5/8\"-50-1552-BLL02\") from village \"ငါးမြင်းချောင်း\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:22:09.481427"
+      },
+      {
+        "id": 359,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 135 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-05T04:22:32.099412"
+      },
+      {
+        "id": 360,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 15 units of batch \"2026-06-04-110/2-4.0-50-1510-SWM01\" (model ID 18) to outpost: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-05T04:22:58.231117"
+      },
+      {
+        "id": 361,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 100 units of batch \"2026-06-04-110/2-4.5-50-1510-SWM01\" (model ID 23) to outpost: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-05T04:23:24.90219"
+      },
+      {
+        "id": 478,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-05T08:01:09.738181"
+      },
+      {
+        "id": 234,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-04T04:40:56.221558"
+      },
+      {
+        "id": 237,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ပမ္မဝတီ",
+        "timestamp": "2026-06-04T04:44:40.982841"
+      },
+      {
+        "id": 238,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ခြံကွင်း",
+        "timestamp": "2026-06-04T04:44:51.189907"
+      },
+      {
+        "id": 241,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-04T04:48:45.876835"
+      },
+      {
+        "id": 244,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-04T04:50:06.25201"
+      },
+      {
+        "id": 246,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: လိပ်ချောင်း",
+        "timestamp": "2026-06-04T04:50:34.064255"
+      },
+      {
+        "id": 249,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကံသစ်",
+        "timestamp": "2026-06-04T04:56:09.662203"
+      },
+      {
+        "id": 252,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကျားချောင်း (မမေစိုးကြည်)",
+        "timestamp": "2026-06-04T04:59:43.951134"
+      },
+      {
+        "id": 254,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ထန်ပင်ကွင်း",
+        "timestamp": "2026-06-04T05:00:13.43884"
+      },
+      {
+        "id": 256,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: မော်ကျွန်း(ဦးတင်မြင့်)",
+        "timestamp": "2026-06-04T05:00:38.680975"
+      },
+      {
+        "id": 257,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ဘိုးကလေး",
+        "timestamp": "2026-06-04T05:01:13.323206"
+      },
+      {
+        "id": 261,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-04T08:56:08.239412"
+      },
+      {
+        "id": 264,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.16 4.2 60 100 WTM01 (Base price: $14500)",
+        "timestamp": "2026-06-04T09:14:52.739094"
+      },
+      {
+        "id": 267,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 1.3/4\" 50 1510 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:15:51.194421"
+      },
+      {
+        "id": 269,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.16 4.2 60 100 SWM01 (Base price: $14500)",
+        "timestamp": "2026-06-04T09:16:19.031193"
+      },
+      {
+        "id": 272,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.16 4.2 60 100 BLL02 (Base price: $14500)",
+        "timestamp": "2026-06-04T09:17:06.883518"
+      },
+      {
+        "id": 275,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.16 4.3 60 2400 SWM01 (Base price: $14500)",
+        "timestamp": "2026-06-04T09:17:48.538125"
+      },
+      {
+        "id": 276,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 4.5 50 1510 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:18:01.942033"
+      },
+      {
+        "id": 279,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 4.5 50 1435 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:18:42.866933"
+      },
+      {
+        "id": 283,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 4.2 50 1510 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:19:36.786075"
+      },
+      {
+        "id": 284,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 44 units of pipe model ID 12 (Batch: 2026-06-04-0.15-1.1/2\"-50-70-SWM01)",
+        "timestamp": "2026-06-04T09:20:57.452732"
+      },
+      {
+        "id": 287,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 24 units of pipe model ID 17 (Batch: 2026-06-04-0.15-4.2-50-1510-WTM01)",
+        "timestamp": "2026-06-04T09:21:51.553281"
+      },
+      {
+        "id": 291,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 301 units of pipe model ID 11 (Batch: 2026-06-04-0.16-4.2-60-100-WTM01)",
+        "timestamp": "2026-06-04T09:22:57.205635"
+      },
+      {
+        "id": 295,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 455 units of pipe model ID 14 (Batch: 2026-06-04-110/2-1.3/4\"-50-1510-SWM01)",
+        "timestamp": "2026-06-04T09:24:03.3153"
+      },
+      {
+        "id": 296,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 11 units of pipe model ID 13 (Batch: 2026-06-04-110/2-2\"-50-100-SWM01)",
+        "timestamp": "2026-06-04T09:24:43.737402"
+      },
+      {
+        "id": 299,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 350 units of pipe model ID 30 (Batch: 2026-06-04-110/2-4.2-50-1510-SWM01)",
+        "timestamp": "2026-06-04T09:28:10.711234"
+      },
+      {
+        "id": 302,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 2 units of pipe model ID 28 (Batch: 2026-06-04-110/2-4.5-50-1475-SWM01)",
+        "timestamp": "2026-06-04T09:29:31.224818"
+      },
+      {
+        "id": 305,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 8 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ကံသစ်",
+        "timestamp": "2026-06-05T03:34:48.544965"
+      },
+      {
+        "id": 308,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 60 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") to village \"ကံသစ်\". Original qty: 40, New qty: 40",
+        "timestamp": "2026-06-05T03:38:21.156055"
+      },
+      {
+        "id": 311,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 60 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") to village \"ကံသစ်\". Original qty: 40, New qty: 41",
+        "timestamp": "2026-06-05T03:48:10.252634"
+      },
+      {
+        "id": 314,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 61 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") to village \"ကံသစ်\". Original qty: 8, New qty: 7",
+        "timestamp": "2026-06-05T03:51:25.353648"
+      },
+      {
+        "id": 320,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 18 units of batch \"2026-06-04-0.18-1.5/8\"-50-1552-BLL02\" (model ID 15) to outpost: ဘုရားကြီးကုန်း",
+        "timestamp": "2026-06-05T04:00:30.768257"
+      },
+      {
+        "id": 323,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 64 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") to village \"ဘုရားကြီးကုန်း\". Original qty: 178, New qty: 180",
+        "timestamp": "2026-06-05T04:02:18.892537"
+      },
+      {
+        "id": 326,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\" (model ID 12) from outpost: လိပ်ချောင်း at unit price: 0",
+        "timestamp": "2026-06-05T04:09:39.903211"
+      },
+      {
+        "id": 329,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 79 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") from village \"လိပ်ချောင်း\". Original qty: 3, New qty: 3, price: 0",
+        "timestamp": "2026-06-05T04:12:05.112479"
+      },
+      {
+        "id": 333,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.15-4.2-50-1510-WTM01\" (model ID 17) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:14:51.486968"
+      },
+      {
+        "id": 339,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 11 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:16:26.897482"
+      },
+      {
+        "id": 343,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 42 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:17:30.82888"
+      },
+      {
+        "id": 344,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 4 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) from outpost: လိပ်ချောင်း at unit price: 0",
+        "timestamp": "2026-06-05T04:17:53.848132"
+      },
+      {
+        "id": 345,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 6 units of batch \"2026-06-04-0.18-1.5/8\"-50-1552-BLL02\" (model ID 15) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:18:22.012315"
+      },
+      {
+        "id": 346,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:18:49.92174"
+      },
+      {
+        "id": 404,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-05T04:48:15.874073"
+      },
+      {
+        "id": 483,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: လပ္ပတ္တာ",
+        "timestamp": "2026-06-05T09:12:22.115825"
+      },
+      {
+        "id": 488,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-06T04:47:02.099104"
+      },
+      {
+        "id": 489,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-06T05:00:17.945565"
+      },
+      {
+        "id": 235,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-04T04:43:43.144062"
+      },
+      {
+        "id": 239,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-04T04:45:02.9669"
+      },
+      {
+        "id": 242,
+        "user_email": "admin@gmail.com",
+        "action": "DELETE_VILLAGE",
+        "details": "Removed outpost node: ကြားကွင်း",
+        "timestamp": "2026-06-04T04:49:51.002062"
+      },
+      {
+        "id": 247,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ငွေသောင်ယံ",
+        "timestamp": "2026-06-04T04:52:33.839001"
+      },
+      {
+        "id": 250,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကွယ်လွယ်",
+        "timestamp": "2026-06-04T04:56:23.56781"
+      },
+      {
+        "id": 253,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ဖျန်ရေကျော်(မကေသီ)",
+        "timestamp": "2026-06-04T05:00:03.853056"
+      },
+      {
+        "id": 258,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ‌ဖျာပုံ",
+        "timestamp": "2026-06-04T05:01:44.237015"
+      },
+      {
+        "id": 259,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကွမ်းခြံကုန်း",
+        "timestamp": "2026-06-04T05:01:59.477111"
+      },
+      {
+        "id": 262,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-04T08:59:27.339039"
+      },
+      {
+        "id": 265,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.15 1.1/2\" 50 70 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:15:18.647304"
+      },
+      {
+        "id": 268,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.18 1.5/8\" 50 1552 BLL02 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:16:04.77464"
+      },
+      {
+        "id": 271,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 4.0 50 1510 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:16:50.655371"
+      },
+      {
+        "id": 274,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.15 3.8 50 1510 WTM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:17:35.802442"
+      },
+      {
+        "id": 277,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 0.16 4.0 60 100 WTM01 (Base price: $14500)",
+        "timestamp": "2026-06-04T09:18:15.653743"
+      },
+      {
+        "id": 281,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 4.5 50 1475 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-04T09:19:09.137297"
+      },
+      {
+        "id": 285,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 450 units of pipe model ID 21 (Batch: 2026-06-04-0.15-3.8-50-1510-WTM01)",
+        "timestamp": "2026-06-04T09:21:14.074539"
+      },
+      {
+        "id": 288,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 145 units of pipe model ID 24 (Batch: 2026-06-04-0.16-4.0-60-100-WTM01)",
+        "timestamp": "2026-06-04T09:22:08.907962"
+      },
+      {
+        "id": 289,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 2 units of pipe model ID 19 (Batch: 2026-06-04-0.16-4.2-60-100-BLL02)",
+        "timestamp": "2026-06-04T09:22:27.734516"
+      },
+      {
+        "id": 292,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 408 units of pipe model ID 22 (Batch: 2026-06-04-0.16-4.3-60-2400-SWM01)",
+        "timestamp": "2026-06-04T09:23:11.694636"
+      },
+      {
+        "id": 293,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 27 units of pipe model ID 15 (Batch: 2026-06-04-0.18-1.5/8\"-50-1552-BLL02)",
+        "timestamp": "2026-06-04T09:23:35.35826"
+      },
+      {
+        "id": 294,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 1 units of pipe model ID 27 (Batch: 2026-06-04-0.18-4.5-50-1475-BLL01)",
+        "timestamp": "2026-06-04T09:23:48.177949"
+      },
+      {
+        "id": 297,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 16 units of pipe model ID 20 (Batch: 2026-06-04-110/2-3.5-50-1510-SWM01)",
+        "timestamp": "2026-06-04T09:25:17.070361"
+      },
+      {
+        "id": 300,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 1 units of pipe model ID 29 (Batch: 2026-06-04-110/2-4.5-50-1435-BLL02)",
+        "timestamp": "2026-06-04T09:28:38.803142"
+      },
+      {
+        "id": 303,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 353 units of pipe model ID 23 (Batch: 2026-06-04-110/2-4.5-50-1510-SWM01)",
+        "timestamp": "2026-06-04T09:29:49.182884"
+      },
+      {
+        "id": 306,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 60 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ကံသစ်",
+        "timestamp": "2026-06-05T03:35:21.406375"
+      },
+      {
+        "id": 309,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 60 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") to village \"ကံသစ်\". Original qty: 40, New qty: 40",
+        "timestamp": "2026-06-05T03:39:06.821791"
+      },
+      {
+        "id": 312,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 60 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") to village \"ကံသစ်\". Original qty: 41, New qty: 40",
+        "timestamp": "2026-06-05T03:49:58.810297"
+      },
+      {
+        "id": 315,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 61 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") to village \"ကံသစ်\". Original qty: 7, New qty: 7",
+        "timestamp": "2026-06-05T03:51:47.274595"
+      },
+      {
+        "id": 316,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 61 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") to village \"ကံသစ်\". Original qty: 7, New qty: 8",
+        "timestamp": "2026-06-05T03:52:29.084695"
+      },
+      {
+        "id": 317,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 61 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") to village \"ကံသစ်\". Original qty: 8, New qty: 10",
+        "timestamp": "2026-06-05T03:53:09.115895"
+      },
+      {
+        "id": 321,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 64 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") to village \"ဘုရားကြီးကုန်း\". Original qty: 179, New qty: 178",
+        "timestamp": "2026-06-05T04:01:24.321547"
+      },
+      {
+        "id": 324,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 40 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ကွယ်လွယ်",
+        "timestamp": "2026-06-05T04:03:09.00065"
+      },
+      {
+        "id": 327,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 79 (batch \"2026-06-04-0.15-1.1/2\"-50-70-SWM01\") from village \"လိပ်ချောင်း\". Original qty: 1, New qty: 3, price: 0",
+        "timestamp": "2026-06-05T04:10:13.838035"
+      },
+      {
+        "id": 330,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 40 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:13:37.794699"
+      },
+      {
+        "id": 334,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 80 (batch \"2026-06-04-0.15-4.2-50-1510-WTM01\") from village \"လိပ်ချောင်း\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:14:52.588459"
+      },
+      {
+        "id": 335,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.16-4.2-60-100-BLL02\" (model ID 19) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:15:22.67603"
+      },
+      {
+        "id": 340,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 2 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) from outpost: လိပ်ချောင်း at unit price: 0",
+        "timestamp": "2026-06-05T04:16:49.556774"
+      },
+      {
+        "id": 341,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:16:56.401849"
+      },
+      {
+        "id": 347,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 2 units (damaged) of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) from outpost: လိပ်ချောင်း at unit price: 0",
+        "timestamp": "2026-06-05T04:19:10.046972"
+      },
+      {
+        "id": 348,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 4 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:19:17.442617"
+      },
+      {
+        "id": 351,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 84 (batch \"2026-06-04-110/2-3.5-50-1510-SWM01\") from village \"လိပ်ချောင်း\". Original qty: 2, New qty: 2, price: 0",
+        "timestamp": "2026-06-05T04:19:25.007511"
+      },
+      {
+        "id": 352,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 27 units of batch \"2026-06-04-110/2-4.0-50-1510-SWM01\" (model ID 18) to outpost: လိပ်ချောင်း",
+        "timestamp": "2026-06-05T04:19:51.595435"
+      },
+      {
+        "id": 354,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 70 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-05T04:21:01.096613"
+      },
+      {
+        "id": 355,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.18-1.5/8\"-50-1552-BLL02\" (model ID 15) to outpost: ငါးမြင်းချောင်း",
+        "timestamp": "2026-06-05T04:21:29.174791"
+      },
+      {
+        "id": 455,
+        "user_email": "admin@gmail.com",
+        "action": "LOGIN",
+        "details": "User logged in successfully",
+        "timestamp": "2026-06-05T05:38:30.68564"
+      },
+      {
+        "id": 362,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 70 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:25:17.109632"
+      },
+      {
+        "id": 363,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.15-4.2-50-1435-BLL02\" (model ID 25) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:25:41.516206"
+      },
+      {
+        "id": 364,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 3 units of batch \"2026-06-04-0.15-4.2-50-1510-WTM01\" (model ID 17) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:26:04.069986"
+      },
+      {
+        "id": 365,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 22 units of batch \"2026-06-04-0.16-4.0-60-100-WTM01\" (model ID 24) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:26:25.280624"
+      },
+      {
+        "id": 366,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 50 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:26:49.941867"
+      },
+      {
+        "id": 367,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 7 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:27:16.572492"
+      },
+      {
+        "id": 368,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 3 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) from outpost: ရွှေဝါထွန်း at unit price: 0",
+        "timestamp": "2026-06-05T04:27:36.727306"
+      },
+      {
+        "id": 369,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 3 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:27:47.579009"
+      },
+      {
+        "id": 370,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 86 (batch \"2026-06-04-0.16-4.2-60-100-WTM01\") from village \"ရွှေဝါထွန်း\". Original qty: 3, New qty: 3, price: 0",
+        "timestamp": "2026-06-05T04:27:49.186409"
+      },
+      {
+        "id": 371,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 20 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:28:14.489539"
+      },
+      {
+        "id": 372,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 50 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:28:38.792302"
+      },
+      {
+        "id": 373,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:29:01.618533"
+      },
+      {
+        "id": 374,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) from outpost: ရွှေဝါထွန်း at unit price: 0",
+        "timestamp": "2026-06-05T04:29:18.005402"
+      },
+      {
+        "id": 375,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 40 units of batch \"2026-06-04-110/2-4.0-50-1510-SWM01\" (model ID 18) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:29:41.730775"
+      },
+      {
+        "id": 376,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 59 units of batch \"2026-06-04-110/2-4.5-50-1435-SWM01\" (model ID 26) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:30:01.965631"
+      },
+      {
+        "id": 377,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 46 units of batch \"2026-06-04-110/2-4.5-50-1510-SWM01\" (model ID 23) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:30:27.420459"
+      },
+      {
+        "id": 378,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.16-4.2-60-100-BLL02\" (model ID 19) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:32:03.255329"
+      },
+      {
+        "id": 379,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-BLL02\" (model ID 19) from outpost: ငွေသောင်ယံ at unit price: 0",
+        "timestamp": "2026-06-05T04:32:27.682485"
+      },
+      {
+        "id": 380,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 55 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:32:53.349151"
+      },
+      {
+        "id": 381,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 2 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) from outpost: ငွေသောင်ယံ at unit price: 0",
+        "timestamp": "2026-06-05T04:33:16.093702"
+      },
+      {
+        "id": 382,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) to outpost: ရွှေဝါထွန်း",
+        "timestamp": "2026-06-05T04:33:28.218415"
+      },
+      {
+        "id": 383,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 87 (batch \"2026-06-04-110/2-3.5-50-1510-SWM01\") from village \"ရွှေဝါထွန်း\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:33:29.860915"
+      },
+      {
+        "id": 384,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:33:36.964698"
+      },
+      {
+        "id": 385,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 89 (batch \"2026-06-04-0.16-4.2-60-100-SWM01\") from village \"ငွေသောင်ယံ\". Original qty: 2, New qty: 2, price: 0",
+        "timestamp": "2026-06-05T04:33:38.103004"
+      },
+      {
+        "id": 386,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.16-4.2-60-100-BLL02\" (model ID 19) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:33:45.290947"
+      },
+      {
+        "id": 387,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 88 (batch \"2026-06-04-0.16-4.2-60-100-BLL02\") from village \"ငွေသောင်ယံ\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:33:46.449956"
+      },
+      {
+        "id": 388,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 38 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:34:12.329161"
+      },
+      {
+        "id": 389,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.18-4.5-50-1475-BLL01\" (model ID 27) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:36:27.382331"
+      },
+      {
+        "id": 390,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-0.18-4.5-50-1475-BLL01\" (model ID 27) from outpost: ငွေသောင်ယံ at unit price: 0",
+        "timestamp": "2026-06-05T04:37:29.371007"
+      },
+      {
+        "id": 391,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.18-4.5-50-1475-BLL01\" (model ID 27) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:37:46.085306"
+      },
+      {
+        "id": 392,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 90 (batch \"2026-06-04-0.18-4.5-50-1475-BLL01\") from village \"ငွေသောင်ယံ\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:37:47.182084"
+      },
+      {
+        "id": 393,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 27 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:38:12.021265"
+      },
+      {
+        "id": 394,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-110/2-4.5-50-1435-BLL02\" (model ID 29) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:39:48.748728"
+      },
+      {
+        "id": 395,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-110/2-4.5-50-1435-BLL02\" (model ID 29) from outpost: ငွေသောင်ယံ at unit price: 0",
+        "timestamp": "2026-06-05T04:40:06.245935"
+      },
+      {
+        "id": 396,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-110/2-4.5-50-1475-SWM01\" (model ID 28) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:40:31.871588"
+      },
+      {
+        "id": 397,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 2 units (damaged) of batch \"2026-06-04-110/2-4.5-50-1475-SWM01\" (model ID 28) from outpost: ငွေသောင်ယံ at unit price: 0",
+        "timestamp": "2026-06-05T04:40:50.928061"
+      },
+      {
+        "id": 398,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-110/2-4.5-50-1435-BLL02\" (model ID 29) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:41:01.709352"
+      },
+      {
+        "id": 464,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ကျားချောင်း",
+        "timestamp": "2026-06-05T06:45:47.369393"
+      },
+      {
+        "id": 399,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 91 (batch \"2026-06-04-110/2-4.5-50-1435-BLL02\") from village \"ငွေသောင်ယံ\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:41:02.864521"
+      },
+      {
+        "id": 400,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 78 units of batch \"2026-06-04-110/2-4.5-50-1510-SWM01\" (model ID 23) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:41:33.364904"
+      },
+      {
+        "id": 401,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 80 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:42:33.821511"
+      },
+      {
+        "id": 402,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 3 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:43:08.106342"
+      },
+      {
+        "id": 403,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 1 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) from outpost: ပမ္မဝတီ at unit price: 0",
+        "timestamp": "2026-06-05T04:43:32.771501"
+      },
+      {
+        "id": 405,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:48:36.039047"
+      },
+      {
+        "id": 406,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 93 (batch \"2026-06-04-0.16-4.2-60-100-SWM01\") from village \"ပမ္မဝတီ\". Original qty: 1, New qty: 1, price: 0",
+        "timestamp": "2026-06-05T04:48:37.198922"
+      },
+      {
+        "id": 407,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:49:45.618204"
+      },
+      {
+        "id": 408,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 90 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:50:22.302955"
+      },
+      {
+        "id": 409,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 74 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:50:57.796326"
+      },
+      {
+        "id": 410,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-110/2-4.0-50-1510-SWM01\" (model ID 18) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:51:21.139625"
+      },
+      {
+        "id": 411,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 100 units of batch \"2026-06-04-110/2-4.2-50-1510-SWM01\" (model ID 30) to outpost: ပမ္မဝတီ",
+        "timestamp": "2026-06-05T04:51:45.125307"
+      },
+      {
+        "id": 412,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 60 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:53:00.208859"
+      },
+      {
+        "id": 413,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 81 units of batch \"2026-06-04-0.16-4.0-60-100-WTM01\" (model ID 24) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:53:18.701462"
+      },
+      {
+        "id": 414,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 23 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:53:39.505053"
+      },
+      {
+        "id": 415,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 6 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:53:59.602411"
+      },
+      {
+        "id": 416,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 40 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:54:21.575861"
+      },
+      {
+        "id": 417,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 31 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:54:42.338087"
+      },
+      {
+        "id": 418,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 13 units of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:55:00.804468"
+      },
+      {
+        "id": 419,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 12 units (damaged) of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) from outpost: ငပုတော at unit price: 0",
+        "timestamp": "2026-06-05T04:55:22.963533"
+      },
+      {
+        "id": 420,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 12 units of batch \"2026-06-04-110/2-3.5-50-1510-SWM01\" (model ID 20) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:55:57.502834"
+      },
+      {
+        "id": 421,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 94 (batch \"2026-06-04-110/2-3.5-50-1510-SWM01\") from village \"ငပုတော\". Original qty: 12, New qty: 12, price: 0",
+        "timestamp": "2026-06-05T04:55:58.688912"
+      },
+      {
+        "id": 422,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 2 units of batch \"2026-06-04-110/2-4.5-50-1475-SWM01\" (model ID 28) to outpost: ငွေသောင်ယံ",
+        "timestamp": "2026-06-05T04:56:04.220888"
+      },
+      {
+        "id": 423,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 92 (batch \"2026-06-04-110/2-4.5-50-1475-SWM01\") from village \"ငွေသောင်ယံ\". Original qty: 2, New qty: 2, price: 0",
+        "timestamp": "2026-06-05T04:56:05.352048"
+      },
+      {
+        "id": 424,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 100 units of batch \"2026-06-04-110/2-4.2-50-1510-SWM01\" (model ID 30) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:56:30.334251"
+      },
+      {
+        "id": 425,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 9 units of batch \"2026-06-04-110/2-4.5-50-1435-SWM01\" (model ID 26) to outpost: ကျားချောင်း (မမေစိုးကြည်)",
+        "timestamp": "2026-06-05T04:56:49.406481"
+      },
+      {
+        "id": 426,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 129 units of batch \"2026-06-04-110/2-4.5-50-1510-SWM01\" (model ID 23) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:57:12.266267"
+      },
+      {
+        "id": 427,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 2 units (damaged) of batch \"2026-06-04-110/2-4.5-50-1510-SWM01\" (model ID 23) from outpost: ငပုတော at unit price: 0",
+        "timestamp": "2026-06-05T04:57:32.399625"
+      },
+      {
+        "id": 428,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 50 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: ခြံကွင်း",
+        "timestamp": "2026-06-05T04:58:19.781402"
+      },
+      {
+        "id": 429,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 28 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ခြံကွင်း",
+        "timestamp": "2026-06-05T04:58:38.704589"
+      },
+      {
+        "id": 430,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 70 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ခြံကွင်း",
+        "timestamp": "2026-06-05T04:58:59.124797"
+      },
+      {
+        "id": 431,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 4 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ခြံကွင်း",
+        "timestamp": "2026-06-05T04:59:22.850934"
+      },
+      {
+        "id": 432,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-110/2-4.0-50-1510-SWM01\" (model ID 18) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T04:59:47.666697"
+      },
+      {
+        "id": 433,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 80 units of batch \"2026-06-04-110/2-4.2-50-1510-SWM01\" (model ID 30) to outpost: ခြံကွင်း",
+        "timestamp": "2026-06-05T05:00:09.527434"
+      },
+      {
+        "id": 434,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 30 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: ရွှေမြကွင်း",
+        "timestamp": "2026-06-05T05:01:35.358143"
+      },
+      {
+        "id": 435,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.16-4.0-60-100-WTM01\" (model ID 24) to outpost: ရွှေမြကွင်း",
+        "timestamp": "2026-06-05T05:05:17.538264"
+      },
+      {
+        "id": 436,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 21 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ရွှေမြကွင်း",
+        "timestamp": "2026-06-05T05:08:03.283983"
+      },
+      {
+        "id": 437,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 20 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ရွှေမြကွင်း",
+        "timestamp": "2026-06-05T05:08:30.289869"
+      },
+      {
+        "id": 438,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 30 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ရွှေမြကွင်း",
+        "timestamp": "2026-06-05T05:08:52.966476"
+      },
+      {
+        "id": 439,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 15 units of batch \"2026-06-04-110/2-4.0-50-1510-SWM01\" (model ID 18) to outpost: ရွှေမြကွင်း",
+        "timestamp": "2026-06-05T05:09:15.252663"
+      },
+      {
+        "id": 440,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_PRODUCTION",
+        "details": "Updated central production record ID 34. Original: 24 units of pipe ID 17 (Batch: 2026-06-04-0.15-4.2-50-1510-WTM01). New: 25 units of pipe ID 17 (Batch: 2026-06-04-0.15-4.2-50-1510-WTM01).",
+        "timestamp": "2026-06-05T05:10:11.548102"
+      },
+      {
+        "id": 441,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 8 units of batch \"2026-06-04-0.15-4.2-50-1510-WTM01\" (model ID 17) to outpost: ရွှေမြကွင်း",
+        "timestamp": "2026-06-05T05:10:45.969752"
+      },
+      {
+        "id": 442,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 70 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:11:29.94606"
+      },
+      {
+        "id": 443,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 40 units of batch \"2026-06-04-0.16-4.0-60-100-WTM01\" (model ID 24) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:11:55.565683"
+      },
+      {
+        "id": 444,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 4 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:12:23.683253"
+      },
+      {
+        "id": 445,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 3 units (damaged) of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) from outpost: သမ္မာဒေဝ at unit price: 0",
+        "timestamp": "2026-06-05T05:12:47.160845"
+      },
+      {
+        "id": 446,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 3 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:13:06.955623"
+      },
+      {
+        "id": 447,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_RETURN",
+        "details": "Updated return record ID 96 (batch \"2026-06-04-0.16-4.2-60-100-SWM01\") from village \"သမ္မာဒေဝ\". Original qty: 3, New qty: 3, price: 0",
+        "timestamp": "2026-06-05T05:13:08.069592"
+      },
+      {
+        "id": 448,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 20 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:13:45.304795"
+      },
+      {
+        "id": 449,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 6 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:14:05.316639"
+      },
+      {
+        "id": 450,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 50 units of batch \"2026-06-04-110/2-4.2-50-1510-SWM01\" (model ID 30) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:14:26.968495"
+      },
+      {
+        "id": 451,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 50 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: ကြာကွင်း",
+        "timestamp": "2026-06-05T05:15:10.976347"
+      },
+      {
+        "id": 452,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-0.16-4.0-60-100-WTM01\" (model ID 24) to outpost: ကြာကွင်း",
+        "timestamp": "2026-06-05T05:15:32.350873"
+      },
+      {
+        "id": 453,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 30 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: သမ္မာဒေဝ",
+        "timestamp": "2026-06-05T05:15:55.215523"
+      },
+      {
+        "id": 454,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 157 (batch \"2026-06-04-0.16-4.2-60-100-SWM01\") to village \"ကြာကွင်း\". Original qty: 30, New qty: 30",
+        "timestamp": "2026-06-05T05:26:50.048998"
+      },
+      {
+        "id": 456,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 16 units of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) to outpost: ကြာကွင်း",
+        "timestamp": "2026-06-05T06:41:39.270622"
+      },
+      {
+        "id": 457,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 40 units of batch \"2026-06-04-0.16-4.3-60-2400-SWM01\" (model ID 22) to outpost: ကြာကွင်း",
+        "timestamp": "2026-06-05T06:42:22.611081"
+      },
+      {
+        "id": 458,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 38 units of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) to outpost: ကြာကွင်း",
+        "timestamp": "2026-06-05T06:42:45.492952"
+      },
+      {
+        "id": 459,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 20 units of batch \"2026-06-04-110/2-4.2-50-1510-SWM01\" (model ID 30) to outpost: ကြာကွင်း",
+        "timestamp": "2026-06-05T06:43:07.447082"
+      },
+      {
+        "id": 460,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 19 units of batch \"2026-06-04-110/2-4.5-50-1435-SWM01\" (model ID 26) to outpost: ကြာကွင်း",
+        "timestamp": "2026-06-05T06:43:28.106902"
+      },
+      {
+        "id": 461,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 162 (batch \"2026-06-04-110/2-4.5-50-1435-SWM01\") to village \"ကြာကွင်း\". Original qty: 19, New qty: 29",
+        "timestamp": "2026-06-05T06:43:55.026011"
+      },
+      {
+        "id": 462,
+        "user_email": "admin@gmail.com",
+        "action": "DELETE_DISTRIBUTION",
+        "details": "Deleted distribution record ID 133: 9 units to village \"ကျားချောင်း (မမေစိုးကြည်)\"",
+        "timestamp": "2026-06-05T06:45:24.748809"
+      },
+      {
+        "id": 463,
+        "user_email": "admin@gmail.com",
+        "action": "DELETE_VILLAGE",
+        "details": "Removed outpost node: ကျားချောင်း (မမေစိုးကြည်)",
+        "timestamp": "2026-06-05T06:45:35.801983"
+      },
+      {
+        "id": 465,
+        "user_email": "admin@gmail.com",
+        "action": "DELETE_VILLAGE",
+        "details": "Removed outpost node: ဖျန်ရေကျော်(မကေသီ)",
+        "timestamp": "2026-06-05T06:45:58.894368"
+      },
+      {
+        "id": 466,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: ဖျန်ရေကျော်",
+        "timestamp": "2026-06-05T06:46:10.01808"
+      },
+      {
+        "id": 467,
+        "user_email": "admin@gmail.com",
+        "action": "DELETE_VILLAGE",
+        "details": "Removed outpost node: မော်ကျွန်း(ဦးတင်မြင့်)",
+        "timestamp": "2026-06-05T06:46:16.832167"
+      },
+      {
+        "id": 468,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_VILLAGE",
+        "details": "Created new outpost node: မော်ကျွန်း",
+        "timestamp": "2026-06-05T06:46:28.087345"
+      },
+      {
+        "id": 469,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_PRODUCTION",
+        "details": "Updated central production record ID 32. Original: 450 units of pipe ID 21 (Batch: 2026-06-04-0.15-3.8-50-1510-WTM01). New: 600 units of pipe ID 21 (Batch: 2026-06-04-0.15-3.8-50-1510-WTM01).",
+        "timestamp": "2026-06-05T07:05:36.673314"
+      },
+      {
+        "id": 470,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_PRODUCTION",
+        "details": "Updated central production record ID 37. Original: 270 units of pipe ID 16 (Batch: 2026-06-04-0.16-4.2-60-100-SWM01). New: 281 units of pipe ID 16 (Batch: 2026-06-04-0.16-4.2-60-100-SWM01).",
+        "timestamp": "2026-06-05T07:06:14.241923"
+      },
+      {
+        "id": 471,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_PRODUCTION",
+        "details": "Updated central production record ID 50. Original: 353 units of pipe ID 23 (Batch: 2026-06-04-110/2-4.5-50-1510-SWM01). New: 354 units of pipe ID 23 (Batch: 2026-06-04-110/2-4.5-50-1510-SWM01).",
+        "timestamp": "2026-06-05T07:06:58.793648"
+      },
+      {
+        "id": 472,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PIPE_TYPE",
+        "details": "Registered new catalog model: 110/2 5.5 50 100 SWM01 (Base price: $8000)",
+        "timestamp": "2026-06-05T07:07:43.365949"
+      },
+      {
+        "id": 473,
+        "user_email": "admin@gmail.com",
+        "action": "CREATE_PRODUCTION",
+        "details": "Logged central production: 128 units of pipe model ID 31 (Batch: 2026-06-04-110/2-5.5-50-100-SWM01)",
+        "timestamp": "2026-06-05T07:11:00.625725"
+      },
+      {
+        "id": 474,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 150 units of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) to outpost: ကျားချောင်း",
+        "timestamp": "2026-06-05T07:14:03.917659"
+      },
+      {
+        "id": 475,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 11 units of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) to outpost: ကျားချောင်း",
+        "timestamp": "2026-06-05T07:14:29.248585"
+      },
+      {
+        "id": 476,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 1 units of batch \"2026-06-04-110/2-4.5-50-1510-SWM01\" (model ID 23) to outpost: ကျားချောင်း",
+        "timestamp": "2026-06-05T07:14:49.042317"
+      },
+      {
+        "id": 477,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 128 units of batch \"2026-06-04-110/2-5.5-50-100-SWM01\" (model ID 31) to outpost: ကျားချောင်း",
+        "timestamp": "2026-06-05T07:15:14.716813"
+      },
+      {
+        "id": 479,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 63 (batch \"2026-06-04-110/2-2\"-50-100-SWM01\") to village \"ကံသစ်\". Original qty: 10, New qty: 11",
+        "timestamp": "2026-06-05T08:59:15.470421"
+      },
+      {
+        "id": 480,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 139 (batch \"2026-06-04-110/2-4.0-50-1510-SWM01\") to village \"ခြံကွင်း\". Original qty: 1, New qty: 1",
+        "timestamp": "2026-06-05T09:01:18.366108"
+      },
+      {
+        "id": 481,
+        "user_email": "admin@gmail.com",
+        "action": "UPDATE_DISTRIBUTION",
+        "details": "Updated distribution record ID 100 (batch \"2026-06-04-110/2-4.5-50-1435-SWM01\") to village \"ရွှေဝါထွန်း\". Original qty: 59, New qty: 69",
+        "timestamp": "2026-06-05T09:02:09.412087"
+      },
+      {
+        "id": 482,
+        "user_email": "admin@gmail.com",
+        "action": "AUTHORIZE_DISTRIBUTION",
+        "details": "Delivered 9 units of batch \"2026-06-04-110/2-4.5-50-1435-SWM01\" (model ID 26) to outpost: ငပုတော",
+        "timestamp": "2026-06-05T09:04:16.794095"
+      },
+      {
+        "id": 484,
+        "user_email": "admin@gmail.com",
+        "action": "DISBURSE_FUNDING",
+        "details": "Disbursed 4030000 MMK to village \"လပ္ပတ္တာ\"",
+        "timestamp": "2026-06-05T09:13:39.365465"
+      },
+      {
+        "id": 485,
+        "user_email": "admin@gmail.com",
+        "action": "REPAY_FUNDING",
+        "details": "Received repayment of 334100 MMK from village \"လပ္ပတ္တာ\"",
+        "timestamp": "2026-06-05T09:15:22.871164"
+      },
+      {
+        "id": 486,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 4 units (production_grade) of batch \"2026-06-04-0.16-4.2-60-100-WTM01\" (model ID 11) from outpost: ကံသစ် at unit price: 15950",
+        "timestamp": "2026-06-06T03:47:51.784305"
+      },
+      {
+        "id": 487,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 46 units (production_grade) of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) from outpost: ကံသစ် at unit price: 8800",
+        "timestamp": "2026-06-06T03:48:25.954126"
+      },
+      {
+        "id": 490,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 70 units (production_grade) of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) from outpost: ကျားချောင်း at unit price: 8800",
+        "timestamp": "2026-06-06T05:00:59.478356"
+      },
+      {
+        "id": 491,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 40 units (production_grade) of batch \"2026-06-04-0.15-3.8-50-1510-WTM01\" (model ID 21) from outpost: ကျားချောင်း at unit price: 8800",
+        "timestamp": "2026-06-06T05:01:18.638031"
+      },
+      {
+        "id": 492,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 15 units (production_grade) of batch \"2026-06-04-110/2-1.3/4\"-50-1510-SWM01\" (model ID 14) from outpost: ငွေသောင်ယံ at unit price: 8800",
+        "timestamp": "2026-06-06T05:01:43.653532"
+      },
+      {
+        "id": 493,
+        "user_email": "admin@gmail.com",
+        "action": "PROCESS_RETURN",
+        "details": "Processed return of 17 units (production_grade) of batch \"2026-06-04-0.16-4.2-60-100-SWM01\" (model ID 16) from outpost: ငွေသောင်ယံ at unit price: 15950",
+        "timestamp": "2026-06-06T05:02:05.854616"
+      }
+    ],
+    "village_funding": [
+      {
+        "id": 4,
+        "date": "2026-06-01",
+        "village": "လပ္ပတ္တာ",
+        "type": "disbursement",
+        "amount": 4030000,
+        "remark": "ပိုက်ဖိုးကြိုတင်ငွေ"
+      },
+      {
+        "id": 5,
+        "date": "2026-06-04",
+        "village": "လပ္ပတ္တာ",
+        "type": "repayment",
+        "amount": 334100,
+        "remark": "ကြိုတင်ငွေ သွင်းခြင်း"
+      }
+    ]
+  }
+}

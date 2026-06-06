@@ -71,8 +71,8 @@ const TRANSLATIONS = {
     recordDistributionDelivery: 'Record Distribution Delivery',
     outpost: 'Outpost',
     pipeModel: 'Pipe Model',
-    startDate: 'Start Date',
-    endDate: 'End Date',
+    startDate: 'From Date',
+    endDate: 'To Date',
     classification: 'Classification',
     allVillages: 'All villages',
     allPipeModels: 'All pipe models',
@@ -749,6 +749,7 @@ export default function InventoryApp() {
   const [filterPipeType, setFilterPipeType] = useState('All');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [isSpecificDate, setIsSpecificDate] = useState(false);
   const [filterStatus, setFilterStatus] = useState('All'); // For returns
   const [searchBatchId, setSearchBatchId] = useState(''); // For production QC search
   const [filterBatchId, setFilterBatchId] = useState('All');
@@ -756,7 +757,7 @@ export default function InventoryApp() {
   const [searchDistributionQuery, setSearchDistributionQuery] = useState('');
   const [searchReturnsQuery, setSearchReturnsQuery] = useState('');
   const [searchReconciliationQuery, setSearchReconciliationQuery] = useState('');
-  const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all'>('month');
+  const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all' | 'custom'>('month');
   
   // --- Cash Flow Search & Filtering States ---
   const [filterFundingVillage, setFilterFundingVillage] = useState('All');
@@ -807,7 +808,7 @@ export default function InventoryApp() {
 
   const [viewingBatchId, setViewingBatchId] = useState<string | null>(null);
 
-  const [reportType, setReportType] = useState<'daily' | 'weekly' | 'monthly' | 'distribution_left'>('daily');
+  const [reportType, setReportType] = useState<'daily' | 'weekly' | 'monthly' | 'distribution_left' | 'custom'>('daily');
   const [reportDate, setReportDate] = useState('');
   const [reportVillage, setReportVillage] = useState<string>('All');
   const [reportPipeTypeId, setReportPipeTypeId] = useState<string>('All');
@@ -819,6 +820,9 @@ export default function InventoryApp() {
   const [isBackupCreating, setIsBackupCreating] = useState(false);
   const [isBackupRestoring, setIsBackupRestoring] = useState(false);
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
+  const [autoBackupEnabled, setAutoBackupEnabled] = useState(true);
+  const [backupIntervalDays, setBackupIntervalDays] = useState(15);
+  const [isSavingSettings, setIsSavingSettings] = useState(false);
 
   // --- Pagination State & Helpers ---
   const [pages, setPages] = useState<Record<string, number>>({});
@@ -1163,6 +1167,9 @@ export default function InventoryApp() {
         loadVillages(),
         user?.role === 'admin' ? loadAuditLogs() : Promise.resolve(),
       ]);
+      if (user?.role === 'admin') {
+        fetch('/api/backup').catch((err) => console.error('Auto backup check failed:', err));
+      }
     } catch (error) {
       console.error('Failed to load system data:', error);
     } finally {
@@ -1198,6 +1205,10 @@ export default function InventoryApp() {
       const data = await response.json();
       if (response.ok && data.backups) {
         setBackups(data.backups);
+        if (data.settings) {
+          setAutoBackupEnabled(data.settings.autoBackup);
+          setBackupIntervalDays(data.settings.intervalDays);
+        }
       } else {
         setBackupMessage(data.error || 'Failed to load backups.');
       }
@@ -1206,6 +1217,33 @@ export default function InventoryApp() {
       console.error(error);
     } finally {
       setIsBackupLoading(false);
+    }
+  };
+
+  const handleSaveBackupSettings = async (auto: boolean, days: number) => {
+    setIsSavingSettings(true);
+    setBackupMessage(null);
+    try {
+      const response = await fetch('/api/backup/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ autoBackup: auto, intervalDays: days }),
+      });
+      const data = await response.json();
+      if (response.ok && data.settings) {
+        setAutoBackupEnabled(data.settings.autoBackup);
+        setBackupIntervalDays(data.settings.intervalDays);
+        setBackupMessage(language === 'my' 
+          ? 'Backup လုပ်ဆောင်ချက် ဆက်တင်များကို အောင်မြင်စွာ သိမ်းဆည်းပြီးပါပြီ။' 
+          : 'Backup settings saved successfully.');
+      } else {
+        setBackupMessage(data.error || 'Failed to save settings.');
+      }
+    } catch (error) {
+      setBackupMessage('Error saving backup settings.');
+      console.error(error);
+    } finally {
+      setIsSavingSettings(false);
     }
   };
 
@@ -1954,6 +1992,21 @@ export default function InventoryApp() {
         || (filterReconType === 'Distributions' && Number(item.distributedQty) > 0)
         || (filterReconType === 'Returns' && (Number(item.returnedDamagedQty) > 0 || Number(item.returnedProductionGradeQty) > 0));
       
+      let matchDate = true;
+      if (isSpecificDate) {
+        matchDate = !filterStartDate ||
+          (item.distDate !== 'N/A' && item.distDate === filterStartDate) ||
+          (item.returnDate !== 'N/A' && item.returnDate === filterStartDate);
+      } else {
+        const matchStart = !filterStartDate ||
+          (item.distDate !== 'N/A' && new Date(item.distDate) >= new Date(filterStartDate)) ||
+          (item.returnDate !== 'N/A' && new Date(item.returnDate) >= new Date(filterStartDate));
+        const matchEnd = !filterEndDate ||
+          (item.distDate !== 'N/A' && new Date(item.distDate) <= new Date(filterEndDate)) ||
+          (item.returnDate !== 'N/A' && new Date(item.returnDate) <= new Date(filterEndDate));
+        matchDate = matchStart && matchEnd;
+      }
+      
       const query = searchReconciliationQuery.toLowerCase();
       const matchSearch = !query ||
         item.village.toLowerCase().includes(query) ||
@@ -1962,9 +2015,9 @@ export default function InventoryApp() {
         (item.distDate || '').toLowerCase().includes(query) ||
         (item.returnDate || '').toLowerCase().includes(query);
 
-      return matchVillage && matchBatchId && matchType && matchSearch;
+      return matchVillage && matchBatchId && matchType && matchDate && matchSearch;
     });
-  }, [reconciliationLedger, filterVillage, filterBatchId, filterReconType, searchReconciliationQuery]);
+  }, [reconciliationLedger, filterVillage, filterBatchId, filterReconType, filterStartDate, filterEndDate, isSpecificDate, searchReconciliationQuery]);
 
   // --- Charts Data Selectors ---
   const mostDamagedVillageData = useMemo(() => {
@@ -2110,11 +2163,19 @@ export default function InventoryApp() {
       const matchBatch = reportBatchId === 'All' || item.batchId === reportBatchId;
       const pipeTypeObj = pipeTypes.find(pt => pt.name === item.pipeName);
       const matchPipe = reportPipeTypeId === 'All' || (pipeTypeObj && pipeTypeObj.id === Number(reportPipeTypeId));
-      const matchDate = !reportDate || item.distDate === reportDate;
+      
+      let matchDate = true;
+      if (isSpecificDate) {
+        matchDate = !filterStartDate || (item.distDate !== 'N/A' && item.distDate === filterStartDate);
+      } else {
+        const matchStart = !filterStartDate || (item.distDate !== 'N/A' && item.distDate >= filterStartDate);
+        const matchEnd = !filterEndDate || (item.distDate !== 'N/A' && item.distDate <= filterEndDate);
+        matchDate = matchStart && matchEnd;
+      }
 
       return matchVillage && matchBatch && matchPipe && matchDate;
     });
-  }, [reportType, reconciliationLedger, reportVillage, reportBatchId, reportPipeTypeId, reportDate, pipeTypes]);
+  }, [reportType, reconciliationLedger, reportVillage, reportBatchId, reportPipeTypeId, filterStartDate, filterEndDate, isSpecificDate, pipeTypes]);
 
   const reportFilterRange = useMemo(() => {
     if (reportType === 'distribution_left') {
@@ -2123,12 +2184,23 @@ export default function InventoryApp() {
         ? (language === 'my' ? 'မော်ဒယ်အားလုံး' : 'All Models') 
         : (pipeTypes.find(p => p.id === Number(reportPipeTypeId))?.name || 'Unknown');
       const batchLabel = reportBatchId === 'All' ? (language === 'my' ? 'အသုတ်အားလုံး' : 'All Batches') : reportBatchId;
-      const dateLabel = reportDate || (language === 'my' ? 'ရက်စွဲအားလုံး' : 'All Dates');
+      
+      if (isSpecificDate) {
+        const dateLabel = filterStartDate || (language === 'my' ? 'မည်သည့်ရက်စွဲမဆို' : 'Any Date');
+        return {
+          start: filterStartDate,
+          end: filterStartDate,
+          label: `${language === 'my' ? 'ကျေးရွာ' : 'Village'}: ${villageLabel} | ${language === 'my' ? 'မော်ဒယ်' : 'Model'}: ${modelLabel} | Batch: ${batchLabel} | ${language === 'my' ? 'ရက်စွဲ' : 'Date'}: ${dateLabel}`,
+        };
+      }
+
+      const startStr = filterStartDate || (language === 'my' ? 'မည်သည့်ရက်စွဲမဆို' : 'Any Date');
+      const endStr = filterEndDate || (language === 'my' ? 'မည်သည့်ရက်စွဲမဆို' : 'Any Date');
       
       return {
-        start: '',
-        end: '',
-        label: `${language === 'my' ? 'ကျေးရွာ' : 'Village'}: ${villageLabel} | ${language === 'my' ? 'မော်ဒယ်' : 'Model'}: ${modelLabel} | Batch: ${batchLabel} | ${language === 'my' ? 'ရက်စွဲ' : 'Date'}: ${dateLabel}`,
+        start: filterStartDate,
+        end: filterEndDate,
+        label: `${language === 'my' ? 'ကျေးရွာ' : 'Village'}: ${villageLabel} | ${language === 'my' ? 'မော်ဒယ်' : 'Model'}: ${modelLabel} | Batch: ${batchLabel} | ${language === 'my' ? 'ကာလ' : 'Period'}: ${startStr} ${language === 'my' ? 'မှ' : 'to'} ${endStr}`,
       };
     }
     if (filterBatchId !== 'All') {
@@ -2136,6 +2208,23 @@ export default function InventoryApp() {
         start: '',
         end: '',
         label: `${t.batchReportLabel} ${filterBatchId}`,
+      };
+    }
+    if (reportType === 'custom') {
+      if (isSpecificDate) {
+        const dateLabel = filterStartDate || (language === 'my' ? 'မည်သည့်ရက်စွဲမဆို' : 'Any Date');
+        return {
+          start: filterStartDate,
+          end: filterStartDate,
+          label: dateLabel,
+        };
+      }
+      const startStr = filterStartDate || (language === 'my' ? 'မည်သည့်ရက်စွဲမဆို' : 'Any Date');
+      const endStr = filterEndDate || (language === 'my' ? 'မည်သည့်ရက်စွဲမဆို' : 'Any Date');
+      return {
+        start: filterStartDate,
+        end: filterEndDate,
+        label: `${startStr} ${language === 'my' ? 'မှ' : 'to'} ${endStr}`,
       };
     }
     if (!reportDate) return { start: '', end: '', label: '' };
@@ -2163,7 +2252,7 @@ export default function InventoryApp() {
         label: yearMonth,
       };
     }
-  }, [reportType, reportDate, filterBatchId, language, t.batchReportLabel, reportVillage, reportPipeTypeId, reportBatchId, pipeTypes]);
+  }, [reportType, reportDate, filterBatchId, language, t.batchReportLabel, reportVillage, reportPipeTypeId, reportBatchId, pipeTypes, filterStartDate, filterEndDate, isSpecificDate]);
 
   const reportData = useMemo(() => {
     if (reportType === 'distribution_left') {
@@ -2205,21 +2294,39 @@ export default function InventoryApp() {
       filteredRets = returnsList.filter(r => r.batch_id === filterBatchId);
     } else {
       const { start, end } = reportFilterRange;
-      if (!start) return { productions: [], distributions: [], returns: [], totals: { produced: 0, distributed: 0, returned: 0, balance: 0 } };
-
-      if (reportType === 'daily') {
-        filteredProds = productions.filter(p => p.date === start);
-        filteredDists = distributions.filter(d => d.date === start);
-        filteredRets = returnsList.filter(r => r.date === start);
-      } else if (reportType === 'weekly') {
-        filteredProds = productions.filter(p => p.date >= start && p.date <= end);
-        filteredDists = distributions.filter(d => d.date >= start && d.date <= end);
-        filteredRets = returnsList.filter(r => r.date >= start && r.date <= end);
+      if (reportType === 'custom') {
+        filteredProds = productions.filter(p => {
+          if (start && p.date < start) return false;
+          if (end && p.date > end) return false;
+          return true;
+        });
+        filteredDists = distributions.filter(d => {
+          if (start && d.date < start) return false;
+          if (end && d.date > end) return false;
+          return true;
+        });
+        filteredRets = returnsList.filter(r => {
+          if (start && r.date < start) return false;
+          if (end && r.date > end) return false;
+          return true;
+        });
       } else {
-        const yearMonth = start.slice(0, 7);
-        filteredProds = productions.filter(p => p.date.startsWith(yearMonth));
-        filteredDists = distributions.filter(d => d.date.startsWith(yearMonth));
-        filteredRets = returnsList.filter(r => r.date.startsWith(yearMonth));
+        if (!start) return { productions: [], distributions: [], returns: [], totals: { produced: 0, distributed: 0, returned: 0, balance: 0 } };
+
+        if (reportType === 'daily') {
+          filteredProds = productions.filter(p => p.date === start);
+          filteredDists = distributions.filter(d => d.date === start);
+          filteredRets = returnsList.filter(r => r.date === start);
+        } else if (reportType === 'weekly') {
+          filteredProds = productions.filter(p => p.date >= start && p.date <= end);
+          filteredDists = distributions.filter(d => d.date >= start && d.date <= end);
+          filteredRets = returnsList.filter(r => r.date >= start && r.date <= end);
+        } else {
+          const yearMonth = start.slice(0, 7);
+          filteredProds = productions.filter(p => p.date.startsWith(yearMonth));
+          filteredDists = distributions.filter(d => d.date.startsWith(yearMonth));
+          filteredRets = returnsList.filter(r => r.date.startsWith(yearMonth));
+        }
       }
     }
 
@@ -3413,9 +3520,15 @@ export default function InventoryApp() {
       const matchPipeType = filterPipeType === 'All' || item.pipe_type_id === Number(filterPipeType);
       const matchBatchId = filterBatchId === 'All' || item.batch_id === filterBatchId;
       
-      const itemDate = new Date(item.date);
-      const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
-      const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+      let matchDate = true;
+      if (isSpecificDate) {
+        matchDate = !filterStartDate || item.date === filterStartDate;
+      } else {
+        const itemDate = new Date(item.date);
+        const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
+        const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+        matchDate = matchStart && matchEnd;
+      }
 
       const pipeName = pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || '';
       const query = searchDistributionQuery.toLowerCase();
@@ -3425,9 +3538,9 @@ export default function InventoryApp() {
         pipeName.toLowerCase().includes(query) ||
         (item.remark || '').toLowerCase().includes(query);
 
-      return matchVillage && matchPipeType && matchBatchId && matchStart && matchEnd && matchSearch;
+      return matchVillage && matchPipeType && matchBatchId && matchDate && matchSearch;
     });
-  }, [distributions, filterVillage, filterPipeType, filterBatchId, filterStartDate, filterEndDate, searchDistributionQuery, pipeTypes]);
+  }, [distributions, filterVillage, filterPipeType, filterBatchId, filterStartDate, filterEndDate, isSpecificDate, searchDistributionQuery, pipeTypes]);
 
   const filteredReturns = useMemo(() => {
     return returnsList.filter((item) => {
@@ -3436,9 +3549,15 @@ export default function InventoryApp() {
       const matchStatus = filterStatus === 'All' || item.status === filterStatus;
       const matchBatchId = filterBatchId === 'All' || item.batch_id === filterBatchId;
 
-      const itemDate = new Date(item.date);
-      const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
-      const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+      let matchDate = true;
+      if (isSpecificDate) {
+        matchDate = !filterStartDate || item.date === filterStartDate;
+      } else {
+        const itemDate = new Date(item.date);
+        const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
+        const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+        matchDate = matchStart && matchEnd;
+      }
 
       const pipeName = pipeTypes.find((p) => p.id === item.pipe_type_id)?.name || '';
       const query = searchReturnsQuery.toLowerCase();
@@ -3448,9 +3567,9 @@ export default function InventoryApp() {
         pipeName.toLowerCase().includes(query) ||
         (item.remark || '').toLowerCase().includes(query);
 
-      return matchVillage && matchPipeType && matchStatus && matchBatchId && matchStart && matchEnd && matchSearch;
+      return matchVillage && matchPipeType && matchStatus && matchBatchId && matchDate && matchSearch;
     });
-  }, [returnsList, filterVillage, filterPipeType, filterStatus, filterBatchId, filterStartDate, filterEndDate, searchReturnsQuery, pipeTypes]);
+  }, [returnsList, filterVillage, filterPipeType, filterStatus, filterBatchId, filterStartDate, filterEndDate, isSpecificDate, searchReturnsQuery, pipeTypes]);
 
   // --- Weekly Delivery Velocity Calculation ---
   const weeklyVelocity = useMemo(() => {
@@ -3477,6 +3596,32 @@ export default function InventoryApp() {
       percentage: Math.min(Math.round((counts[day] / maxVal) * 100), 100),
     }));
   }, [distributions]);
+
+  const filteredProductions = useMemo(() => {
+    return productions.filter((item) => {
+      const matchBatch = (item.batch_id || '').toLowerCase().includes(searchBatchId.toLowerCase());
+      if (isSpecificDate) {
+        return matchBatch && (!filterStartDate || item.date === filterStartDate);
+      }
+      const itemDate = new Date(item.date);
+      const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
+      const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+      return matchBatch && matchStart && matchEnd;
+    });
+  }, [productions, searchBatchId, filterStartDate, filterEndDate, isSpecificDate]);
+
+  const filteredAuditLogs = useMemo(() => {
+    return auditLogs.filter((log) => {
+      if (!log.timestamp) return true;
+      const logDatePart = log.timestamp.substring(0, 10);
+      if (isSpecificDate) {
+        return !filterStartDate || logDatePart === filterStartDate;
+      }
+      if (filterStartDate && logDatePart < filterStartDate) return false;
+      if (filterEndDate && logDatePart > filterEndDate) return false;
+      return true;
+    });
+  }, [auditLogs, filterStartDate, filterEndDate, isSpecificDate]);
 
   // --- Cash Flow (Funding) Client-Side Filtering ---
   const filteredFundingList = useMemo(() => {
@@ -3511,6 +3656,14 @@ export default function InventoryApp() {
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
     const isWithinPeriod = (dateStr: string) => {
+      if (financePeriod === 'custom') {
+        if (isSpecificDate) {
+          return !filterStartDate || dateStr === filterStartDate;
+        }
+        if (filterStartDate && dateStr < filterStartDate) return false;
+        if (filterEndDate && dateStr > filterEndDate) return false;
+        return true;
+      }
       if (financePeriod === 'all') return true;
       try {
         const itemDate = parseLocalDate(dateStr);
@@ -3533,7 +3686,7 @@ export default function InventoryApp() {
       dists: distributions.filter((d) => isWithinPeriod(d.date) && (!d.remark || !d.remark.includes('is-resent'))),
       rets: returnsList.filter((r) => isWithinPeriod(r.date) && r.status === 'production_grade'),
     };
-  }, [distributions, returnsList, financePeriod]);
+  }, [distributions, returnsList, financePeriod, filterStartDate, filterEndDate, isSpecificDate]);
 
   const financeKPIs = useMemo(() => {
     const { dists, rets } = filteredFinanceData;
@@ -4289,111 +4442,164 @@ export default function InventoryApp() {
 
           {/* PRODUCTION TAB RENDER */}
           {activeTab === 'Production' && (
-            <div className="table-panel">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2>{language === 'my' ? 'ကုန်ထုတ်လုပ်မှု မှတ်တမ်းများ' : 'Production Log Registry'}</h2>
-                <input
-                  type="text"
-                  placeholder={t.searchBatchId}
-                  style={{ width: '180px', padding: '6px 10px', fontSize: '0.85rem' }}
-                  value={searchBatchId}
-                  onChange={(e) => {
-                    setSearchBatchId(e.target.value);
-                    setPage('production', 1);
-                  }}
+            <>
+              {/* Reactive Search & Filters Header */}
+              <div className="filter-bar">
+                <div className="filter-group">
+                  <label htmlFor="prod-start-date">{isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}</label>
+                  <input
+                    id="prod-start-date"
+                    type="date"
+                    value={filterStartDate}
+                    onChange={(e) => {
+                      setFilterStartDate(e.target.value);
+                      setPage('production', 1);
+                    }}
+                  />
+                </div>
+
+                {!isSpecificDate && (
+                  <div className="filter-group">
+                    <label htmlFor="prod-end-date">{t.endDate}:</label>
+                    <input
+                      id="prod-end-date"
+                      type="date"
+                      value={filterEndDate}
+                      onChange={(e) => {
+                        setFilterEndDate(e.target.value);
+                        setPage('production', 1);
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 'auto 0 0 0' }}>
+                  <label className="specific-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: 0, height: '38px', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSpecificDate}
+                      onChange={(e) => {
+                        setIsSpecificDate(e.target.checked);
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        tables.forEach(t => setPage(t, 1));
+                      }}
+                    />
+                    {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}
+                  </label>
+                </div>
+              </div>
+
+              <div className="table-panel">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h2 style={{ margin: 0 }}>{language === 'my' ? 'ကုန်ထုတ်လုပ်မှု မှတ်တမ်းများ' : 'Production Log Registry'}</h2>
+                    <p style={{ margin: '6px 0 0 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>
+                      {language === 'my' ? 'ဗဟိုစက်ရုံမှ ကုန်ထုတ်လုပ်မှုမှတ်တမ်းများ။' : 'Central factory production logs.'}
+                    </p>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={t.searchBatchId}
+                    style={{ width: '240px', padding: '8px 12px', fontSize: '0.85rem' }}
+                    value={searchBatchId}
+                    onChange={(e) => {
+                      setSearchBatchId(e.target.value);
+                      setPage('production', 1);
+                    }}
+                  />
+                </div>
+                <div className="table-wrapper mobile-cards">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</th>
+                        <th>Batch ID</th>
+                        <th>Model</th>
+                        <th>Output</th>
+                        <th>QC Status</th>
+                        {user.role === 'admin' && <th>{t.action}</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {isDataLoading ? (
+                        renderTableSkeleton(user.role === 'admin' ? 6 : 5)
+                      ) : filteredProductions.length === 0 ? (
+                        <tr>
+                          <td colSpan={user.role === 'admin' ? 6 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+                            {t.noBatchesRegistered}
+                          </td>
+                        </tr>
+                      ) : (
+                        (() => {
+                          const filtered = filteredProductions;
+                          return (isPrinting ? filtered : filtered.slice((getPage('production') - 1) * getPageSize('production'), getPage('production') * getPageSize('production'))).map((prod) => {
+                            const pipeName = pipeTypes.find((p) => p.id === prod.pipe_type_id)?.name || 'Unknown Pipe';
+                            const hasDamaged = returnsList.some((r) => r.pipe_type_id === prod.pipe_type_id && r.status === 'damaged');
+                            return (
+                              <tr key={prod.id}>
+                                <td data-label={language === 'my' ? 'ရက်စွဲ' : 'Date'}>{prod.date}</td>
+                                <td data-label="Batch ID">
+                                  {prod.batch_id ? (
+                                    <button
+                                      type="button"
+                                      className="link-btn"
+                                      style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
+                                      onClick={() => setViewingBatchId(prod.batch_id)}
+                                    >
+                                      {prod.batch_id}
+                                    </button>
+                                  ) : (
+                                    'N/A'
+                                  )}
+                                  {prod.batch_id && batchStatusMap[prod.batch_id]?.isFullyReturned && (
+                                    <span className="badge badge-success" style={{ marginLeft: '8px', fontSize: '0.75rem', backgroundColor: 'var(--success)', color: 'white' }}>
+                                      {t.fullyReturned}
+                                    </span>
+                                  )}
+                                </td>
+                                <td data-label="Model">{pipeName}</td>
+                                <td data-label="Output">{prod.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
+                                <td data-label="QC Status">
+                                  {hasDamaged ? (
+                                    <span className="badge badge-warning">{t.defectReturns}</span>
+                                  ) : (
+                                    <span className="badge badge-success">{t.passedQcInspection}</span>
+                                  )}
+                                </td>
+                                {user.role === 'admin' && (
+                                  <td className="actions-cell">
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                      <button
+                                        type="button"
+                                        className="action-btn edit"
+                                        onClick={() => openEditProductionModal(prod)}
+                                      >
+                                        {t.edit}
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="action-btn delete"
+                                        onClick={() => deleteRecord(`/api/production?id=${prod.id}`, t.confirmDeleteRecord)}
+                                      >
+                                        {t.delete}
+                                      </button>
+                                    </div>
+                                  </td>
+                                )}
+                              </tr>
+                            );
+                          });
+                        })()
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <PaginationControls
+                  tableKey="production"
+                  totalItems={filteredProductions.length}
                 />
               </div>
-              <div className="table-wrapper mobile-cards">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>{language === 'my' ? 'ရက်စွဲ' : 'Date'}</th>
-                      <th>Batch ID</th>
-                      <th>Model</th>
-                      <th>Output</th>
-                      <th>QC Status</th>
-                      {user.role === 'admin' && <th>{t.action}</th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isDataLoading ? (
-                      renderTableSkeleton(user.role === 'admin' ? 6 : 5)
-                    ) : productions.length === 0 ? (
-                      <tr>
-                        <td colSpan={user.role === 'admin' ? 6 : 5} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-                          {t.noBatchesRegistered}
-                        </td>
-                      </tr>
-                    ) : (
-                      (() => {
-                        const filtered = productions.filter(p => (p.batch_id || '').toLowerCase().includes(searchBatchId.toLowerCase()));
-                        return (isPrinting ? filtered : filtered.slice((getPage('production') - 1) * getPageSize('production'), getPage('production') * getPageSize('production'))).map((prod) => {
-                          const pipeName = pipeTypes.find((p) => p.id === prod.pipe_type_id)?.name || 'Unknown Pipe';
-                          const hasDamaged = returnsList.some((r) => r.pipe_type_id === prod.pipe_type_id && r.status === 'damaged');
-                          return (
-                            <tr key={prod.id}>
-                              <td data-label={language === 'my' ? 'ရက်စွဲ' : 'Date'}>{prod.date}</td>
-                              <td data-label="Batch ID">
-                                {prod.batch_id ? (
-                                  <button
-                                    type="button"
-                                    className="link-btn"
-                                    style={{ background: 'none', border: 'none', padding: 0, color: 'var(--primary)', cursor: 'pointer', textDecoration: 'underline', fontWeight: '600' }}
-                                    onClick={() => setViewingBatchId(prod.batch_id)}
-                                  >
-                                    {prod.batch_id}
-                                  </button>
-                                ) : (
-                                  'N/A'
-                                )}
-                                {prod.batch_id && batchStatusMap[prod.batch_id]?.isFullyReturned && (
-                                  <span className="badge badge-success" style={{ marginLeft: '8px', fontSize: '0.75rem', backgroundColor: 'var(--success)', color: 'white' }}>
-                                    {t.fullyReturned}
-                                  </span>
-                                )}
-                              </td>
-                              <td data-label="Model">{pipeName}</td>
-                              <td data-label="Output">{prod.quantity} {language === 'my' ? 'ယူနစ်' : 'units'}</td>
-                              <td data-label="QC Status">
-                                {hasDamaged ? (
-                                  <span className="badge badge-warning">{t.defectReturns}</span>
-                                ) : (
-                                  <span className="badge badge-success">{t.passedQcInspection}</span>
-                                )}
-                              </td>
-                              {user.role === 'admin' && (
-                                <td className="actions-cell">
-                                  <div style={{ display: 'flex', gap: '8px' }}>
-                                    <button
-                                      type="button"
-                                      className="action-btn edit"
-                                      onClick={() => openEditProductionModal(prod)}
-                                    >
-                                      {t.edit}
-                                    </button>
-                                    <button
-                                      type="button"
-                                      className="action-btn delete"
-                                      onClick={() => deleteRecord(`/api/production?id=${prod.id}`, t.confirmDeleteRecord)}
-                                    >
-                                      {t.delete}
-                                    </button>
-                                  </div>
-                                </td>
-                              )}
-                            </tr>
-                          );
-                        });
-                      })()
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <PaginationControls
-                tableKey="production"
-                totalItems={productions.filter(p => (p.batch_id || '').toLowerCase().includes(searchBatchId.toLowerCase())).length}
-              />
-            </div>
+            </>
           )}
 
           {/* DISTRIBUTION TAB RENDER */}
@@ -4454,7 +4660,7 @@ export default function InventoryApp() {
                 </div>
 
                 <div className="filter-group">
-                  <label htmlFor="filter-start-date">{t.startDate}:</label>
+                  <label htmlFor="filter-start-date">{isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}</label>
                   <input
                     id="filter-start-date"
                     type="date"
@@ -4466,17 +4672,34 @@ export default function InventoryApp() {
                   />
                 </div>
 
-                <div className="filter-group">
-                  <label htmlFor="filter-end-date">{t.endDate}:</label>
-                  <input
-                    id="filter-end-date"
-                    type="date"
-                    value={filterEndDate}
-                    onChange={(e) => {
-                      setFilterEndDate(e.target.value);
-                      setPage('distribution', 1);
-                    }}
-                  />
+                {!isSpecificDate && (
+                  <div className="filter-group">
+                    <label htmlFor="filter-end-date">{t.endDate}:</label>
+                    <input
+                      id="filter-end-date"
+                      type="date"
+                      value={filterEndDate}
+                      onChange={(e) => {
+                        setFilterEndDate(e.target.value);
+                        setPage('distribution', 1);
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 'auto 0 0 0' }}>
+                  <label className="specific-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: 0, height: '38px', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSpecificDate}
+                      onChange={(e) => {
+                        setIsSpecificDate(e.target.checked);
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        tables.forEach(t => setPage(t, 1));
+                      }}
+                    />
+                    {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}
+                  </label>
                 </div>
               </div>
 
@@ -4648,7 +4871,7 @@ export default function InventoryApp() {
                 </div>
 
                 <div className="filter-group">
-                  <label htmlFor="return-start-date">{t.startDate}:</label>
+                  <label htmlFor="return-start-date">{isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}</label>
                   <input
                     id="return-start-date"
                     type="date"
@@ -4660,17 +4883,34 @@ export default function InventoryApp() {
                   />
                 </div>
 
-                <div className="filter-group">
-                  <label htmlFor="return-end-date">{t.endDate}:</label>
-                  <input
-                    id="return-end-date"
-                    type="date"
-                    value={filterEndDate}
-                    onChange={(e) => {
-                      setFilterEndDate(e.target.value);
-                      setPage('returns', 1);
-                    }}
-                  />
+                {!isSpecificDate && (
+                  <div className="filter-group">
+                    <label htmlFor="return-end-date">{t.endDate}:</label>
+                    <input
+                      id="return-end-date"
+                      type="date"
+                      value={filterEndDate}
+                      onChange={(e) => {
+                        setFilterEndDate(e.target.value);
+                        setPage('returns', 1);
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 'auto 0 0 0' }}>
+                  <label className="specific-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: 0, height: '38px', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSpecificDate}
+                      onChange={(e) => {
+                        setIsSpecificDate(e.target.checked);
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        tables.forEach(t => setPage(t, 1));
+                      }}
+                    />
+                    {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}
+                  </label>
                 </div>
               </div>
 
@@ -4850,6 +5090,49 @@ export default function InventoryApp() {
                     <option value="Returns">{language === 'my' ? 'ပြန်အပ်နှံမှုများသာ' : 'Returns Only'}</option>
                   </select>
                 </div>
+
+                <div className="filter-group">
+                  <label htmlFor="recon-start-date">{isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}</label>
+                  <input
+                    id="recon-start-date"
+                    type="date"
+                    value={filterStartDate}
+                    onChange={(e) => {
+                      setFilterStartDate(e.target.value);
+                      setPage('reconciliation', 1);
+                    }}
+                  />
+                </div>
+
+                {!isSpecificDate && (
+                  <div className="filter-group">
+                    <label htmlFor="recon-end-date">{t.endDate}:</label>
+                    <input
+                      id="recon-end-date"
+                      type="date"
+                      value={filterEndDate}
+                      onChange={(e) => {
+                        setFilterEndDate(e.target.value);
+                        setPage('reconciliation', 1);
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 'auto 0 0 0' }}>
+                  <label className="specific-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: 0, height: '38px', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSpecificDate}
+                      onChange={(e) => {
+                        setIsSpecificDate(e.target.checked);
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        tables.forEach(t => setPage(t, 1));
+                      }}
+                    />
+                    {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}
+                  </label>
+                </div>
               </div>
 
               {/* RECONCILIATION SUMMARY TABLE */}
@@ -4971,15 +5254,18 @@ export default function InventoryApp() {
           {activeTab === 'Finance' && (
             <>
               {/* Financial Period Filter Control */}
-              <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className="filter-group">
+              <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div className="filter-group" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '16px', margin: 0 }}>
                   <label>{t.timePeriod}:</label>
-                  <div className="button-group-toggle" style={{ display: 'flex', gap: '8px' }}>
+                  <div className="button-group-toggle" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       className={`tab-btn-mini ${financePeriod === 'day' ? 'active' : ''}`}
                       onClick={() => {
                         setFinancePeriod('day');
+                        setFilterStartDate('');
+                        setFilterEndDate('');
+                        setIsSpecificDate(false);
                         setPage('finRebuyProd', 1);
                         setPage('finRatio', 1);
                         setPage('finFunding', 1);
@@ -5002,6 +5288,9 @@ export default function InventoryApp() {
                       className={`tab-btn-mini ${financePeriod === 'week' ? 'active' : ''}`}
                       onClick={() => {
                         setFinancePeriod('week');
+                        setFilterStartDate('');
+                        setFilterEndDate('');
+                        setIsSpecificDate(false);
                         setPage('finRebuyProd', 1);
                         setPage('finRatio', 1);
                         setPage('finFunding', 1);
@@ -5024,6 +5313,9 @@ export default function InventoryApp() {
                       className={`tab-btn-mini ${financePeriod === 'month' ? 'active' : ''}`}
                       onClick={() => {
                         setFinancePeriod('month');
+                        setFilterStartDate('');
+                        setFilterEndDate('');
+                        setIsSpecificDate(false);
                         setPage('finRebuyProd', 1);
                         setPage('finRatio', 1);
                         setPage('finFunding', 1);
@@ -5046,6 +5338,9 @@ export default function InventoryApp() {
                       className={`tab-btn-mini ${financePeriod === 'all' ? 'active' : ''}`}
                       onClick={() => {
                         setFinancePeriod('all');
+                        setFilterStartDate('');
+                        setFilterEndDate('');
+                        setIsSpecificDate(false);
                         setPage('finRebuyProd', 1);
                         setPage('finRatio', 1);
                         setPage('finFunding', 1);
@@ -5063,7 +5358,80 @@ export default function InventoryApp() {
                     >
                       {t.allTime}
                     </button>
+                    <button
+                      type="button"
+                      className={`tab-btn-mini ${financePeriod === 'custom' ? 'active' : ''}`}
+                      onClick={() => {
+                        setFinancePeriod('custom');
+                        setPage('finRebuyProd', 1);
+                        setPage('finRatio', 1);
+                        setPage('finFunding', 1);
+                        setPage('finCashFlow', 1);
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--border-color)',
+                        background: financePeriod === 'custom' ? 'var(--primary)' : 'var(--bg-primary)',
+                        color: financePeriod === 'custom' ? '#fff' : 'var(--text-primary)',
+                        cursor: 'pointer',
+                        fontWeight: '600'
+                      }}
+                    >
+                      {language === 'my' ? 'စိတ်ကြိုက်ကာလ' : 'Custom Range'}
+                    </button>
                   </div>
+
+                  {financePeriod === 'custom' && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                      <label htmlFor="fin-start-date" style={{ fontSize: '0.85rem', margin: 0 }}>
+                        {isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}
+                      </label>
+                      <input
+                        id="fin-start-date"
+                        type="date"
+                        value={filterStartDate}
+                        onChange={(e) => {
+                          setFilterStartDate(e.target.value);
+                          setPage('finRebuyProd', 1);
+                          setPage('finRatio', 1);
+                          setPage('finFunding', 1);
+                          setPage('finCashFlow', 1);
+                        }}
+                        style={{ padding: '6px 10px', fontSize: '0.85rem', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                      />
+                      {!isSpecificDate && (
+                        <>
+                          <label htmlFor="fin-end-date" style={{ fontSize: '0.85rem', margin: 0 }}>{t.endDate}:</label>
+                          <input
+                            id="fin-end-date"
+                            type="date"
+                            value={filterEndDate}
+                            onChange={(e) => {
+                              setFilterEndDate(e.target.value);
+                              setPage('finRebuyProd', 1);
+                              setPage('finRatio', 1);
+                              setPage('finFunding', 1);
+                              setPage('finCashFlow', 1);
+                            }}
+                            style={{ padding: '6px 10px', fontSize: '0.85rem', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                          />
+                        </>
+                      )}
+                      <label className="specific-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: 0, color: 'var(--text-secondary)' }}>
+                        <input
+                          type="checkbox"
+                          checked={isSpecificDate}
+                          onChange={(e) => {
+                            setIsSpecificDate(e.target.checked);
+                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                            tables.forEach(t => setPage(t, 1));
+                          }}
+                        />
+                        {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}
+                      </label>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -5509,6 +5877,7 @@ export default function InventoryApp() {
                     <option value="daily">{t.daily}</option>
                     <option value="weekly">{t.weekly}</option>
                     <option value="monthly">{t.monthly}</option>
+                    <option value="custom">{language === 'my' ? 'စိတ်ကြိုက်ကာလ' : 'Custom Range'}</option>
                     <option value="distribution_left">{language === 'my' ? 'ဖြန့်ဖြူးမှုနှင့် ကျန်ရှိမှု' : 'Distribution & Left Return'}</option>
                   </select>
                 </div>
@@ -5568,39 +5937,93 @@ export default function InventoryApp() {
                     </div>
 
                     <div className="filter-group">
-                      <label htmlFor="report-date-select">{language === 'my' ? 'ရက်စွဲ:' : 'Date:'}</label>
+                      <label htmlFor="report-start-date">
+                        {isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}
+                      </label>
                       <input
-                        id="report-date-select"
+                        id="report-start-date"
                         type="date"
-                        value={reportDate}
+                        value={filterStartDate}
                         onChange={(e) => {
-                          setReportDate(e.target.value);
+                          setFilterStartDate(e.target.value);
                           setPage('repRecon', 1);
                         }}
                       />
                     </div>
+
+                    {!isSpecificDate && (
+                      <div className="filter-group">
+                        <label htmlFor="report-end-date">{t.endDate}:</label>
+                        <input
+                          id="report-end-date"
+                          type="date"
+                          value={filterEndDate}
+                          onChange={(e) => {
+                            setFilterEndDate(e.target.value);
+                            setPage('repRecon', 1);
+                          }}
+                        />
+                      </div>
+                    )}
                   </>
                 ) : (
                   <>
-                    <div className="filter-group">
-                      <label htmlFor="report-date">
-                        {reportType === 'daily' && (language === 'my' ? 'ရက်စွဲ ရွေးချယ်ရန်:' : 'Select Date:')}
-                        {reportType === 'weekly' && (language === 'my' ? 'စတင်မည့် ရက်စွဲ ရွေးချယ်ရန်:' : 'Select Start Date:')}
-                        {reportType === 'monthly' && (language === 'my' ? 'လ ရွေးချယ်ရန်:' : 'Select Month:')}
-                      </label>
-                      <input
-                        id="report-date"
-                        type={reportType === 'monthly' ? 'month' : 'date'}
-                        value={reportDate}
-                        disabled={filterBatchId !== 'All'}
-                        onChange={(e) => {
-                          setReportDate(e.target.value);
-                          setPage('repProd', 1);
-                          setPage('repDist', 1);
-                          setPage('repRet', 1);
-                        }}
-                      />
-                    </div>
+                    {reportType === 'custom' ? (
+                      <>
+                        <div className="filter-group">
+                          <label htmlFor="report-start-date">
+                            {isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}
+                          </label>
+                          <input
+                            id="report-start-date"
+                            type="date"
+                            value={filterStartDate}
+                            onChange={(e) => {
+                              setFilterStartDate(e.target.value);
+                              setPage('repProd', 1);
+                              setPage('repDist', 1);
+                              setPage('repRet', 1);
+                            }}
+                          />
+                        </div>
+                        {!isSpecificDate && (
+                          <div className="filter-group">
+                            <label htmlFor="report-end-date">{t.endDate}:</label>
+                            <input
+                              id="report-end-date"
+                              type="date"
+                              value={filterEndDate}
+                              onChange={(e) => {
+                                setFilterEndDate(e.target.value);
+                                setPage('repProd', 1);
+                                setPage('repDist', 1);
+                                setPage('repRet', 1);
+                              }}
+                            />
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="filter-group">
+                        <label htmlFor="report-date">
+                          {reportType === 'daily' && (language === 'my' ? 'ရက်စွဲ ရွေးချယ်ရန်:' : 'Select Date:')}
+                          {reportType === 'weekly' && (language === 'my' ? 'စတင်မည့် ရက်စွဲ ရွေးချယ်ရန်:' : 'Select Start Date:')}
+                          {reportType === 'monthly' && (language === 'my' ? 'လ ရွေးချယ်ရန်:' : 'Select Month:')}
+                        </label>
+                        <input
+                          id="report-date"
+                          type={reportType === 'monthly' ? 'month' : 'date'}
+                          value={reportDate}
+                          disabled={filterBatchId !== 'All'}
+                          onChange={(e) => {
+                            setReportDate(e.target.value);
+                            setPage('repProd', 1);
+                            setPage('repDist', 1);
+                            setPage('repRet', 1);
+                          }}
+                        />
+                      </div>
+                    )}
 
                     <div className="filter-group">
                       <label htmlFor="report-batch-id-select">{t.batchIdLabel}</label>
@@ -5622,6 +6045,23 @@ export default function InventoryApp() {
                       />
                     </div>
                   </>
+                )}
+
+                {(reportType === 'custom' || reportType === 'distribution_left') && (
+                  <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 'auto 0 0 0' }}>
+                    <label className="specific-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: 0, height: '38px', color: 'var(--text-secondary)' }}>
+                      <input
+                        type="checkbox"
+                        checked={isSpecificDate}
+                        onChange={(e) => {
+                          setIsSpecificDate(e.target.checked);
+                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                          tables.forEach(t => setPage(t, 1));
+                        }}
+                      />
+                      {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}
+                    </label>
+                  </div>
                 )}
 
                 <div className="responsive-btn-group right-aligned">
@@ -6107,54 +6547,102 @@ export default function InventoryApp() {
 
           {/* AUDIT LOGS TAB RENDER */}
           {activeTab === 'Audit Logs' && user.role === 'admin' && (
-            <div className="table-panel">
-              <h2>{t.operationalSystemAuditTrail}</h2>
-              <p>{t.chronologicalSecurityLogs}</p>
-              <div className="table-wrapper mobile-cards">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>{t.timestamp}</th>
-                      <th>{t.actorUser}</th>
-                      <th>{t.operationAction}</th>
-                      <th>{t.operationalDetails}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {isDataLoading ? (
-                      renderTableSkeleton(4)
-                    ) : auditLogs.length === 0 ? (
+            <>
+              {/* Reactive Search & Filters Header */}
+              <div className="filter-bar">
+                <div className="filter-group">
+                  <label htmlFor="audit-start-date">{isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}</label>
+                  <input
+                    id="audit-start-date"
+                    type="date"
+                    value={filterStartDate}
+                    onChange={(e) => {
+                      setFilterStartDate(e.target.value);
+                      setPage('auditLogs', 1);
+                    }}
+                  />
+                </div>
+
+                {!isSpecificDate && (
+                  <div className="filter-group">
+                    <label htmlFor="audit-end-date">{t.endDate}:</label>
+                    <input
+                      id="audit-end-date"
+                      type="date"
+                      value={filterEndDate}
+                      onChange={(e) => {
+                        setFilterEndDate(e.target.value);
+                        setPage('auditLogs', 1);
+                      }}
+                    />
+                  </div>
+                )}
+
+                <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 'auto 0 0 0' }}>
+                  <label className="specific-date-label" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem', cursor: 'pointer', margin: 0, height: '38px', color: 'var(--text-secondary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSpecificDate}
+                      onChange={(e) => {
+                        setIsSpecificDate(e.target.checked);
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        tables.forEach(t => setPage(t, 1));
+                      }}
+                    />
+                    {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}
+                  </label>
+                </div>
+              </div>
+
+              <div className="table-panel">
+                <h2>{t.operationalSystemAuditTrail}</h2>
+                <p>{t.chronologicalSecurityLogs}</p>
+                <div className="table-wrapper mobile-cards">
+                  <table>
+                    <thead>
                       <tr>
-                        <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
-                          {t.noAuditEntriesLogged}
-                        </td>
+                        <th>{t.timestamp}</th>
+                        <th>{t.actorUser}</th>
+                        <th>{t.operationAction}</th>
+                        <th>{t.operationalDetails}</th>
                       </tr>
-                    ) : (
-                      (isPrinting ? auditLogs : auditLogs.slice((getPage('auditLogs') - 1) * getPageSize('auditLogs'), getPage('auditLogs') * getPageSize('auditLogs'))).map((log) => (
-                        <tr key={log.id}>
-                          <td data-label={t.timestamp} style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                            {formatAuditTimestamp(log.timestamp)}
-                          </td>
-                          <td data-label={t.actorUser}>{log.user_email}</td>
-                          <td data-label={t.operationAction}>
-                            <span className="badge badge-success" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
-                              {log.action}
-                            </span>
-                          </td>
-                          <td data-label={t.operationalDetails} className="details-col" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                            {log.details || 'None'}
+                    </thead>
+                    <tbody>
+                      {isDataLoading ? (
+                        renderTableSkeleton(4)
+                      ) : filteredAuditLogs.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '24px' }}>
+                            {t.noAuditEntriesLogged}
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : (
+                        (isPrinting ? filteredAuditLogs : filteredAuditLogs.slice((getPage('auditLogs') - 1) * getPageSize('auditLogs'), getPage('auditLogs') * getPageSize('auditLogs'))).map((log) => (
+                          <tr key={log.id}>
+                            <td data-label={t.timestamp} style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                              {formatAuditTimestamp(log.timestamp)}
+                            </td>
+                            <td data-label={t.actorUser}>{log.user_email}</td>
+                            <td data-label={t.operationAction}>
+                              <span className="badge badge-success" style={{ backgroundColor: 'var(--bg-tertiary)', color: 'var(--text-primary)' }}>
+                                {log.action}
+                              </span>
+                            </td>
+                            <td data-label={t.operationalDetails} className="details-col" style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                              {log.details || 'None'}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <PaginationControls
+                  tableKey="auditLogs"
+                  totalItems={filteredAuditLogs.length}
+                />
               </div>
-              <PaginationControls
-                tableKey="auditLogs"
-                totalItems={auditLogs.length}
-              />
-            </div>
+            </>
           )}
 
           {/* BACKUP & RECOVERY TAB RENDER */}
@@ -6217,6 +6705,76 @@ export default function InventoryApp() {
                     : 'Use this panel to manage database snapshot file archives saved locally on the server. Even if the Supabase database is gone or unreachable, you can still list, download raw backups, and export them directly to Excel (.xlsx) workbooks.'
                   }
                 </p>
+              </div>
+
+              {/* BACKUP & RECOVERY SETTINGS */}
+              <div style={{ 
+                padding: '16px 20px', 
+                backgroundColor: 'var(--bg-secondary)', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '8px', 
+                marginBottom: '24px' 
+              }}>
+                <h3 style={{ margin: '0 0 12px 0', fontSize: '1rem', color: 'var(--text-primary)' }}>
+                  ⚙️ {language === 'my' ? 'Backup လုပ်ဆောင်ချက် ဆက်တင်များ' : 'Automatic Backup Settings'}
+                </h3>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', fontSize: '0.9rem', cursor: 'pointer', color: 'var(--text-primary)' }}>
+                    <input
+                      type="checkbox"
+                      checked={autoBackupEnabled}
+                      disabled={isSavingSettings}
+                      onChange={(e) => {
+                        const val = e.target.checked;
+                        setAutoBackupEnabled(val);
+                        handleSaveBackupSettings(val, backupIntervalDays);
+                      }}
+                    />
+                    {language === 'my' ? 'အလိုအလျောက် Backup စနစ်ကို ဖွင့်မည်' : 'Enable Automatic Backup'}
+                  </label>
+
+                  {autoBackupEnabled && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                        {language === 'my' ? 'ရက်အပိုင်းအခြား:' : 'Backup Every:'}
+                      </span>
+                      <select
+                        value={backupIntervalDays}
+                        disabled={isSavingSettings}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setBackupIntervalDays(val);
+                          handleSaveBackupSettings(autoBackupEnabled, val);
+                        }}
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '0.85rem',
+                          borderRadius: '6px',
+                          border: '1px solid var(--border-color)',
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value={1}>1 {language === 'my' ? 'ရက်' : 'Day'}</option>
+                        <option value={3}>3 {language === 'my' ? 'ရက်' : 'Days'}</option>
+                        <option value={7}>7 {language === 'my' ? 'ရက်' : 'Days'}</option>
+                        <option value={15}>15 {language === 'my' ? 'ရက်' : 'Days'}</option>
+                        <option value={30}>30 {language === 'my' ? 'ရက်' : 'Days'}</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                    {autoBackupEnabled 
+                      ? (language === 'my' 
+                          ? `(ရက်ပေါင်း ${backupIntervalDays} ပြည့်တိုင်း စနစ်က အလိုအလျောက် backup ပြုလုပ်ပေးပါမည်)` 
+                          : `(System will auto-backup every ${backupIntervalDays} days when admin accesses the app)`)
+                      : (language === 'my' 
+                          ? '(အလိုအလျောက် Backup စနစ်ကို ပိတ်ထားသည် - Manual သာ ပြုလုပ်နိုင်သည်)' 
+                          : '(Auto backup disabled - only manual backups will be created)')}
+                  </span>
+                </div>
               </div>
 
               <div className="table-wrapper mobile-cards">
