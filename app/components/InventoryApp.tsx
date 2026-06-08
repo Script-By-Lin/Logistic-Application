@@ -971,6 +971,9 @@ export default function InventoryApp() {
   const [searchReconciliationQuery, setSearchReconciliationQuery] = useState('');
   const [searchPipeQuery, setSearchPipeQuery] = useState('');
   const [searchVillageQuery, setSearchVillageQuery] = useState('');
+  const [searchCarIncomeQuery, setSearchCarIncomeQuery] = useState('');
+  const [searchCarExpenseQuery, setSearchCarExpenseQuery] = useState('');
+  const [activeFerrySubTab, setActiveFerrySubTab] = useState<'incomes' | 'expenses'>('incomes');
   const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all' | 'custom'>('month');
   
   // --- Cash Flow Search & Filtering States ---
@@ -4031,26 +4034,100 @@ export default function InventoryApp() {
   };
 
   // --- Ferry Car Calculations & Filtering ---
-  const carStats = useMemo(() => {
-    const targetExpenses = selectedCarId === 'all' 
-      ? carExpenses 
-      : carExpenses.filter(e => e.car_id === selectedCarId);
-    
-    const targetIncomes = selectedCarId === 'all' 
-      ? carIncomes 
-      : carIncomes.filter(i => i.car_id === selectedCarId);
+  const filteredCarExpenses = useMemo(() => {
+    return carExpenses.filter((item) => {
+      // 1. Car filter
+      const matchCar = selectedCarId === 'all' || item.car_id === selectedCarId;
+      
+      // 2. Date filter
+      let matchDate = true;
+      if (isSpecificDate) {
+        matchDate = !filterStartDate || item.date === filterStartDate;
+      } else {
+        const itemDate = new Date(item.date);
+        const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
+        const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+        matchDate = matchStart && matchEnd;
+      }
 
-    const totalIncome = targetIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-    const totalExpense = targetExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      // 3. Search filter
+      const car = cars.find(c => c.id === item.car_id);
+      const carNumber = car ? car.car_number : '';
+      const query = searchCarExpenseQuery.toLowerCase();
+      const matchSearch = !query ||
+        carNumber.toLowerCase().includes(query) ||
+        (item.reason || '').toLowerCase().includes(query);
+
+      return matchCar && matchDate && matchSearch;
+    });
+  }, [carExpenses, selectedCarId, filterStartDate, filterEndDate, isSpecificDate, searchCarExpenseQuery, cars]);
+
+  const filteredCarIncomes = useMemo(() => {
+    return carIncomes.filter((item) => {
+      // 1. Car filter
+      const matchCar = selectedCarId === 'all' || item.car_id === selectedCarId;
+      
+      // 2. Date filter
+      let matchDate = true;
+      if (isSpecificDate) {
+        matchDate = !filterStartDate || item.date === filterStartDate;
+      } else {
+        const itemDate = new Date(item.date);
+        const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
+        const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+        matchDate = matchStart && matchEnd;
+      }
+
+      // 3. Search filter
+      const car = cars.find(c => c.id === item.car_id);
+      const carNumber = car ? car.car_number : '';
+      const query = searchCarIncomeQuery.toLowerCase();
+      const matchSearch = !query ||
+        carNumber.toLowerCase().includes(query) ||
+        (item.reason || '').toLowerCase().includes(query);
+
+      return matchCar && matchDate && matchSearch;
+    });
+  }, [carIncomes, selectedCarId, filterStartDate, filterEndDate, isSpecificDate, searchCarIncomeQuery, cars]);
+
+  const carStats = useMemo(() => {
+    const totalIncome = filteredCarIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalExpense = filteredCarExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
     const netBalance = totalIncome - totalExpense;
 
     return { totalIncome, totalExpense, netBalance };
-  }, [carExpenses, carIncomes, selectedCarId]);
+  }, [filteredCarIncomes, filteredCarExpenses]);
 
   const carsWithBalances = useMemo(() => {
     return cars.map(car => {
-      const targetExpenses = carExpenses.filter(e => e.car_id === car.id);
-      const targetIncomes = carIncomes.filter(i => i.car_id === car.id);
+      const targetExpenses = carExpenses.filter(e => {
+        if (e.car_id !== car.id) return false;
+        let matchDate = true;
+        if (isSpecificDate) {
+          matchDate = !filterStartDate || e.date === filterStartDate;
+        } else {
+          const itemDate = new Date(e.date);
+          const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
+          const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+          matchDate = matchStart && matchEnd;
+        }
+        return matchDate;
+      });
+
+      const targetIncomes = carIncomes.filter(i => {
+        if (i.car_id !== car.id) return false;
+        let matchDate = true;
+        if (isSpecificDate) {
+          matchDate = !filterStartDate || i.date === filterStartDate;
+        } else {
+          const itemDate = new Date(i.date);
+          const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
+          const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
+          matchDate = matchStart && matchEnd;
+        }
+        return matchDate;
+      });
+
       const totalIncome = targetIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const totalExpense = targetExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
       const netBalance = totalIncome - totalExpense;
@@ -4061,17 +4138,7 @@ export default function InventoryApp() {
         netBalance
       };
     });
-  }, [cars, carExpenses, carIncomes]);
-
-  const filteredCarExpenses = useMemo(() => {
-    if (selectedCarId === 'all') return carExpenses;
-    return carExpenses.filter(e => e.car_id === selectedCarId);
-  }, [carExpenses, selectedCarId]);
-
-  const filteredCarIncomes = useMemo(() => {
-    if (selectedCarId === 'all') return carIncomes;
-    return carIncomes.filter(i => i.car_id === selectedCarId);
-  }, [carIncomes, selectedCarId]);
+  }, [cars, carExpenses, carIncomes, filterStartDate, filterEndDate, isSpecificDate]);
 
   // --- Dynamic Live Alerts Calculation ---
   const systemAlerts = useMemo(() => {
@@ -5242,7 +5309,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />
@@ -5456,7 +5523,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />
@@ -5667,7 +5734,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />
@@ -5823,43 +5890,169 @@ export default function InventoryApp() {
               </div>
 
               {/* Action and filter bar */}
-              <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                <div className="filter-group">
-                  <label htmlFor="ferry-car-filter">{t.selectCar}:</label>
-                  <select
-                    id="ferry-car-filter"
-                    value={selectedCarId}
-                    onChange={(e) => {
-                      setSelectedCarId(e.target.value === 'all' ? 'all' : Number(e.target.value));
-                      setPage('carExpensesTable', 1);
-                      setPage('carIncomesTable', 1);
-                    }}
-                    style={{ minWidth: '200px' }}
-                  >
-                    <option value="all">{t.allCars}</option>
-                    {cars.map((car) => (
-                      <option key={car.id} value={car.id}>
-                        {car.car_number}
-                      </option>
-                    ))}
-                  </select>
+              <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', padding: '24px 40px' }}>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+                  <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label htmlFor="ferry-car-filter" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>🚗</span> {t.selectCar}:
+                    </label>
+                    <select
+                      id="ferry-car-filter"
+                      value={selectedCarId}
+                      onChange={(e) => {
+                        setSelectedCarId(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                        setPage('carExpensesTable', 1);
+                        setPage('carIncomesTable', 1);
+                      }}
+                      style={{
+                        minWidth: '200px',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border-color)',
+                        padding: '10px 16px',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)',
+                        transition: 'all 0.2s',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    >
+                      <option value="all">{t.allCars}</option>
+                      {cars.map((car) => (
+                        <option key={car.id} value={car.id}>
+                          {car.car_number}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <label htmlFor="ferry-car-start-date" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span>📅</span> {isSpecificDate ? (language === 'my' ? 'ရက်စွဲ:' : 'Date:') : t.startDate + ':'}
+                    </label>
+                    <input
+                      id="ferry-car-start-date"
+                      type="date"
+                      value={filterStartDate}
+                      onChange={(e) => {
+                        setFilterStartDate(e.target.value);
+                        setPage('carExpensesTable', 1);
+                        setPage('carIncomesTable', 1);
+                      }}
+                      style={{
+                        borderRadius: '10px',
+                        border: '1px solid var(--border-color)',
+                        padding: '10px 16px',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-primary)',
+                        transition: 'all 0.2s',
+                        cursor: 'pointer',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {!isSpecificDate && (
+                    <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label htmlFor="ferry-car-end-date" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span>📅</span> {t.endDate}:
+                      </label>
+                      <input
+                        id="ferry-car-end-date"
+                        type="date"
+                        value={filterEndDate}
+                        onChange={(e) => {
+                          setFilterEndDate(e.target.value);
+                          setPage('carExpensesTable', 1);
+                          setPage('carIncomesTable', 1);
+                        }}
+                        style={{
+                          borderRadius: '10px',
+                          border: '1px solid var(--border-color)',
+                          padding: '10px 16px',
+                          fontSize: '0.85rem',
+                          fontWeight: 500,
+                          backgroundColor: 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          transition: 'all 0.2s',
+                          cursor: 'pointer',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 0 }}>
+                    <label className="specific-date-label" style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      margin: 0,
+                      padding: '8px 14px',
+                      borderRadius: '20px',
+                      border: '1px solid var(--border-color)',
+                      backgroundColor: isSpecificDate ? 'var(--accent-light)' : 'var(--bg-primary)',
+                      color: isSpecificDate ? 'var(--accent)' : 'var(--text-secondary)',
+                      fontWeight: 600,
+                      transition: 'all 0.2s ease',
+                      userSelect: 'none'
+                    }}>
+                      <input
+                        type="checkbox"
+                        checked={isSpecificDate}
+                        onChange={(e) => {
+                          setIsSpecificDate(e.target.checked);
+                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                          tables.forEach(t => setPage(t, 1));
+                        }}
+                        style={{ margin: 0, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                      />
+                      <span>⏱️ {language === 'my' ? 'ရက်စွဲတစ်ခုတည်း' : 'Specific Date Only'}</span>
+                    </label>
+                  </div>
                 </div>
                 {user?.role === 'admin' && (
                   <div className="header-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     <button
                       type="button"
-                      className="primary"
                       onClick={() => {
                         setCarForm({ carNumber: '' });
                         setActiveModal('new_car');
                       }}
+                      style={{
+                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        fontFamily: 'var(--font-body)',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-1px)';
+                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.2)';
+                      }}
                     >
-                      + {t.addCar}
+                       + {t.addCar}
                     </button>
                     <button
                       type="button"
-                      className="primary"
-                      style={{ backgroundColor: 'var(--success)' }}
                       onClick={() => {
                         setCarIncomeForm({
                           date: getLocalTodayDateString(),
@@ -5870,13 +6063,40 @@ export default function InventoryApp() {
                         setActiveModal('new_car_income');
                       }}
                       disabled={cars.length === 0}
+                      style={{
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        fontFamily: 'var(--font-body)',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        cursor: cars.length === 0 ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
+                        opacity: cars.length === 0 ? 0.6 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (cars.length > 0) {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.3)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (cars.length > 0) {
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.2)';
+                        }
+                      }}
                     >
                       + {t.addIncome}
                     </button>
                     <button
                       type="button"
-                      className="primary"
-                      style={{ backgroundColor: 'var(--danger)' }}
                       onClick={() => {
                         setCarExpenseForm({
                           date: getLocalTodayDateString(),
@@ -5887,15 +6107,44 @@ export default function InventoryApp() {
                         setActiveModal('new_car_expense');
                       }}
                       disabled={cars.length === 0}
+                      style={{
+                        background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 20px',
+                        borderRadius: '10px',
+                        fontFamily: 'var(--font-body)',
+                        fontWeight: 600,
+                        fontSize: '0.9rem',
+                        cursor: cars.length === 0 ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 4px 12px rgba(244, 63, 94, 0.2)',
+                        opacity: cars.length === 0 ? 0.6 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (cars.length > 0) {
+                          e.currentTarget.style.transform = 'translateY(-1px)';
+                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(244, 63, 94, 0.3)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (cars.length > 0) {
+                          e.currentTarget.style.transform = 'none';
+                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(244, 63, 94, 0.2)';
+                        }
+                      }}
                     >
-                      + {t.addExpense}
+                       + {t.addExpense}
                     </button>
                   </div>
                 )}
               </div>
 
               {/* Main content pane */}
-              <div className="overview-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '40px', padding: '40px', overflowY: 'auto' }}>
+              <div className="ferry-cars-grid">
                 
                 {/* Left column - Cars List */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -5979,171 +6228,255 @@ export default function InventoryApp() {
                   )}
                 </div>
 
-                {/* Right column - Incomes and Expenses Details */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
-                  
-                  {/* Incomes Section */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem' }}>
-                      <span>💵 {language === 'my' ? 'ဝင်ငွေ မှတ်တမ်း' : 'Incomes Registry'}</span>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        {selectedCarId === 'all' ? `(${t.allCars})` : ''}
-                      </span>
-                    </h3>
-                    
-                    <div className="table-responsive">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>{t.date}</th>
-                            <th>{t.carNumber}</th>
-                            <th>{t.amount}</th>
-                            <th>{t.reason}</th>
-                            {user?.role === 'admin' && <th>{t.action}</th>}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredCarIncomes.length === 0 ? (
-                            <tr>
-                              <td colSpan={user?.role === 'admin' ? 5 : 4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
-                                {language === 'my' ? 'ဝင်ငွေမှတ်တမ်းမရှိပါ။' : 'No income records found.'}
-                              </td>
-                            </tr>
-                          ) : (
-                            (isPrinting 
-                              ? filteredCarIncomes 
-                              : filteredCarIncomes.slice((getPage('carIncomesTable') - 1) * getPageSize('carIncomesTable'), getPage('carIncomesTable') * getPageSize('carIncomesTable'))
-                            ).map((income) => {
-                              const car = cars.find(c => c.id === income.car_id);
-                              return (
-                                <tr key={income.id}>
-                                  <td>{income.date}</td>
-                                  <td style={{ fontWeight: 600 }}>{car ? car.car_number : `ID ${income.car_id}`}</td>
-                                  <td style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(income.amount)}</td>
-                                  <td>{income.reason || '-'}</td>
-                                  {user?.role === 'admin' && (
-                                    <td>
-                                      <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button
-                                          type="button"
-                                          className="action-btn edit"
-                                          onClick={() => {
-                                            setEditingCarIncome(income);
-                                            setCarIncomeForm({
-                                              date: income.date,
-                                              carId: income.car_id,
-                                              amount: income.amount,
-                                              reason: income.reason || '',
-                                            });
-                                            setActiveModal('edit_car_income');
-                                          }}
-                                        >
-                                          {t.edit}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="action-btn delete"
-                                          onClick={() => handleDeleteCarIncome(income.id)}
-                                        >
-                                          {t.delete}
-                                        </button>
-                                      </div>
-                                    </td>
-                                  )}
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                    <PaginationControls
-                      tableKey="carIncomesTable"
-                      totalItems={filteredCarIncomes.length}
-                    />
+                {/* Right Column - Incomes / Expenses Tabbed View */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* Segmented Sub-tab control switcher */}
+                  <div className="ferry-segmented-control">
+                    <button
+                      type="button"
+                      onClick={() => setActiveFerrySubTab('incomes')}
+                      className={`ferry-segmented-btn ${activeFerrySubTab === 'incomes' ? 'active-income' : ''}`}
+                    >
+                      <span>💵</span> {language === 'my' ? 'ဝင်ငွေ မှတ်တမ်း' : 'Incomes Registry'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveFerrySubTab('expenses')}
+                      className={`ferry-segmented-btn ${activeFerrySubTab === 'expenses' ? 'active-expense' : ''}`}
+                    >
+                      <span>⛽</span> {language === 'my' ? 'အသုံးစရိတ် မှတ်တမ်း' : 'Expenses Registry'}
+                    </button>
                   </div>
 
-                  {/* Expenses Section */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--danger)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem' }}>
-                      <span>⛽ {language === 'my' ? 'အသုံးစရိတ် မှတ်တမ်း' : 'Expenses Registry'}</span>
-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                        {selectedCarId === 'all' ? `(${t.allCars})` : ''}
-                      </span>
-                    </h3>
-
-                    <div className="table-responsive">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>{t.date}</th>
-                            <th>{t.carNumber}</th>
-                            <th>{t.amount}</th>
-                            <th>{t.reason}</th>
-                            {user?.role === 'admin' && <th>{t.action}</th>}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredCarExpenses.length === 0 ? (
+                  {activeFerrySubTab === 'incomes' && (
+                    <div className="ferry-card-panel income-panel">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
+                        <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--success)', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1.2rem', margin: 0 }}>
+                          <span>💵 {language === 'my' ? 'ဝင်ငွေ မှတ်တမ်း' : 'Incomes Registry'}</span>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                            {selectedCarId === 'all' ? `(${t.allCars})` : ''}
+                          </span>
+                        </h3>
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', opacity: 0.6, pointerEvents: 'none' }}>🔍</span>
+                          <input
+                            type="text"
+                            placeholder={language === 'my' ? 'ကားနံပါတ်၊ အကြောင်းအရာဖြင့် ရှာဖွေရန်...' : 'Search by car, reason...'}
+                            style={{
+                              width: '260px',
+                              padding: '10px 16px 10px 36px',
+                              fontSize: '0.85rem',
+                              borderRadius: '10px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'var(--bg-primary)',
+                              color: 'var(--text-primary)',
+                              transition: 'all 0.2s ease',
+                              outline: 'none'
+                            }}
+                            value={searchCarIncomeQuery}
+                            onChange={(e) => {
+                              setSearchCarIncomeQuery(e.target.value);
+                              setPage('carIncomesTable', 1);
+                            }}
+                            onFocus={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--accent)';
+                              e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-glow)';
+                            }}
+                            onBlur={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--border-color)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="table-responsive">
+                        <table className="data-table">
+                          <thead>
                             <tr>
-                              <td colSpan={user?.role === 'admin' ? 5 : 4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
-                                {language === 'my' ? 'အသုံးစရိတ်မှတ်တမ်းမရှိပါ။' : 'No expense records found.'}
-                              </td>
+                              <th>{t.date}</th>
+                              <th>{t.carNumber}</th>
+                              <th>{t.amount}</th>
+                              <th>{t.reason}</th>
+                              {user?.role === 'admin' && <th>{t.action}</th>}
                             </tr>
-                          ) : (
-                            (isPrinting 
-                              ? filteredCarExpenses 
-                              : filteredCarExpenses.slice((getPage('carExpensesTable') - 1) * getPageSize('carExpensesTable'), getPage('carExpensesTable') * getPageSize('carExpensesTable'))
-                            ).map((exp) => {
-                              const car = cars.find(c => c.id === exp.car_id);
-                              return (
-                                <tr key={exp.id}>
-                                  <td>{exp.date}</td>
-                                  <td style={{ fontWeight: 600 }}>{car ? car.car_number : `ID ${exp.car_id}`}</td>
-                                  <td style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(exp.amount)}</td>
-                                  <td>{exp.reason}</td>
-                                  {user?.role === 'admin' && (
-                                    <td>
-                                      <div style={{ display: 'flex', gap: '8px' }}>
-                                        <button
-                                          type="button"
-                                          className="action-btn edit"
-                                          onClick={() => {
-                                            setEditingCarExpense(exp);
-                                            setCarExpenseForm({
-                                              date: exp.date,
-                                              carId: exp.car_id,
-                                              amount: exp.amount,
-                                              reason: exp.reason,
-                                            });
-                                            setActiveModal('edit_car_expense');
-                                          }}
-                                        >
-                                          {t.edit}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          className="action-btn delete"
-                                          onClick={() => handleDeleteCarExpense(exp.id)}
-                                        >
-                                          {t.delete}
-                                        </button>
-                                      </div>
-                                    </td>
-                                  )}
-                                </tr>
-                              );
-                            })
-                          )}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody>
+                            {filteredCarIncomes.length === 0 ? (
+                              <tr>
+                                <td colSpan={user?.role === 'admin' ? 5 : 4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                                  {language === 'my' ? 'ဝင်ငွေမှတ်တမ်းမရှိပါ။' : 'No income records found.'}
+                                </td>
+                              </tr>
+                            ) : (
+                              (isPrinting 
+                                ? filteredCarIncomes 
+                                : filteredCarIncomes.slice((getPage('carIncomesTable') - 1) * getPageSize('carIncomesTable'), getPage('carIncomesTable') * getPageSize('carIncomesTable'))
+                              ).map((income) => {
+                                const car = cars.find(c => c.id === income.car_id);
+                                return (
+                                  <tr key={income.id}>
+                                    <td>{income.date}</td>
+                                    <td style={{ fontWeight: 600 }}>{car ? car.car_number : `ID ${income.car_id}`}</td>
+                                    <td style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(income.amount)}</td>
+                                    <td>{income.reason || '-'}</td>
+                                    {user?.role === 'admin' && (
+                                      <td>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                          <button
+                                            type="button"
+                                            className="action-btn edit"
+                                            onClick={() => {
+                                              setEditingCarIncome(income);
+                                              setCarIncomeForm({
+                                                date: income.date,
+                                                carId: income.car_id,
+                                                amount: income.amount,
+                                                reason: income.reason || '',
+                                              });
+                                              setActiveModal('edit_car_income');
+                                            }}
+                                          >
+                                            {t.edit}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="action-btn delete"
+                                            onClick={() => handleDeleteCarIncome(income.id)}
+                                          >
+                                            {t.delete}
+                                          </button>
+                                        </div>
+                                      </td>
+                                    )}
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      <PaginationControls
+                        tableKey="carIncomesTable"
+                        totalItems={filteredCarIncomes.length}
+                      />
                     </div>
-                    <PaginationControls
-                      tableKey="carExpensesTable"
-                      totalItems={filteredCarExpenses.length}
-                    />
-                  </div>
+                  )}
 
+                  {activeFerrySubTab === 'expenses' && (
+                    <div className="ferry-card-panel expense-panel">
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
+                        <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--danger)', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1.2rem', margin: 0 }}>
+                          <span>⛽ {language === 'my' ? 'အသုံးစရိတ် မှတ်တမ်း' : 'Expenses Registry'}</span>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
+                            {selectedCarId === 'all' ? `(${t.allCars})` : ''}
+                          </span>
+                        </h3>
+                        <div style={{ position: 'relative', display: 'inline-block' }}>
+                          <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', opacity: 0.6, pointerEvents: 'none' }}>🔍</span>
+                          <input
+                            type="text"
+                            placeholder={language === 'my' ? 'ကားနံပါတ်၊ အကြောင်းအရာဖြင့် ရှာဖွေရန်...' : 'Search by car, reason...'}
+                            style={{
+                              width: '260px',
+                              padding: '10px 16px 10px 36px',
+                              fontSize: '0.85rem',
+                              borderRadius: '10px',
+                              border: '1px solid var(--border-color)',
+                              backgroundColor: 'var(--bg-primary)',
+                              color: 'var(--text-primary)',
+                              transition: 'all 0.2s ease',
+                              outline: 'none'
+                            }}
+                            value={searchCarExpenseQuery}
+                            onChange={(e) => {
+                              setSearchCarExpenseQuery(e.target.value);
+                              setPage('carExpensesTable', 1);
+                            }}
+                            onFocus={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--accent)';
+                              e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-glow)';
+                            }}
+                            onBlur={(e) => {
+                              e.currentTarget.style.borderColor = 'var(--border-color)';
+                              e.currentTarget.style.boxShadow = 'none';
+                            }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="table-responsive">
+                        <table className="data-table">
+                          <thead>
+                            <tr>
+                              <th>{t.date}</th>
+                              <th>{t.carNumber}</th>
+                              <th>{t.amount}</th>
+                              <th>{t.reason}</th>
+                              {user?.role === 'admin' && <th>{t.action}</th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredCarExpenses.length === 0 ? (
+                              <tr>
+                                <td colSpan={user?.role === 'admin' ? 5 : 4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                                  {language === 'my' ? 'အသုံးစရိတ်မှတ်တမ်းမရှိပါ။' : 'No expense records found.'}
+                                </td>
+                              </tr>
+                            ) : (
+                              (isPrinting 
+                                ? filteredCarExpenses 
+                                : filteredCarExpenses.slice((getPage('carExpensesTable') - 1) * getPageSize('carExpensesTable'), getPage('carExpensesTable') * getPageSize('carExpensesTable'))
+                              ).map((exp) => {
+                                const car = cars.find(c => c.id === exp.car_id);
+                                return (
+                                  <tr key={exp.id}>
+                                    <td>{exp.date}</td>
+                                    <td style={{ fontWeight: 600 }}>{car ? car.car_number : `ID ${exp.car_id}`}</td>
+                                    <td style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(exp.amount)}</td>
+                                    <td>{exp.reason}</td>
+                                    {user?.role === 'admin' && (
+                                      <td>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                          <button
+                                            type="button"
+                                            className="action-btn edit"
+                                            onClick={() => {
+                                              setEditingCarExpense(exp);
+                                              setCarExpenseForm({
+                                                date: exp.date,
+                                                carId: exp.car_id,
+                                                amount: exp.amount,
+                                                reason: exp.reason,
+                                              });
+                                              setActiveModal('edit_car_expense');
+                                            }}
+                                          >
+                                            {t.edit}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="action-btn delete"
+                                            onClick={() => handleDeleteCarExpense(exp.id)}
+                                          >
+                                            {t.delete}
+                                          </button>
+                                        </div>
+                                      </td>
+                                    )}
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                      <PaginationControls
+                        tableKey="carExpensesTable"
+                        totalItems={filteredCarExpenses.length}
+                      />
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -6539,7 +6872,7 @@ export default function InventoryApp() {
                           checked={isSpecificDate}
                           onChange={(e) => {
                             setIsSpecificDate(e.target.checked);
-                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
                             tables.forEach(t => setPage(t, 1));
                           }}
                         />
@@ -7170,7 +7503,7 @@ export default function InventoryApp() {
                         checked={isSpecificDate}
                         onChange={(e) => {
                           setIsSpecificDate(e.target.checked);
-                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
                           tables.forEach(t => setPage(t, 1));
                         }}
                       />
@@ -7804,7 +8137,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />

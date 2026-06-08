@@ -1,0 +1,581 @@
+﻿diff --git a/app/components/InventoryApp.tsx b/app/components/InventoryApp.tsx
+index e7cccdd..dbdc5b5 100644
+--- a/app/components/InventoryApp.tsx
++++ b/app/components/InventoryApp.tsx
+@@ -971,6 +971,8 @@ export default function InventoryApp() {
+   const [searchReconciliationQuery, setSearchReconciliationQuery] = useState('');
+   const [searchPipeQuery, setSearchPipeQuery] = useState('');
+   const [searchVillageQuery, setSearchVillageQuery] = useState('');
++  const [searchCarIncomeQuery, setSearchCarIncomeQuery] = useState('');
++  const [searchCarExpenseQuery, setSearchCarExpenseQuery] = useState('');
+   const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all' | 'custom'>('month');
+   
+   // --- Cash Flow Search & Filtering States ---
+@@ -4031,26 +4033,100 @@ export default function InventoryApp() {
+   };
+ 
+   // --- Ferry Car Calculations & Filtering ---
+-  const carStats = useMemo(() => {
+-    const targetExpenses = selectedCarId === 'all' 
+-      ? carExpenses 
+-      : carExpenses.filter(e => e.car_id === selectedCarId);
+-    
+-    const targetIncomes = selectedCarId === 'all' 
+-      ? carIncomes 
+-      : carIncomes.filter(i => i.car_id === selectedCarId);
++  const filteredCarExpenses = useMemo(() => {
++    return carExpenses.filter((item) => {
++      // 1. Car filter
++      const matchCar = selectedCarId === 'all' || item.car_id === selectedCarId;
++      
++      // 2. Date filter
++      let matchDate = true;
++      if (isSpecificDate) {
++        matchDate = !filterStartDate || item.date === filterStartDate;
++      } else {
++        const itemDate = new Date(item.date);
++        const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
++        const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
++        matchDate = matchStart && matchEnd;
++      }
++
++      // 3. Search filter
++      const car = cars.find(c => c.id === item.car_id);
++      const carNumber = car ? car.car_number : '';
++      const query = searchCarExpenseQuery.toLowerCase();
++      const matchSearch = !query ||
++        carNumber.toLowerCase().includes(query) ||
++        (item.reason || '').toLowerCase().includes(query);
++
++      return matchCar && matchDate && matchSearch;
++    });
++  }, [carExpenses, selectedCarId, filterStartDate, filterEndDate, isSpecificDate, searchCarExpenseQuery, cars]);
++
++  const filteredCarIncomes = useMemo(() => {
++    return carIncomes.filter((item) => {
++      // 1. Car filter
++      const matchCar = selectedCarId === 'all' || item.car_id === selectedCarId;
++      
++      // 2. Date filter
++      let matchDate = true;
++      if (isSpecificDate) {
++        matchDate = !filterStartDate || item.date === filterStartDate;
++      } else {
++        const itemDate = new Date(item.date);
++        const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
++        const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
++        matchDate = matchStart && matchEnd;
++      }
++
++      // 3. Search filter
++      const car = cars.find(c => c.id === item.car_id);
++      const carNumber = car ? car.car_number : '';
++      const query = searchCarIncomeQuery.toLowerCase();
++      const matchSearch = !query ||
++        carNumber.toLowerCase().includes(query) ||
++        (item.reason || '').toLowerCase().includes(query);
++
++      return matchCar && matchDate && matchSearch;
++    });
++  }, [carIncomes, selectedCarId, filterStartDate, filterEndDate, isSpecificDate, searchCarIncomeQuery, cars]);
+ 
+-    const totalIncome = targetIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+-    const totalExpense = targetExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
++  const carStats = useMemo(() => {
++    const totalIncome = filteredCarIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
++    const totalExpense = filteredCarExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+     const netBalance = totalIncome - totalExpense;
+ 
+     return { totalIncome, totalExpense, netBalance };
+-  }, [carExpenses, carIncomes, selectedCarId]);
++  }, [filteredCarIncomes, filteredCarExpenses]);
+ 
+   const carsWithBalances = useMemo(() => {
+     return cars.map(car => {
+-      const targetExpenses = carExpenses.filter(e => e.car_id === car.id);
+-      const targetIncomes = carIncomes.filter(i => i.car_id === car.id);
++      const targetExpenses = carExpenses.filter(e => {
++        if (e.car_id !== car.id) return false;
++        let matchDate = true;
++        if (isSpecificDate) {
++          matchDate = !filterStartDate || e.date === filterStartDate;
++        } else {
++          const itemDate = new Date(e.date);
++          const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
++          const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
++          matchDate = matchStart && matchEnd;
++        }
++        return matchDate;
++      });
++
++      const targetIncomes = carIncomes.filter(i => {
++        if (i.car_id !== car.id) return false;
++        let matchDate = true;
++        if (isSpecificDate) {
++          matchDate = !filterStartDate || i.date === filterStartDate;
++        } else {
++          const itemDate = new Date(i.date);
++          const matchStart = !filterStartDate || itemDate >= new Date(filterStartDate);
++          const matchEnd = !filterEndDate || itemDate <= new Date(filterEndDate);
++          matchDate = matchStart && matchEnd;
++        }
++        return matchDate;
++      });
++
+       const totalIncome = targetIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+       const totalExpense = targetExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+       const netBalance = totalIncome - totalExpense;
+@@ -4061,17 +4137,7 @@ export default function InventoryApp() {
+         netBalance
+       };
+     });
+-  }, [cars, carExpenses, carIncomes]);
+-
+-  const filteredCarExpenses = useMemo(() => {
+-    if (selectedCarId === 'all') return carExpenses;
+-    return carExpenses.filter(e => e.car_id === selectedCarId);
+-  }, [carExpenses, selectedCarId]);
+-
+-  const filteredCarIncomes = useMemo(() => {
+-    if (selectedCarId === 'all') return carIncomes;
+-    return carIncomes.filter(i => i.car_id === selectedCarId);
+-  }, [carIncomes, selectedCarId]);
++  }, [cars, carExpenses, carIncomes, filterStartDate, filterEndDate, isSpecificDate]);
+ 
+   // --- Dynamic Live Alerts Calculation ---
+   const systemAlerts = useMemo(() => {
+@@ -5242,7 +5308,7 @@ export default function InventoryApp() {
+                       checked={isSpecificDate}
+                       onChange={(e) => {
+                         setIsSpecificDate(e.target.checked);
+-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
++                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                         tables.forEach(t => setPage(t, 1));
+                       }}
+                     />
+@@ -5456,7 +5522,7 @@ export default function InventoryApp() {
+                       checked={isSpecificDate}
+                       onChange={(e) => {
+                         setIsSpecificDate(e.target.checked);
+-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
++                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                         tables.forEach(t => setPage(t, 1));
+                       }}
+                     />
+@@ -5667,7 +5733,7 @@ export default function InventoryApp() {
+                       checked={isSpecificDate}
+                       onChange={(e) => {
+                         setIsSpecificDate(e.target.checked);
+-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
++                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                         tables.forEach(t => setPage(t, 1));
+                       }}
+                     />
+@@ -5823,43 +5889,169 @@ export default function InventoryApp() {
+               </div>
+ 
+               {/* Action and filter bar */}
+-              <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+-                <div className="filter-group">
+-                  <label htmlFor="ferry-car-filter">{t.selectCar}:</label>
+-                  <select
+-                    id="ferry-car-filter"
+-                    value={selectedCarId}
+-                    onChange={(e) => {
+-                      setSelectedCarId(e.target.value === 'all' ? 'all' : Number(e.target.value));
+-                      setPage('carExpensesTable', 1);
+-                      setPage('carIncomesTable', 1);
+-                    }}
+-                    style={{ minWidth: '200px' }}
+-                  >
+-                    <option value="all">{t.allCars}</option>
+-                    {cars.map((car) => (
+-                      <option key={car.id} value={car.id}>
+-                        {car.car_number}
+-                      </option>
+-                    ))}
+-                  </select>
++              <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', padding: '24px 40px' }}>
++                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
++                  <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
++                    <label htmlFor="ferry-car-filter" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
++                      <span>≡ƒÜù</span> {t.selectCar}:
++                    </label>
++                    <select
++                      id="ferry-car-filter"
++                      value={selectedCarId}
++                      onChange={(e) => {
++                        setSelectedCarId(e.target.value === 'all' ? 'all' : Number(e.target.value));
++                        setPage('carExpensesTable', 1);
++                        setPage('carIncomesTable', 1);
++                      }}
++                      style={{
++                        minWidth: '200px',
++                        borderRadius: '10px',
++                        border: '1px solid var(--border-color)',
++                        padding: '10px 16px',
++                        fontSize: '0.85rem',
++                        fontWeight: 500,
++                        backgroundColor: 'var(--bg-primary)',
++                        color: 'var(--text-primary)',
++                        transition: 'all 0.2s',
++                        cursor: 'pointer',
++                        outline: 'none'
++                      }}
++                    >
++                      <option value="all">{t.allCars}</option>
++                      {cars.map((car) => (
++                        <option key={car.id} value={car.id}>
++                          {car.car_number}
++                        </option>
++                      ))}
++                    </select>
++                  </div>
++
++                  <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
++                    <label htmlFor="ferry-car-start-date" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
++                      <span>≡ƒôà</span> {isSpecificDate ? (language === 'my' ? 'ßÇ¢ßÇÇßÇ║ßÇàßÇ╜ßÇ▓:' : 'Date:') : t.startDate + ':'}
++                    </label>
++                    <input
++                      id="ferry-car-start-date"
++                      type="date"
++                      value={filterStartDate}
++                      onChange={(e) => {
++                        setFilterStartDate(e.target.value);
++                        setPage('carExpensesTable', 1);
++                        setPage('carIncomesTable', 1);
++                      }}
++                      style={{
++                        borderRadius: '10px',
++                        border: '1px solid var(--border-color)',
++                        padding: '10px 16px',
++                        fontSize: '0.85rem',
++                        fontWeight: 500,
++                        backgroundColor: 'var(--bg-primary)',
++                        color: 'var(--text-primary)',
++                        transition: 'all 0.2s',
++                        cursor: 'pointer',
++                        outline: 'none'
++                      }}
++                    />
++                  </div>
++
++                  {!isSpecificDate && (
++                    <div className="filter-group" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
++                      <label htmlFor="ferry-car-end-date" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
++                        <span>≡ƒôà</span> {t.endDate}:
++                      </label>
++                      <input
++                        id="ferry-car-end-date"
++                        type="date"
++                        value={filterEndDate}
++                        onChange={(e) => {
++                          setFilterEndDate(e.target.value);
++                          setPage('carExpensesTable', 1);
++                          setPage('carIncomesTable', 1);
++                        }}
++                        style={{
++                          borderRadius: '10px',
++                          border: '1px solid var(--border-color)',
++                          padding: '10px 16px',
++                          fontSize: '0.85rem',
++                          fontWeight: 500,
++                          backgroundColor: 'var(--bg-primary)',
++                          color: 'var(--text-primary)',
++                          transition: 'all 0.2s',
++                          cursor: 'pointer',
++                          outline: 'none'
++                        }}
++                      />
++                    </div>
++                  )}
++
++                  <div className="filter-group" style={{ display: 'flex', alignItems: 'center', margin: 0 }}>
++                    <label className="specific-date-label" style={{
++                      display: 'inline-flex',
++                      alignItems: 'center',
++                      gap: '8px',
++                      fontSize: '0.85rem',
++                      cursor: 'pointer',
++                      margin: 0,
++                      padding: '8px 14px',
++                      borderRadius: '20px',
++                      border: '1px solid var(--border-color)',
++                      backgroundColor: isSpecificDate ? 'var(--accent-light)' : 'var(--bg-primary)',
++                      color: isSpecificDate ? 'var(--accent)' : 'var(--text-secondary)',
++                      fontWeight: 600,
++                      transition: 'all 0.2s ease',
++                      userSelect: 'none'
++                    }}>
++                      <input
++                        type="checkbox"
++                        checked={isSpecificDate}
++                        onChange={(e) => {
++                          setIsSpecificDate(e.target.checked);
++                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
++                          tables.forEach(t => setPage(t, 1));
++                        }}
++                        style={{ margin: 0, accentColor: 'var(--accent)', cursor: 'pointer' }}
++                      />
++                      <span>ΓÅ▒∩╕Å {language === 'my' ? 'ßÇ¢ßÇÇßÇ║ßÇàßÇ╜ßÇ▓ßÇÉßÇàßÇ║ßÇüßÇ»ßÇÉßÇèßÇ║ßÇ╕' : 'Specific Date Only'}</span>
++                    </label>
++                  </div>
+                 </div>
+                 {user?.role === 'admin' && (
+                   <div className="header-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                     <button
+                       type="button"
+-                      className="primary"
+                       onClick={() => {
+                         setCarForm({ carNumber: '' });
+                         setActiveModal('new_car');
+                       }}
++                      style={{
++                        background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)',
++                        color: '#ffffff',
++                        border: 'none',
++                        padding: '10px 20px',
++                        borderRadius: '10px',
++                        fontFamily: 'var(--font-body)',
++                        fontWeight: 600,
++                        fontSize: '0.9rem',
++                        cursor: 'pointer',
++                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
++                        box-shadow: '0 4px 12px rgba(79, 70, 229, 0.2)',
++                        display: 'flex',
++                        alignItems: 'center',
++                        gap: '6px'
++                      }}
++                      onMouseEnter={(e) => {
++                        e.currentTarget.style.transform = 'translateY(-1px)';
++                        e.currentTarget.style.boxShadow = '0 6px 16px rgba(79, 70, 229, 0.3)';
++                      }}
++                      onMouseLeave={(e) => {
++                        e.currentTarget.style.transform = 'none';
++                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.2)';
++                      }}
+                     >
+-                      + {t.addCar}
++                      ≡ƒÜù + {t.addCar}
+                     </button>
+                     <button
+                       type="button"
+-                      className="primary"
+-                      style={{ backgroundColor: 'var(--success)' }}
+                       onClick={() => {
+                         setCarIncomeForm({
+                           date: getLocalTodayDateString(),
+@@ -5870,13 +6062,40 @@ export default function InventoryApp() {
+                         setActiveModal('new_car_income');
+                       }}
+                       disabled={cars.length === 0}
++                      style={{
++                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
++                        color: '#ffffff',
++                        border: 'none',
++                        padding: '10px 20px',
++                        borderRadius: '10px',
++                        fontFamily: 'var(--font-body)',
++                        fontWeight: 600,
++                        fontSize: '0.9rem',
++                        cursor: cars.length === 0 ? 'not-allowed' : 'pointer',
++                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
++                        box-shadow: '0 4px 12px rgba(16, 185, 129, 0.2)',
++                        opacity: cars.length === 0 ? 0.6 : 1,
++                        display: 'flex',
++                        alignItems: 'center',
++                        gap: '6px'
++                      }}
++                      onMouseEnter={(e) => {
++                        if (cars.length > 0) {
++                          e.currentTarget.style.transform = 'translateY(-1px)';
++                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(16, 185, 129, 0.3)';
++                        }
++                      }}
++                      onMouseLeave={(e) => {
++                        if (cars.length > 0) {
++                          e.currentTarget.style.transform = 'none';
++                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.2)';
++                        }
++                      }}
+                     >
+-                      + {t.addIncome}
++                      ≡ƒÆ╡ + {t.addIncome}
+                     </button>
+                     <button
+                       type="button"
+-                      className="primary"
+-                      style={{ backgroundColor: 'var(--danger)' }}
+                       onClick={() => {
+                         setCarExpenseForm({
+                           date: getLocalTodayDateString(),
+@@ -5887,8 +6106,37 @@ export default function InventoryApp() {
+                         setActiveModal('new_car_expense');
+                       }}
+                       disabled={cars.length === 0}
++                      style={{
++                        background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
++                        color: '#ffffff',
++                        border: 'none',
++                        padding: '10px 20px',
++                        borderRadius: '10px',
++                        fontFamily: 'var(--font-body)',
++                        fontWeight: 600,
++                        fontSize: '0.9rem',
++                        cursor: cars.length === 0 ? 'not-allowed' : 'pointer',
++                        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
++                        box-shadow: '0 4px 12px rgba(244, 63, 94, 0.2)',
++                        opacity: cars.length === 0 ? 0.6 : 1,
++                        display: 'flex',
++                        alignItems: 'center',
++                        gap: '6px'
++                      }}
++                      onMouseEnter={(e) => {
++                        if (cars.length > 0) {
++                          e.currentTarget.style.transform = 'translateY(-1px)';
++                          e.currentTarget.style.boxShadow = '0 6px 16px rgba(244, 63, 94, 0.3)';
++                        }
++                      }}
++                      onMouseLeave={(e) => {
++                        if (cars.length > 0) {
++                          e.currentTarget.style.transform = 'none';
++                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(244, 63, 94, 0.2)';
++                        }
++                      }}
+                     >
+-                      + {t.addExpense}
++                      Γ¢╜ + {t.addExpense}
+                     </button>
+                   </div>
+                 )}
+@@ -5984,12 +6232,45 @@ export default function InventoryApp() {
+                   
+                   {/* Incomes Section */}
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+-                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem' }}>
+-                      <span>≡ƒÆ╡ {language === 'my' ? 'ßÇ¥ßÇäßÇ║ßÇäßÇ╜ßÇ▒ ßÇÖßÇ╛ßÇÉßÇ║ßÇÉßÇÖßÇ║ßÇ╕' : 'Incomes Registry'}</span>
+-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+-                        {selectedCarId === 'all' ? `(${t.allCars})` : ''}
+-                      </span>
+-                    </h3>
++                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
++                      <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--success)', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1.2rem', margin: 0 }}>
++                        <span>≡ƒÆ╡ {language === 'my' ? 'ßÇ¥ßÇäßÇ║ßÇäßÇ╜ßÇ▒ ßÇÖßÇ╛ßÇÉßÇ║ßÇÉßÇÖßÇ║ßÇ╕' : 'Incomes Registry'}</span>
++                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
++                          {selectedCarId === 'all' ? `(${t.allCars})` : ''}
++                        </span>
++                      </h3>
++                      <div style={{ position: 'relative', display: 'inline-block' }}>
++                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', opacity: 0.6, pointerEvents: 'none' }}>≡ƒöì</span>
++                        <input
++                          type="text"
++                          placeholder={language === 'my' ? 'ßÇÇßÇ¼ßÇ╕ßÇößÇ╢ßÇòßÇ½ßÇÉßÇ║ßüè ßÇíßÇÇßÇ╝ßÇ▒ßÇ¼ßÇäßÇ║ßÇ╕ßÇíßÇ¢ßÇ¼ßÇûßÇ╝ßÇäßÇ╖ßÇ║ ßÇ¢ßÇ╛ßÇ¼ßÇûßÇ╜ßÇ▒ßÇ¢ßÇößÇ║...' : 'Search by car, reason...'}
++                          style={{
++                            width: '260px',
++                            padding: '10px 16px 10px 36px',
++                            fontSize: '0.85rem',
++                            borderRadius: '10px',
++                            border: '1px solid var(--border-color)',
++                            backgroundColor: 'var(--bg-primary)',
++                            color: 'var(--text-primary)',
++                            transition: 'all 0.2s ease',
++                            outline: 'none'
++                          }}
++                          value={searchCarIncomeQuery}
++                          onChange={(e) => {
++                            setSearchCarIncomeQuery(e.target.value);
++                            setPage('carIncomesTable', 1);
++                          }}
++                          onFocus={(e) => {
++                            e.currentTarget.style.borderColor = 'var(--accent)';
++                            e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-glow)';
++                          }}
++                          onBlur={(e) => {
++                            e.currentTarget.style.borderColor = 'var(--border-color)';
++                            e.currentTarget.style.boxShadow = 'none';
++                          }}
++                        />
++                      </div>
++                    </div>
+                     
+                     <div className="table-responsive">
+                       <table className="data-table">
+@@ -6065,12 +6346,45 @@ export default function InventoryApp() {
+ 
+                   {/* Expenses Section */}
+                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+-                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--danger)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem' }}>
+-                      <span>Γ¢╜ {language === 'my' ? 'ßÇíßÇ₧ßÇ»ßÇ╢ßÇ╕ßÇàßÇ¢ßÇ¡ßÇÉßÇ║ ßÇÖßÇ╛ßÇÉßÇ║ßÇÉßÇÖßÇ║ßÇ╕' : 'Expenses Registry'}</span>
+-                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+-                        {selectedCarId === 'all' ? `(${t.allCars})` : ''}
+-                      </span>
+-                    </h3>
++                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', marginBottom: '8px' }}>
++                      <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--danger)', display: 'flex', gap: '8px', alignItems: 'center', fontSize: '1.2rem', margin: 0 }}>
++                        <span>Γ¢╜ {language === 'my' ? 'ßÇíßÇ₧ßÇ»ßÇ╢ßÇ╕ßÇàßÇ¢ßÇ¡ßÇÉßÇ║ ßÇÖßÇ╛ßÇÉßÇ║ßÇÉßÇÖßÇ║ßÇ╕' : 'Expenses Registry'}</span>
++                        <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontWeight: 'normal' }}>
++                          {selectedCarId === 'all' ? `(${t.allCars})` : ''}
++                        </span>
++                      </h3>
++                      <div style={{ position: 'relative', display: 'inline-block' }}>
++                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.9rem', opacity: 0.6, pointerEvents: 'none' }}>≡ƒöì</span>
++                        <input
++                          type="text"
++                          placeholder={language === 'my' ? 'ßÇÇßÇ¼ßÇ╕ßÇößÇ╢ßÇòßÇ½ßÇÉßÇ║ßüè ßÇíßÇÇßÇ╝ßÇ▒ßÇ¼ßÇäßÇ║ßÇ╕ßÇíßÇ¢ßÇ¼ßÇûßÇ╝ßÇäßÇ╖ßÇ║ ßÇ¢ßÇ╛ßÇ¼ßÇûßÇ╜ßÇ▒ßÇ¢ßÇößÇ║...' : 'Search by car, reason...'}
++                          style={{
++                            width: '260px',
++                            padding: '10px 16px 10px 36px',
++                            fontSize: '0.85rem',
++                            borderRadius: '10px',
++                            border: '1px solid var(--border-color)',
++                            backgroundColor: 'var(--bg-primary)',
++                            color: 'var(--text-primary)',
++                            transition: 'all 0.2s ease',
++                            outline: 'none'
++                          }}
++                          value={searchCarExpenseQuery}
++                          onChange={(e) => {
++                            setSearchCarExpenseQuery(e.target.value);
++                            setPage('carExpensesTable', 1);
++                          }}
++                          onFocus={(e) => {
++                            e.currentTarget.style.borderColor = 'var(--accent)';
++                            e.currentTarget.style.boxShadow = '0 0 0 3px var(--accent-glow)';
++                          }}
++                          onBlur={(e) => {
++                            e.currentTarget.style.borderColor = 'var(--border-color)';
++                            e.currentTarget.style.boxShadow = 'none';
++                          }}
++                        />
++                      </div>
++                    </div>
+ 
+                     <div className="table-responsive">
+                       <table className="data-table">
+@@ -6539,7 +6853,7 @@ export default function InventoryApp() {
+                           checked={isSpecificDate}
+                           onChange={(e) => {
+                             setIsSpecificDate(e.target.checked);
+-                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
++                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                             tables.forEach(t => setPage(t, 1));
+                           }}
+                         />
+@@ -7170,7 +7484,7 @@ export default function InventoryApp() {
+                         checked={isSpecificDate}
+                         onChange={(e) => {
+                           setIsSpecificDate(e.target.checked);
+-                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
++                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                           tables.forEach(t => setPage(t, 1));
+                         }}
+                       />
+@@ -7804,7 +8118,7 @@ export default function InventoryApp() {
+                       checked={isSpecificDate}
+                       onChange={(e) => {
+                         setIsSpecificDate(e.target.checked);
+-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs'];
++                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                         tables.forEach(t => setPage(t, 1));
+                       }}
+                     />
