@@ -3352,6 +3352,41 @@ body:has(.pwa-offline-banner) .dashboard-layout {
   border-top: 4px solid var(--danger);
 }
 
+.ferry-card-panel.cars-panel {
+  border-top: 4px solid var(--accent);
+  max-height: 650px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ferry-cars-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Custom scrollbar for premium touch */
+.ferry-cars-list-container::-webkit-scrollbar,
+.table-responsive::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ferry-cars-list-container::-webkit-scrollbar-track,
+.table-responsive::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ferry-cars-list-container::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 20px;
+}
+
 /* Segmented Control for Sub-tabs */
 .ferry-segmented-control {
   display: inline-flex;
@@ -3395,11 +3430,173 @@ body:has(.pwa-offline-banner) .dashboard-layout {
   box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25);
 }
 
+/* Filter bar class */
+.ferry-filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 32px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  margin: 0 32px 24px 32px;
+}
+
+.ferry-search-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* Actions popover dropdown */
+.ferry-actions-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 999;
+  animation: ferryFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes ferryFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.ferry-actions-dropdown button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: none;
+  background-color: transparent;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ferry-actions-dropdown button:hover:not(:disabled) {
+  background-color: var(--bg-secondary);
+  color: var(--accent);
+}
+
+.ferry-actions-dropdown button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ferry-btn-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* By default (desktop), show both columns in the grid */
+.ferry-cars-grid .ferry-active-panel,
+.ferry-cars-grid .ferry-inactive-panel {
+  display: flex;
+}
+
+/* Mobile 3-button switcher */
+.mobile-only-ferry-tabs {
+  display: none;
+  padding: 0 32px 16px 32px;
+}
+
+.ferry-segmented-control-3 {
+  display: flex;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  padding: 4px;
+  width: 100%;
+  gap: 4px;
+}
+
+.ferry-segmented-btn-3 {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.88rem;
+  border: none;
+  background-color: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ferry-segmented-btn-3:hover {
+  color: var(--text-primary);
+  background-color: rgba(120, 120, 120, 0.05);
+}
+
+.ferry-segmented-btn-3.active {
+  background-color: var(--bg-primary);
+  color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.ferry-segmented-btn-3.active.active-income {
+  background-color: var(--success);
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+}
+
+.ferry-segmented-btn-3.active.active-expense {
+  background-color: var(--danger);
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25);
+}
+
 @media (max-width: 1200px) {
+  .ferry-segmented-control {
+    display: none !important;
+  }
   .ferry-cars-grid {
     grid-template-columns: 1fr;
     gap: 24px;
     padding: 24px;
+  }
+  .mobile-only-ferry-tabs {
+    display: block;
+  }
+  /* On mobile/tablet, conditionally hide inactive panels */
+  .ferry-cars-grid .ferry-inactive-panel {
+    display: none !important;
+  }
+  .ferry-cars-grid .ferry-active-panel {
+    display: flex !important;
+    flex-direction: column;
+  }
+  .ferry-card-panel.cars-panel {
+    max-height: 500px; /* can be slightly taller on tablet/mobile if it's the only active pane */
+  }
+  .ferry-filter-bar {
+    margin: 0 24px 20px 24px;
+    padding: 20px;
   }
 }
 
@@ -3407,5 +3604,67 @@ body:has(.pwa-offline-banner) .dashboard-layout {
   .ferry-cars-grid {
     gap: 16px;
     padding: 16px;
+  }
+  .mobile-only-ferry-tabs {
+    padding: 0 16px 12px 16px;
+  }
+  .ferry-filter-bar {
+    margin: 0 16px 16px 16px;
+    padding: 16px;
+    gap: 16px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ferry-filter-bar > div:first-child {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .ferry-filter-bar .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .ferry-filter-bar .filter-group label {
+    margin-bottom: 4px;
+  }
+  .ferry-filter-bar select,
+  .ferry-filter-bar input[type="date"] {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 576px) {
+  .ferry-segmented-control {
+    display: flex;
+    align-self: stretch;
+    width: 100%;
+  }
+  .ferry-segmented-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 16px;
+  }
+  .ferry-search-wrapper {
+    width: 100%;
+  }
+  .ferry-search-wrapper input {
+    width: 100% !important;
+  }
+  .ferry-btn-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+  .ferry-btn-group > button,
+  .ferry-btn-group > div,
+  .ferry-btn-group > div > button {
+    width: 100% !important;
+    justify-content: center;
+  }
+  .ferry-segmented-btn-3 {
+    padding: 10px 8px;
+    font-size: 0.8rem;
+    gap: 4px;
   }
 }
