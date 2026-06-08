@@ -108,6 +108,18 @@ const TRANSLATIONS = {
     listOfIncomingReturns: 'List of incoming returns from outpost centers.',
     noReturnLogsMatch: 'No return logs match your current filters.',
     centralPipesCatalog: 'Pipe Models',
+    updateProfileTitle: 'Update Profile Credentials',
+    updateProfileSubtitle: 'Change your email address or password. If updating password, it must be at least 6 characters.',
+    emailAddressLabel: 'Email Address',
+    newPasswordLabel: 'New Password',
+    confirmPasswordLabel: 'Confirm New Password',
+    saveProfileBtn: 'Save Profile Changes',
+    searchPipePlaceholder: 'Search pipe models...',
+    searchVillagePlaceholder: 'Search village outposts...',
+    pipeExistsMsg: 'This pipe model already exists in the catalog.',
+    pipeAvailableMsg: 'This model name is available.',
+    villageExistsMsg: 'This outpost name already exists in the network.',
+    villageAvailableMsg: 'This outpost name is available.',
     configureStandardRates: 'Configure standard model rates or register and delete pipe models.',
     modelName: 'Model Name',
     currentPrice: 'Current Price',
@@ -301,6 +313,18 @@ const TRANSLATIONS = {
     listOfIncomingReturns: 'ကျေးရွာများမှ ပြန်လည် လက်ခံရရှိသော အပ်နှံမှုများ စာရင်း။',
     noReturnLogsMatch: 'ရှာဖွေထားသော သတ်မှတ်ချက်များနှင့် ကိုက်ညီသည့် ပြန်အပ်နှံမှု မှတ်တမ်း မရှိပါ။',
     centralPipesCatalog: 'ဗဟို ပိုက်ကတ်တလောက်',
+    updateProfileTitle: 'ပရိုဖိုင် အချက်အလက်များ ပြင်ဆင်ရန်',
+    updateProfileSubtitle: 'သင်၏ အီးမေးလ်လိပ်စာ သို့မဟုတ် စကားဝှက်ကို ပြင်ဆင်ပါ။ စကားဝှက်အသစ်သည် အနည်းဆုံး ၆ လုံး ရှိရမည်။',
+    emailAddressLabel: 'အီးမေးလ် လိပ်စာ',
+    newPasswordLabel: 'စကားဝှက်အသစ်',
+    confirmPasswordLabel: 'စကားဝှက်အသစ်အား ထပ်မံရိုက်ထည့်ပါ',
+    saveProfileBtn: 'ပရိုဖိုင် ပြင်ဆင်မှု သိမ်းဆည်းရန်',
+    searchPipePlaceholder: 'ပိုက်မော်ဒယ်များ ရှာဖွေရန်...',
+    searchVillagePlaceholder: 'ကျေးရွာအမည်များ ရှာဖွေရန်...',
+    pipeExistsMsg: 'ဤပိုက်မော်ဒယ်အမည် ရှိနှင့်ပြီးသားဖြစ်သည်',
+    pipeAvailableMsg: 'ဤအမည်အား အသုံးပြုနိုင်ပါသည်',
+    villageExistsMsg: 'ဤကျေးရွာအမည် ရှိနှင့်ပြီးသားဖြစ်သည်',
+    villageAvailableMsg: 'ဤအမည်အား အသုံးပြုနိုင်ပါသည်',
     configureStandardRates: 'စံနှုန်းများကို သတ်မှတ်ပါ (သို့မဟုတ်) ပိုက်မော်ဒယ်အသစ်များကို ထည့်သွင်း/ဖျက်သိမ်းပါ။',
     modelName: 'မော်ဒယ် အမည်',
     currentPrice: 'လက်ရှိ ဈေးနှုန်း',
@@ -558,7 +582,14 @@ export default function InventoryApp() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | 'edit_village' | null>(null);
+  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | 'edit_village' | 'update_profile' | null>(null);
+
+  // --- Profile Edit Modal States ---
+  const [profileEmail, setProfileEmail] = useState('');
+  const [profilePassword, setProfilePassword] = useState('');
+  const [profileConfirmPassword, setProfileConfirmPassword] = useState('');
+  const [profileEmailError, setProfileEmailError] = useState<string | null>(null);
+  const [profilePasswordError, setProfilePasswordError] = useState<string | null>(null);
 
   useEffect(() => {
     if (activeModal === null) {
@@ -630,6 +661,10 @@ export default function InventoryApp() {
   const handleVillageEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingVillage || !editVillageName.trim()) return;
+    if (editVillageExists) {
+      alert(language === 'my' ? 'ဤကျေးရွာအမည် ရှိနှင့်ပြီးသားဖြစ်သည်' : 'This outpost name already exists in the network.');
+      return;
+    }
     const trimmedName = editVillageName.trim();
     if (trimmedName === editingVillage.name) {
       setActiveModal(null);
@@ -858,6 +893,8 @@ export default function InventoryApp() {
   const [searchDistributionQuery, setSearchDistributionQuery] = useState('');
   const [searchReturnsQuery, setSearchReturnsQuery] = useState('');
   const [searchReconciliationQuery, setSearchReconciliationQuery] = useState('');
+  const [searchPipeQuery, setSearchPipeQuery] = useState('');
+  const [searchVillageQuery, setSearchVillageQuery] = useState('');
   const [financePeriod, setFinancePeriod] = useState<'day' | 'week' | 'month' | 'all' | 'custom'>('month');
   
   // --- Cash Flow Search & Filtering States ---
@@ -3441,6 +3478,10 @@ export default function InventoryApp() {
   const handleAddPipeType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPipeName || newPipePrice === '') return;
+    if (pipeExists) {
+      alert(language === 'my' ? 'ဤပိုက်မော်ဒယ်အမည် ရှိနှင့်ပြီးသားဖြစ်သည်' : 'This pipe model already exists in the catalog.');
+      return;
+    }
     setIsSubmitting(true);
     setMessage(null);
     try {
@@ -3470,6 +3511,10 @@ export default function InventoryApp() {
   const handleAddVillage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newVillageName) return;
+    if (villageExists) {
+      alert(language === 'my' ? 'ဤကျေးရွာအမည် ရှိနှင့်ပြီးသားဖြစ်သည်' : 'This outpost name already exists in the network.');
+      return;
+    }
     setIsSubmitting(true);
     setMessage(null);
     try {
@@ -3490,6 +3535,57 @@ export default function InventoryApp() {
       }
     } catch (error) {
       setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileEmailError(null);
+    setProfilePasswordError(null);
+
+    const emailToSubmit = profileEmail.trim().toLowerCase();
+    if (!emailToSubmit) return;
+
+    if (profilePassword) {
+      if (profilePassword.length < 6) {
+        setProfilePasswordError(language === 'my' ? 'စကားဝှက်သည် အနည်းဆုံး ၆ လုံး ရှိရမည်။' : 'Password must be at least 6 characters.');
+        return;
+      }
+      if (profilePassword !== profileConfirmPassword) {
+        setProfilePasswordError(language === 'my' ? 'စကားဝှက်များ ကိုက်ညီမှု မရှိပါ။' : 'Passwords do not match.');
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const response = await fetch('/api/auth/me', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: emailToSubmit,
+          password: profilePassword ? profilePassword : undefined,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        if (data.error && data.error.includes('Email')) {
+          setProfileEmailError(data.error);
+        } else {
+          setMessage(data.error || 'Failed to update profile.');
+        }
+      } else {
+        setMessage(language === 'my' ? 'ပရိုဖိုင် ပြင်ဆင်မှု အောင်မြင်ပါသည်။' : 'Profile successfully updated.');
+        setUser((prev: any) => ({ ...prev, email: data.user.email }));
+        setActiveModal(null);
+      }
+    } catch (err) {
+      setMessage('Server connection failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -3741,6 +3837,36 @@ export default function InventoryApp() {
       return matchVillage && matchType && matchStart && matchEnd;
     });
   }, [fundingList, filterFundingVillage, filterFundingType, filterFundingStartDate, filterFundingEndDate]);
+
+  const filteredPipeTypes = useMemo(() => {
+    return pipeTypes.filter((pipe) =>
+      pipe.name.toLowerCase().includes(searchPipeQuery.toLowerCase())
+    );
+  }, [pipeTypes, searchPipeQuery]);
+
+  const filteredVillages = useMemo(() => {
+    return villages.filter((v) =>
+      v.name.toLowerCase().includes(searchVillageQuery.toLowerCase())
+    );
+  }, [villages, searchVillageQuery]);
+
+  const pipeExists = useMemo(() => {
+    return newPipeName.trim() !== '' && pipeTypes.some(
+      (pipe) => pipe.name.toLowerCase().trim() === newPipeName.toLowerCase().trim()
+    );
+  }, [pipeTypes, newPipeName]);
+
+  const villageExists = useMemo(() => {
+    return newVillageName.trim() !== '' && villages.some(
+      (v) => v.name.toLowerCase().trim() === newVillageName.toLowerCase().trim()
+    );
+  }, [villages, newVillageName]);
+
+  const editVillageExists = useMemo(() => {
+    return editVillageName.trim() !== '' && !!editingVillage &&
+      editVillageName.toLowerCase().trim() !== editingVillage.name.toLowerCase().trim() &&
+      villages.some((v) => v.name.toLowerCase().trim() === editVillageName.toLowerCase().trim());
+  }, [villages, editVillageName, editingVillage]);
 
   // --- Finance Parsing & Client-Side Filtering ---
   const parseLocalDate = (dateStr: string) => {
@@ -4191,6 +4317,46 @@ export default function InventoryApp() {
                   </>
                 )}
                 
+                <div className="dropdown-divider"></div>
+                <button
+                  type="button"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '100%',
+                    padding: '10px 14px',
+                    background: 'var(--bg-secondary, rgba(0,0,0,0.03))',
+                    border: '1px solid var(--border-color, #e2e8f0)',
+                    color: 'var(--text-primary, #0f172a)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    textAlign: 'left',
+                    borderRadius: '10px',
+                    transition: 'all 0.2s ease',
+                    boxSizing: 'border-box'
+                  }}
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    setProfileEmail(user.email);
+                    setProfilePassword('');
+                    setProfileConfirmPassword('');
+                    setProfileEmailError(null);
+                    setProfilePasswordError(null);
+                    setActiveModal('update_profile');
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-tertiary, rgba(0,0,0,0.06))';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-secondary, rgba(0,0,0,0.03))';
+                  }}
+                >
+                  <span>⚙️</span>
+                  <span>{language === 'my' ? 'ပရိုဖိုင် ပြင်ဆင်ရန်' : 'Update Profile'}</span>
+                </button>
+
                 <div className="dropdown-divider"></div>
                 <button type="button" className="dropdown-logout-btn" onClick={handleLogout}>
                   <span className="logout-icon">🚪</span>
@@ -6654,8 +6820,22 @@ export default function InventoryApp() {
                 
                 {/* Left Column: Pipe Models CRUD */}
                 <div className={`table-panel ${catalogSubTab === 'pipes' ? 'active-panel' : 'inactive-panel'}`}>
-                  <h2>{t.centralPipesCatalog}</h2>
-                  <p style={{ marginBottom: '24px' }}>{t.configureStandardRates}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <h2 style={{ margin: 0 }}>{t.centralPipesCatalog}</h2>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{t.configureStandardRates}</p>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder={t.searchPipePlaceholder}
+                      style={{ width: '240px', padding: '8px 12px', fontSize: '0.85rem' }}
+                      value={searchPipeQuery}
+                      onChange={(e) => {
+                        setSearchPipeQuery(e.target.value);
+                        setPage('catalogPipes', 1);
+                      }}
+                    />
+                  </div>
                   
                   <div className="table-wrapper mobile-cards">
                     <table>
@@ -6669,14 +6849,14 @@ export default function InventoryApp() {
                       <tbody>
                         {isDataLoading ? (
                           renderTableSkeleton(3)
-                        ) : pipeTypes.length === 0 ? (
+                        ) : filteredPipeTypes.length === 0 ? (
                           <tr>
                             <td colSpan={3} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                               No pipe models registered in the catalog.
                             </td>
                           </tr>
                         ) : (
-                          (isPrinting ? pipeTypes : pipeTypes.slice((getPage('catalogPipes') - 1) * getPageSize('catalogPipes'), getPage('catalogPipes') * getPageSize('catalogPipes'))).map((pipe) => (
+                          (isPrinting ? filteredPipeTypes : filteredPipeTypes.slice((getPage('catalogPipes') - 1) * getPageSize('catalogPipes'), getPage('catalogPipes') * getPageSize('catalogPipes'))).map((pipe) => (
                             <tr key={pipe.id}>
                               <td>{pipe.name}</td>
                               <td>
@@ -6718,14 +6898,28 @@ export default function InventoryApp() {
                   </div>
                   <PaginationControls
                     tableKey="catalogPipes"
-                    totalItems={pipeTypes.length}
+                    totalItems={filteredPipeTypes.length}
                   />
                 </div>
 
                 {/* Right Column: Outpost Registry CRUD */}
                 <div className={`table-panel ${catalogSubTab === 'villages' ? 'active-panel' : 'inactive-panel'}`}>
-                  <h2>{t.villageOutpostRegistry}</h2>
-                  <p style={{ marginBottom: '24px' }}>{t.manageActiveNodes}</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <h2 style={{ margin: 0 }}>{t.villageOutpostRegistry}</h2>
+                      <p style={{ margin: '4px 0 0 0', fontSize: '0.95rem', color: 'var(--text-secondary)' }}>{t.manageActiveNodes}</p>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder={t.searchVillagePlaceholder}
+                      style={{ width: '240px', padding: '8px 12px', fontSize: '0.85rem' }}
+                      value={searchVillageQuery}
+                      onChange={(e) => {
+                        setSearchVillageQuery(e.target.value);
+                        setPage('catalogVillages', 1);
+                      }}
+                    />
+                  </div>
 
                   <div className="table-wrapper mobile-cards">
                     <table>
@@ -6738,14 +6932,14 @@ export default function InventoryApp() {
                       <tbody>
                         {isDataLoading ? (
                           renderTableSkeleton(2)
-                        ) : villages.length === 0 ? (
+                        ) : filteredVillages.length === 0 ? (
                           <tr>
                             <td colSpan={2} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
                               {t.noVillageNodesRegistered}
                             </td>
                           </tr>
                         ) : (
-                          (isPrinting ? villages : villages.slice((getPage('catalogVillages') - 1) * getPageSize('catalogVillages'), getPage('catalogVillages') * getPageSize('catalogVillages'))).map((v) => (
+                          (isPrinting ? filteredVillages : filteredVillages.slice((getPage('catalogVillages') - 1) * getPageSize('catalogVillages'), getPage('catalogVillages') * getPageSize('catalogVillages'))).map((v) => (
                             <tr key={v.id}>
                               <td>{v.name}</td>
                               <td>
@@ -6780,7 +6974,7 @@ export default function InventoryApp() {
                   </div>
                   <PaginationControls
                     tableKey="catalogVillages"
-                    totalItems={villages.length}
+                    totalItems={filteredVillages.length}
                   />
                 </div>
 
@@ -7107,6 +7301,7 @@ export default function InventoryApp() {
                   {activeModal === 'edit_return' && t.editReturnTitle}
                   {activeModal === 'edit_funding' && (language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှု ပြင်ဆင်ရန်' : 'Edit Cash Transaction')}
                   {activeModal === 'edit_village' && (language === 'my' ? 'ကျေးရွာ အမည်ပြင်ဆင်ရန်' : 'Edit Outpost Village Name')}
+                  {activeModal === 'update_profile' && t.updateProfileTitle}
                 </h2>
                 <button 
                   type="button" 
@@ -7612,6 +7807,20 @@ export default function InventoryApp() {
                           value={newPipeName}
                           onChange={(e) => setNewPipeName(e.target.value)}
                         />
+                        {newPipeName.trim() !== '' && (
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            color: pipeExists ? 'var(--danger, #ef4444)' : 'var(--success, #22c55e)',
+                            fontWeight: '500'
+                          }}>
+                            <span>{pipeExists ? '⚠️' : '✅'}</span>
+                            <span>{pipeExists ? t.pipeExistsMsg : t.pipeAvailableMsg}</span>
+                          </div>
+                        )}
                       </div>
                       <div className="form-group">
                         <label>{t.basePricePerUnit}</label>
@@ -7626,7 +7835,7 @@ export default function InventoryApp() {
                         />
                       </div>
                     </div>
-                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting}>
+                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting || pipeExists}>
                       {t.addCatalogModel}
                     </button>
                   </form>
@@ -7646,8 +7855,22 @@ export default function InventoryApp() {
                         value={newVillageName}
                         onChange={(e) => setNewVillageName(e.target.value)}
                       />
+                      {newVillageName.trim() !== '' && (
+                        <div style={{
+                          marginTop: '8px',
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          color: villageExists ? 'var(--danger, #ef4444)' : 'var(--success, #22c55e)',
+                          fontWeight: '500'
+                        }}>
+                          <span>{villageExists ? '⚠️' : '✅'}</span>
+                          <span>{villageExists ? t.villageExistsMsg : t.villageAvailableMsg}</span>
+                        </div>
+                      )}
                     </div>
-                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting}>
+                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting || villageExists}>
                       {t.addOutpostNode}
                     </button>
                   </form>
@@ -7675,10 +7898,84 @@ export default function InventoryApp() {
                           value={editVillageName}
                           onChange={(e) => setEditVillageName(e.target.value)}
                         />
+                        {editVillageName.trim() !== '' && editingVillage && editVillageName.trim().toLowerCase() !== editingVillage.name.toLowerCase() && (
+                          <div style={{
+                            marginTop: '8px',
+                            fontSize: '0.85rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            color: editVillageExists ? 'var(--danger, #ef4444)' : 'var(--success, #22c55e)',
+                            fontWeight: '500'
+                          }}>
+                            <span>{editVillageExists ? '⚠️' : '✅'}</span>
+                            <span>{editVillageExists ? t.villageExistsMsg : t.villageAvailableMsg}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting}>
+                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting || editVillageExists}>
                       {language === 'my' ? 'သိမ်းဆည်းမည်' : 'Save Changes'}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'update_profile' && user && (
+                  <form onSubmit={handleProfileUpdate}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {t.updateProfileSubtitle}
+                    </p>
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                      <div className="form-group">
+                        <label>{t.emailAddressLabel}</label>
+                        <input
+                          type="email"
+                          required
+                          value={profileEmail}
+                          onChange={(e) => {
+                            setProfileEmail(e.target.value);
+                            setProfileEmailError(null);
+                          }}
+                        />
+                        {profileEmailError && (
+                          <div style={{ marginTop: '6px', fontSize: '0.85rem', color: 'var(--danger, #ef4444)', fontWeight: '500' }}>
+                            ⚠️ {profileEmailError}
+                          </div>
+                        )}
+                      </div>
+                      <div className="form-group">
+                        <label>{t.newPasswordLabel} ({language === 'my' ? 'မပြင်ဆင်ပါက ကွက်လပ်ထားပါ' : 'leave blank to keep unchanged'})</label>
+                        <input
+                          type="password"
+                          placeholder="••••••••"
+                          value={profilePassword}
+                          onChange={(e) => {
+                            setProfilePassword(e.target.value);
+                            setProfilePasswordError(null);
+                          }}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.confirmPasswordLabel}</label>
+                        <input
+                          type="password"
+                          placeholder="••••••••"
+                          value={profileConfirmPassword}
+                          disabled={!profilePassword}
+                          onChange={(e) => {
+                            setProfileConfirmPassword(e.target.value);
+                            setProfilePasswordError(null);
+                          }}
+                        />
+                        {profilePasswordError && (
+                          <div style={{ marginTop: '6px', fontSize: '0.85rem', color: 'var(--danger, #ef4444)', fontWeight: '500' }}>
+                            ⚠️ {profilePasswordError}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '24px' }} disabled={isSubmitting}>
+                      {t.saveProfileBtn}
                     </button>
                   </form>
                 )}
