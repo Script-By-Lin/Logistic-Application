@@ -9,13 +9,16 @@ import {
   ProductionRecord,
   ReturnRecord,
   VillageFundingRecord,
+  Car,
+  CarExpense,
+  CarIncome,
 } from '@/types';
 import SearchableSelect from './SearchableSelect';
 import * as XLSX from 'xlsx';
 
 // Dynamic sidebar tabs depending on user role
-const ADMIN_TABS = ['Overview', 'Production', 'Distribution', 'Returns', 'Reconciliation', 'Reports', 'Finance', 'Catalog Settings', 'Audit Logs', 'Backup & Recovery'] as const;
-const VIEWER_TABS = ['Overview', 'Distribution', 'Returns', 'Reconciliation', 'Finance', 'Reports'] as const;
+const ADMIN_TABS = ['Overview', 'Production', 'Distribution', 'Returns', 'Ferry Cars', 'Reconciliation', 'Reports', 'Finance', 'Catalog Settings', 'Audit Logs', 'Backup & Recovery'] as const;
+const VIEWER_TABS = ['Overview', 'Distribution', 'Returns', 'Ferry Cars', 'Reconciliation', 'Finance', 'Reports'] as const;
 
 interface AuditLog {
   id: number;
@@ -236,6 +239,28 @@ const TRANSLATIONS = {
     appInstalled: 'Installed Successfully',
     isOffline: 'Offline Mode',
     isOnline: 'Online',
+    ferryCars: 'Ferry Cars',
+    carNumber: 'Car Number',
+    addCar: 'Register New Car',
+    editCar: 'Edit Car Number',
+    deleteCar: 'Delete Car',
+    income: 'Income',
+    expense: 'Expense',
+    netIncome: 'Net Income',
+    reason: 'Reason / Remark',
+    amount: 'Amount (MMK)',
+    date: 'Date',
+    addExpense: 'Add Expense',
+    addIncome: 'Add Income',
+    allCars: 'All Cars',
+    carPerformanceOverview: 'Ferry Cars Financial Performance Overview',
+    ferryCarsSubheading: 'Track expenses, incomes, and net balances for all registered ferry cars.',
+    recordExpenseTitle: 'Record Car Expense',
+    recordIncomeTitle: 'Record Car Income',
+    editExpenseTitle: 'Edit Car Expense',
+    editIncomeTitle: 'Edit Car Income',
+    selectCar: 'Select Ferry Car',
+    noCarsRegistered: 'No ferry cars registered in the network.',
   },
   my: {
     overview: 'ခြုံငုံသုံးသပ်ချက်',
@@ -441,6 +466,28 @@ const TRANSLATIONS = {
     appInstalled: 'ထည့်သွင်းမှု အောင်မြင်သည်',
     isOffline: 'အော့ဖ်လိုင်းမုဒ်',
     isOnline: 'အွန်လိုင်း',
+    ferryCars: 'ဖယ်ရီကားများ',
+    carNumber: 'ကားနံပါတ်',
+    addCar: 'ကားအသစ်မှတ်ပုံတင်ရန်',
+    editCar: 'ကားနံပါတ်ပြင်ဆင်ရန်',
+    deleteCar: 'ကားဖျက်ရန်',
+    income: 'ဝင်ငွေ',
+    expense: 'အသုံးစရိတ် / ထွက်ငွေ',
+    netIncome: 'အသားတင် ဝင်ငွေ',
+    reason: 'အကြောင်းအရာ / မှတ်ချက်',
+    amount: 'ပမာဏ (ကျပ်)',
+    date: 'ရက်စွဲ',
+    addExpense: 'အသုံးစရိတ်ထည့်ရန်',
+    addIncome: 'ဝင်ငွေထည့်ရန်',
+    allCars: 'ကားအားလုံး',
+    carPerformanceOverview: 'ဖယ်ရီကားများ၏ ဘဏ္ဍာရေးအခြေအနေ ခြုံငုံသုံးသပ်ချက်',
+    ferryCarsSubheading: 'ဖယ်ရီကားများ၏ ဝင်ငွေ၊ အသုံးစရိတ်နှင့် အသားတင်ကျန်ရှိမှုများကို စောင့်ကြည့်ရန်။',
+    recordExpenseTitle: 'ကားအသုံးစရိတ် စာရင်းသွင်းရန်',
+    recordIncomeTitle: 'ကားဝင်ငွေ စာရင်းသွင်းရန်',
+    editExpenseTitle: 'ကားအသုံးစရိတ် ပြင်ဆင်ရန်',
+    editIncomeTitle: 'ကားဝင်ငွေ ပြင်ဆင်ရန်',
+    selectCar: 'ဖယ်ရီကား ရွေးချယ်ပါ',
+    noCarsRegistered: 'မှတ်ပုံတင်ထားသော ဖယ်ရီကား မရှိသေးပါ။',
   }
 };
 
@@ -573,6 +620,35 @@ export default function InventoryApp() {
   const [returnsList, setReturnsList] = useState<ReturnRecord[]>([]);
   const [fundingList, setFundingList] = useState<VillageFundingRecord[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+
+  // Ferry Car States
+  const [cars, setCars] = useState<Car[]>([]);
+  const [carExpenses, setCarExpenses] = useState<CarExpense[]>([]);
+  const [carIncomes, setCarIncomes] = useState<CarIncome[]>([]);
+  const [selectedCarId, setSelectedCarId] = useState<number | 'all'>('all');
+
+  const [carForm, setCarForm] = useState({
+    carNumber: '',
+  });
+
+  const [carExpenseForm, setCarExpenseForm] = useState({
+    date: getLocalTodayDateString(),
+    carId: 0,
+    amount: 0,
+    reason: '',
+  });
+
+  const [carIncomeForm, setCarIncomeForm] = useState({
+    date: getLocalTodayDateString(),
+    carId: 0,
+    amount: 0,
+    reason: '',
+  });
+
+  const [editingCar, setEditingCar] = useState<Car | null>(null);
+  const [editingCarExpense, setEditingCarExpense] = useState<CarExpense | null>(null);
+  const [editingCarIncome, setEditingCarIncome] = useState<CarIncome | null>(null);
+
   const [fundingForm, setFundingForm] = useState({
     date: '',
     village: '',
@@ -582,7 +658,7 @@ export default function InventoryApp() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | 'edit_village' | 'update_profile' | null>(null);
+  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | 'edit_village' | 'update_profile' | 'new_car' | 'edit_car' | 'new_car_expense' | 'edit_car_expense' | 'new_car_income' | 'edit_car_income' | null>(null);
 
   // --- Profile Edit Modal States ---
   const [profileEmail, setProfileEmail] = useState('');
@@ -1282,6 +1358,26 @@ export default function InventoryApp() {
         }
       } catch (err) {
         console.error('Failed to load funding records:', err);
+      }
+
+      // Fetch ferry car data from API
+      try {
+        const [carsRes, expensesRes, incomesRes] = await Promise.all([
+          fetch('/api/cars').then(r => r.json().catch(() => ({}))),
+          fetch('/api/car-expenses').then(r => r.json().catch(() => ({}))),
+          fetch('/api/car-incomes').then(r => r.json().catch(() => ({})))
+        ]);
+        if (carsRes.cars) {
+          setCars(carsRes.cars);
+        }
+        if (expensesRes.expenses) {
+          setCarExpenses(expensesRes.expenses);
+        }
+        if (incomesRes.incomes) {
+          setCarIncomes(incomesRes.incomes);
+        }
+      } catch (err) {
+        console.error('Failed to load ferry car data:', err);
       }
     } catch (error) {
       console.warn('Supabase fetch failed; using fallback data.', error);
@@ -3540,6 +3636,215 @@ export default function InventoryApp() {
     }
   };
 
+  const handleAddCar = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!carForm.carNumber.trim()) return;
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/cars', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ carNumber: carForm.carNumber }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to add car.');
+      } else {
+        setMessage(language === 'my' ? `ကား "${carForm.carNumber}" အောင်မြင်စွာ မှတ်ပုံတင်ပြီးပါပြီ။` : `Car "${carForm.carNumber}" registered successfully.`);
+        setCarForm({ carNumber: '' });
+        await loadData();
+        await loadAuditLogs();
+        setActiveModal(null);
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditCarSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCar || !carForm.carNumber.trim()) return;
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/cars', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingCar.id, carNumber: carForm.carNumber }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to update car.');
+      } else {
+        setMessage(language === 'my' ? 'ကားနံပါတ် ပြင်ဆင်ပြီးပါပြီ။' : 'Car number updated successfully.');
+        setCarForm({ carNumber: '' });
+        setEditingCar(null);
+        await loadData();
+        await loadAuditLogs();
+        setActiveModal(null);
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddCarExpense = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { date, carId, amount, reason } = carExpenseForm;
+    if (!carId || amount <= 0 || !reason.trim()) {
+      alert(language === 'my' ? 'ကျေးဇူးပြု၍ လိုအပ်ချက်များ အားလုံး ဖြည့်သွင်းပါ။' : 'Please fill in all required fields.');
+      return;
+    }
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/car-expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, carId: Number(carId), amount: Number(amount), reason }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to record expense.');
+      } else {
+        setMessage(language === 'my' ? 'အသုံးစရိတ် စာရင်းသွင်းပြီးပါပြီ။' : 'Expense recorded successfully.');
+        setCarExpenseForm({
+          date: getLocalTodayDateString(),
+          carId: cars.length > 0 ? cars[0].id : 0,
+          amount: 0,
+          reason: '',
+        });
+        await loadData();
+        await loadAuditLogs();
+        setActiveModal(null);
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditCarExpenseSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCarExpense) return;
+    const { date, carId, amount, reason } = carExpenseForm;
+    if (!carId || amount <= 0 || !reason.trim()) {
+      alert(language === 'my' ? 'ကျေးဇူးပြု၍ လိုအပ်ချက်များ အားလုံး ဖြည့်သွင်းပါ။' : 'Please fill in all required fields.');
+      return;
+    }
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/car-expenses', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingCarExpense.id, carId: Number(carId), date, amount: Number(amount), reason }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to update expense.');
+      } else {
+        setMessage(language === 'my' ? 'အသုံးစရိတ် ပြင်ဆင်ပြီးပါပြီ။' : 'Expense record updated successfully.');
+        setCarExpenseForm({
+          date: getLocalTodayDateString(),
+          carId: cars.length > 0 ? cars[0].id : 0,
+          amount: 0,
+          reason: '',
+        });
+        setEditingCarExpense(null);
+        await loadData();
+        await loadAuditLogs();
+        setActiveModal(null);
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddCarIncome = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { date, carId, amount, reason } = carIncomeForm;
+    if (!carId || amount <= 0) {
+      alert(language === 'my' ? 'ကျေးဇူးပြု၍ လိုအပ်ချက်များ အားလုံး ဖြည့်သွင်းပါ။' : 'Please fill in all required fields.');
+      return;
+    }
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/car-incomes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date, carId: Number(carId), amount: Number(amount), reason }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to record income.');
+      } else {
+        setMessage(language === 'my' ? 'ဝင်ငွေ စာရင်းသွင်းပြီးပါပြီ။' : 'Income recorded successfully.');
+        setCarIncomeForm({
+          date: getLocalTodayDateString(),
+          carId: cars.length > 0 ? cars[0].id : 0,
+          amount: 0,
+          reason: '',
+        });
+        await loadData();
+        await loadAuditLogs();
+        setActiveModal(null);
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditCarIncomeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCarIncome) return;
+    const { date, carId, amount, reason } = carIncomeForm;
+    if (!carId || amount <= 0) {
+      alert(language === 'my' ? 'ကျေးဇူးပြု၍ လိုအပ်ချက်များ အားလုံး ဖြည့်သွင်းပါ။' : 'Please fill in all required fields.');
+      return;
+    }
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/car-incomes', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingCarIncome.id, carId: Number(carId), date, amount: Number(amount), reason }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to update income.');
+      } else {
+        setMessage(language === 'my' ? 'ဝင်ငွေ ပြင်ဆင်ပြီးပါပြီ။' : 'Income record updated successfully.');
+        setCarIncomeForm({
+          date: getLocalTodayDateString(),
+          carId: cars.length > 0 ? cars[0].id : 0,
+          amount: 0,
+          reason: '',
+        });
+        setEditingCarIncome(null);
+        await loadData();
+        await loadAuditLogs();
+        setActiveModal(null);
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileEmailError(null);
@@ -3643,6 +3948,130 @@ export default function InventoryApp() {
       setIsSubmitting(false);
     }
   };
+
+  const handleDeleteCar = async (id: number, carNumber: string) => {
+    const confirmMsg = language === 'my' 
+      ? `ဤဖယ်ရီကား "${carNumber}" ကို ဖျက်ရန် သေချာပါသလား? ၎င်းနှင့်ပတ်သက်သော ဝင်ငွေ၊ ထွက်ငွေမှတ်တမ်းများအားလုံး ပျက်သွားပါမည်။` 
+      : `Are you sure you want to delete car "${carNumber}"? All associated income and expense records will be deleted as well.`;
+    if (!confirm(confirmMsg)) return;
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/cars?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to delete car.');
+      } else {
+        setMessage(language === 'my' ? 'ဖယ်ရီကားအား ဖျက်သိမ်းပြီးပါပြီ။' : 'Ferry car successfully deleted.');
+        if (selectedCarId === id) {
+          setSelectedCarId('all');
+        }
+        await loadData();
+        await loadAuditLogs();
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCarExpense = async (id: number) => {
+    const confirmMsg = language === 'my' 
+      ? 'ဤကားအသုံးစရိတ်မှတ်တမ်းအား ဖျက်ရန် သေချာပါသလား?' 
+      : 'Are you sure you want to delete this car expense record?';
+    if (!confirm(confirmMsg)) return;
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/car-expenses?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to delete expense record.');
+      } else {
+        setMessage(language === 'my' ? 'အသုံးစရိတ်မှတ်တမ်း ဖျက်ပြီးပါပြီ။' : 'Expense record successfully deleted.');
+        await loadData();
+        await loadAuditLogs();
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteCarIncome = async (id: number) => {
+    const confirmMsg = language === 'my' 
+      ? 'ဤကားဝင်ငွေမှတ်တမ်းအား ဖျက်ရန် သေချာပါသလား?' 
+      : 'Are you sure you want to delete this car income record?';
+    if (!confirm(confirmMsg)) return;
+    setIsSubmitting(true);
+    setMessage(null);
+    try {
+      const response = await fetch(`/api/car-incomes?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data.error || 'Failed to delete income record.');
+      } else {
+        setMessage(language === 'my' ? 'ဝင်ငွေမှတ်တမ်း ဖျက်ပြီးပါပြီ။' : 'Income record successfully deleted.');
+        await loadData();
+        await loadAuditLogs();
+      }
+    } catch (error) {
+      setMessage('Server connection error.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // --- Ferry Car Calculations & Filtering ---
+  const carStats = useMemo(() => {
+    const targetExpenses = selectedCarId === 'all' 
+      ? carExpenses 
+      : carExpenses.filter(e => e.car_id === selectedCarId);
+    
+    const targetIncomes = selectedCarId === 'all' 
+      ? carIncomes 
+      : carIncomes.filter(i => i.car_id === selectedCarId);
+
+    const totalIncome = targetIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const totalExpense = targetExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    const netBalance = totalIncome - totalExpense;
+
+    return { totalIncome, totalExpense, netBalance };
+  }, [carExpenses, carIncomes, selectedCarId]);
+
+  const carsWithBalances = useMemo(() => {
+    return cars.map(car => {
+      const targetExpenses = carExpenses.filter(e => e.car_id === car.id);
+      const targetIncomes = carIncomes.filter(i => i.car_id === car.id);
+      const totalIncome = targetIncomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const totalExpense = targetExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+      const netBalance = totalIncome - totalExpense;
+      return {
+        ...car,
+        totalIncome,
+        totalExpense,
+        netBalance
+      };
+    });
+  }, [cars, carExpenses, carIncomes]);
+
+  const filteredCarExpenses = useMemo(() => {
+    if (selectedCarId === 'all') return carExpenses;
+    return carExpenses.filter(e => e.car_id === selectedCarId);
+  }, [carExpenses, selectedCarId]);
+
+  const filteredCarIncomes = useMemo(() => {
+    if (selectedCarId === 'all') return carIncomes;
+    return carIncomes.filter(i => i.car_id === selectedCarId);
+  }, [carIncomes, selectedCarId]);
 
   // --- Dynamic Live Alerts Calculation ---
   const systemAlerts = useMemo(() => {
@@ -5364,6 +5793,359 @@ export default function InventoryApp() {
                   tableKey="returns"
                   totalItems={filteredReturns.length}
                 />
+              </div>
+            </>
+          )}
+
+          {/* FERRY CARS TAB RENDER */}
+          {activeTab === 'Ferry Cars' && (
+            <>
+              {/* Stats Grid */}
+              <div className="stats-grid">
+                <div className="summary-card">
+                  <p>{language === 'my' ? 'စုစုပေါင်း ဝင်ငွေ' : 'Total Incomes'}</p>
+                  <h3 style={{ color: 'var(--success)' }}>{formatCurrency(carStats.totalIncome)}</h3>
+                </div>
+                <div className="summary-card">
+                  <p>{language === 'my' ? 'စုစုပေါင်း အသုံးစရိတ်' : 'Total Expenses'}</p>
+                  <h3 style={{ color: 'var(--danger)' }}>{formatCurrency(carStats.totalExpense)}</h3>
+                </div>
+                <div className="summary-card">
+                  <p>{language === 'my' ? 'အသားတင် ကျန်ရှိမှု' : 'Net Balance'}</p>
+                  <h3 style={{ color: carStats.netBalance >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                    {formatCurrency(carStats.netBalance)}
+                  </h3>
+                </div>
+                <div className="summary-card">
+                  <p>{language === 'my' ? 'ကား စုစုပေါင်း' : 'Total Cars'}</p>
+                  <h3>{cars.length}</h3>
+                </div>
+              </div>
+
+              {/* Action and filter bar */}
+              <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div className="filter-group">
+                  <label htmlFor="ferry-car-filter">{t.selectCar}:</label>
+                  <select
+                    id="ferry-car-filter"
+                    value={selectedCarId}
+                    onChange={(e) => {
+                      setSelectedCarId(e.target.value === 'all' ? 'all' : Number(e.target.value));
+                      setPage('carExpensesTable', 1);
+                      setPage('carIncomesTable', 1);
+                    }}
+                    style={{ minWidth: '200px' }}
+                  >
+                    <option value="all">{t.allCars}</option>
+                    {cars.map((car) => (
+                      <option key={car.id} value={car.id}>
+                        {car.car_number}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {user?.role === 'admin' && (
+                  <div className="header-actions" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="primary"
+                      onClick={() => {
+                        setCarForm({ carNumber: '' });
+                        setActiveModal('new_car');
+                      }}
+                    >
+                      + {t.addCar}
+                    </button>
+                    <button
+                      type="button"
+                      className="primary"
+                      style={{ backgroundColor: 'var(--success)' }}
+                      onClick={() => {
+                        setCarIncomeForm({
+                          date: getLocalTodayDateString(),
+                          carId: cars.length > 0 ? cars[0].id : 0,
+                          amount: 0,
+                          reason: '',
+                        });
+                        setActiveModal('new_car_income');
+                      }}
+                      disabled={cars.length === 0}
+                    >
+                      + {t.addIncome}
+                    </button>
+                    <button
+                      type="button"
+                      className="primary"
+                      style={{ backgroundColor: 'var(--danger)' }}
+                      onClick={() => {
+                        setCarExpenseForm({
+                          date: getLocalTodayDateString(),
+                          carId: cars.length > 0 ? cars[0].id : 0,
+                          amount: 0,
+                          reason: '',
+                        });
+                        setActiveModal('new_car_expense');
+                      }}
+                      disabled={cars.length === 0}
+                    >
+                      + {t.addExpense}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Main content pane */}
+              <div className="overview-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '40px', padding: '40px', overflowY: 'auto' }}>
+                
+                {/* Left column - Cars List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '1.25rem' }}>
+                    {language === 'my' ? 'ကား စာရင်း' : 'Cars Registry'}
+                  </h3>
+                  
+                  {carsWithBalances.length === 0 ? (
+                    <div className="empty-state" style={{ padding: '40px 20px', border: '1px dashed var(--border-color)', borderRadius: '12px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      {t.noCarsRegistered}
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '600px', overflowY: 'auto', paddingRight: '4px' }}>
+                      {carsWithBalances.map((car) => (
+                        <div
+                          key={car.id}
+                          onClick={() => {
+                            setSelectedCarId(car.id);
+                            setPage('carExpensesTable', 1);
+                            setPage('carIncomesTable', 1);
+                          }}
+                          style={{
+                            padding: '16px',
+                            borderRadius: '12px',
+                            border: '1px solid',
+                            borderColor: selectedCarId === car.id ? 'var(--accent)' : 'var(--border-color)',
+                            backgroundColor: selectedCarId === car.id ? 'var(--accent-light)' : 'var(--bg-secondary)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: selectedCarId === car.id ? 'var(--accent)' : 'var(--text-primary)' }}>
+                              {car.car_number}
+                            </span>
+                            {user?.role === 'admin' && (
+                              <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  type="button"
+                                  className="action-btn edit"
+                                  onClick={() => {
+                                    setEditingCar(car);
+                                    setCarForm({ carNumber: car.car_number });
+                                    setActiveModal('edit_car');
+                                  }}
+                                >
+                                  {t.edit}
+                                </button>
+                                <button
+                                  type="button"
+                                  className="action-btn delete"
+                                  onClick={() => handleDeleteCar(car.id, car.car_number)}
+                                >
+                                  {t.delete}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                            <div>
+                              <span>{t.income}: </span>
+                              <span style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(car.totalIncome)}</span>
+                            </div>
+                            <div>
+                              <span>{t.expense}: </span>
+                              <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(car.totalExpense)}</span>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '0.9rem', borderTop: '1px solid var(--border-color)', paddingTop: '6px', marginTop: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                            <span>{t.netIncome}:</span>
+                            <span style={{ fontWeight: 700, color: car.netBalance >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                              {formatCurrency(car.netBalance)}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Right column - Incomes and Expenses Details */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
+                  
+                  {/* Incomes Section */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--success)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem' }}>
+                      <span>💵 {language === 'my' ? 'ဝင်ငွေ မှတ်တမ်း' : 'Incomes Registry'}</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        {selectedCarId === 'all' ? `(${t.allCars})` : ''}
+                      </span>
+                    </h3>
+                    
+                    <div className="table-responsive">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>{t.date}</th>
+                            <th>{t.carNumber}</th>
+                            <th>{t.amount}</th>
+                            <th>{t.reason}</th>
+                            {user?.role === 'admin' && <th>{t.action}</th>}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredCarIncomes.length === 0 ? (
+                            <tr>
+                              <td colSpan={user?.role === 'admin' ? 5 : 4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                                {language === 'my' ? 'ဝင်ငွေမှတ်တမ်းမရှိပါ။' : 'No income records found.'}
+                              </td>
+                            </tr>
+                          ) : (
+                            (isPrinting 
+                              ? filteredCarIncomes 
+                              : filteredCarIncomes.slice((getPage('carIncomesTable') - 1) * getPageSize('carIncomesTable'), getPage('carIncomesTable') * getPageSize('carIncomesTable'))
+                            ).map((income) => {
+                              const car = cars.find(c => c.id === income.car_id);
+                              return (
+                                <tr key={income.id}>
+                                  <td>{income.date}</td>
+                                  <td style={{ fontWeight: 600 }}>{car ? car.car_number : `ID ${income.car_id}`}</td>
+                                  <td style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(income.amount)}</td>
+                                  <td>{income.reason || '-'}</td>
+                                  {user?.role === 'admin' && (
+                                    <td>
+                                      <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                          type="button"
+                                          className="action-btn edit"
+                                          onClick={() => {
+                                            setEditingCarIncome(income);
+                                            setCarIncomeForm({
+                                              date: income.date,
+                                              carId: income.car_id,
+                                              amount: income.amount,
+                                              reason: income.reason || '',
+                                            });
+                                            setActiveModal('edit_car_income');
+                                          }}
+                                        >
+                                          {t.edit}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="action-btn delete"
+                                          onClick={() => handleDeleteCarIncome(income.id)}
+                                        >
+                                          {t.delete}
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <PaginationControls
+                      tableKey="carIncomesTable"
+                      totalItems={filteredCarIncomes.length}
+                    />
+                  </div>
+
+                  {/* Expenses Section */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h3 style={{ fontFamily: 'var(--font-display)', fontWeight: 600, color: 'var(--danger)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '1.2rem' }}>
+                      <span>⛽ {language === 'my' ? 'အသုံးစရိတ် မှတ်တမ်း' : 'Expenses Registry'}</span>
+                      <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                        {selectedCarId === 'all' ? `(${t.allCars})` : ''}
+                      </span>
+                    </h3>
+
+                    <div className="table-responsive">
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>{t.date}</th>
+                            <th>{t.carNumber}</th>
+                            <th>{t.amount}</th>
+                            <th>{t.reason}</th>
+                            {user?.role === 'admin' && <th>{t.action}</th>}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredCarExpenses.length === 0 ? (
+                            <tr>
+                              <td colSpan={user?.role === 'admin' ? 5 : 4} style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '20px' }}>
+                                {language === 'my' ? 'အသုံးစရိတ်မှတ်တမ်းမရှိပါ။' : 'No expense records found.'}
+                              </td>
+                            </tr>
+                          ) : (
+                            (isPrinting 
+                              ? filteredCarExpenses 
+                              : filteredCarExpenses.slice((getPage('carExpensesTable') - 1) * getPageSize('carExpensesTable'), getPage('carExpensesTable') * getPageSize('carExpensesTable'))
+                            ).map((exp) => {
+                              const car = cars.find(c => c.id === exp.car_id);
+                              return (
+                                <tr key={exp.id}>
+                                  <td>{exp.date}</td>
+                                  <td style={{ fontWeight: 600 }}>{car ? car.car_number : `ID ${exp.car_id}`}</td>
+                                  <td style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(exp.amount)}</td>
+                                  <td>{exp.reason}</td>
+                                  {user?.role === 'admin' && (
+                                    <td>
+                                      <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                          type="button"
+                                          className="action-btn edit"
+                                          onClick={() => {
+                                            setEditingCarExpense(exp);
+                                            setCarExpenseForm({
+                                              date: exp.date,
+                                              carId: exp.car_id,
+                                              amount: exp.amount,
+                                              reason: exp.reason,
+                                            });
+                                            setActiveModal('edit_car_expense');
+                                          }}
+                                        >
+                                          {t.edit}
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="action-btn delete"
+                                          onClick={() => handleDeleteCarExpense(exp.id)}
+                                        >
+                                          {t.delete}
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <PaginationControls
+                      tableKey="carExpensesTable"
+                      totalItems={filteredCarExpenses.length}
+                    />
+                  </div>
+
+                </div>
+
               </div>
             </>
           )}
@@ -7976,6 +8758,279 @@ export default function InventoryApp() {
                     </div>
                     <button className="primary" type="submit" style={{ marginTop: '24px' }} disabled={isSubmitting}>
                       {t.saveProfileBtn}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'new_car' && (
+                  <form onSubmit={handleAddCar}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {language === 'my' ? 'ဖယ်ရီကားအသစ်မှတ်ပုံတင်ရန် ၎င်း၏ ကားနံပါတ်ကို ထည့်သွင်းပါ။' : 'Enter the car number to register a new ferry car in the network.'}
+                    </p>
+                    <div className="form-group">
+                      <label>{t.carNumber}</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. YGN 1A-1234"
+                        value={carForm.carNumber}
+                        onChange={(e) => setCarForm({ carNumber: e.target.value })}
+                      />
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting}>
+                      {t.addCar}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'edit_car' && editingCar && (
+                  <form onSubmit={handleEditCarSubmit}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {language === 'my' ? `"${editingCar.car_number}" ၏ ကားနံပါတ်ကို ပြင်ဆင်ရန် အောက်တွင် အသစ်ဖြည့်သွင်းပါ။` : `Update the car number for "${editingCar.car_number}".`}
+                    </p>
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+                      <div className="form-group">
+                        <label>{language === 'my' ? 'လက်ရှိ ကားနံပါတ်' : 'Current Car Number'}</label>
+                        <div style={{ padding: '12px 16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', fontWeight: '500' }}>
+                          {editingCar.car_number}
+                        </div>
+                      </div>
+                      <div className="form-group">
+                        <label htmlFor="edit-car-number">{language === 'my' ? 'ကားနံပါတ်အသစ်' : 'New Car Number'}</label>
+                        <input
+                          id="edit-car-number"
+                          type="text"
+                          required
+                          placeholder="e.g. MDY 2B-5678"
+                          value={carForm.carNumber}
+                          onChange={(e) => setCarForm({ carNumber: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '16px' }} disabled={isSubmitting}>
+                      {language === 'my' ? 'သိမ်းဆည်းမည်' : 'Save Changes'}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'new_car_expense' && (
+                  <form onSubmit={handleAddCarExpense}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {t.recordExpenseTitle}
+                    </p>
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr', gap: '16px' }}>
+                      <div className="form-group">
+                        <label>{t.selectCar}</label>
+                        <select
+                          value={carExpenseForm.carId}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, carId: Number(e.target.value) }))}
+                          required
+                        >
+                          <option value="">-- {t.selectCar} --</option>
+                          {cars.map((car) => (
+                            <option key={car.id} value={car.id}>
+                              {car.car_number}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>{t.date}</label>
+                        <input
+                          type="date"
+                          required
+                          value={carExpenseForm.date}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, date: e.target.value }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.amount}</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={carExpenseForm.amount || ''}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.reason}</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="e.g. Fuel, Engine Oil, Repair"
+                          value={carExpenseForm.reason}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, reason: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '24px', backgroundColor: 'var(--danger)' }} disabled={isSubmitting || !carExpenseForm.carId}>
+                      {t.addExpense}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'edit_car_expense' && editingCarExpense && (
+                  <form onSubmit={handleEditCarExpenseSubmit}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {t.editExpenseTitle}
+                    </p>
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr', gap: '16px' }}>
+                      <div className="form-group">
+                        <label>{t.selectCar}</label>
+                        <select
+                          value={carExpenseForm.carId}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, carId: Number(e.target.value) }))}
+                          required
+                        >
+                          {cars.map((car) => (
+                            <option key={car.id} value={car.id}>
+                              {car.car_number}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>{t.date}</label>
+                        <input
+                          type="date"
+                          required
+                          value={carExpenseForm.date}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, date: e.target.value }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.amount}</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={carExpenseForm.amount || ''}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.reason}</label>
+                        <input
+                          type="text"
+                          required
+                          value={carExpenseForm.reason}
+                          onChange={(e) => setCarExpenseForm(prev => ({ ...prev, reason: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '24px' }} disabled={isSubmitting}>
+                      {language === 'my' ? 'ပြင်ဆင်မည်' : 'Save Changes'}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'new_car_income' && (
+                  <form onSubmit={handleAddCarIncome}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {t.recordIncomeTitle}
+                    </p>
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr', gap: '16px' }}>
+                      <div className="form-group">
+                        <label>{t.selectCar}</label>
+                        <select
+                          value={carIncomeForm.carId}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, carId: Number(e.target.value) }))}
+                          required
+                        >
+                          <option value="">-- {t.selectCar} --</option>
+                          {cars.map((car) => (
+                            <option key={car.id} value={car.id}>
+                              {car.car_number}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>{t.date}</label>
+                        <input
+                          type="date"
+                          required
+                          value={carIncomeForm.date}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, date: e.target.value }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.amount}</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={carIncomeForm.amount || ''}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.reason}</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Ferry trip fee, Delivery income (Optional)"
+                          value={carIncomeForm.reason}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, reason: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '24px', backgroundColor: 'var(--success)' }} disabled={isSubmitting || !carIncomeForm.carId}>
+                      {t.addIncome}
+                    </button>
+                  </form>
+                )}
+
+                {activeModal === 'edit_car_income' && editingCarIncome && (
+                  <form onSubmit={handleEditCarIncomeSubmit}>
+                    <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.95rem' }}>
+                      {t.editIncomeTitle}
+                    </p>
+                    <div className="form-grid" style={{ gridTemplateColumns: '1fr', gap: '16px' }}>
+                      <div className="form-group">
+                        <label>{t.selectCar}</label>
+                        <select
+                          value={carIncomeForm.carId}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, carId: Number(e.target.value) }))}
+                          required
+                        >
+                          {cars.map((car) => (
+                            <option key={car.id} value={car.id}>
+                              {car.car_number}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="form-group">
+                        <label>{t.date}</label>
+                        <input
+                          type="date"
+                          required
+                          value={carIncomeForm.date}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, date: e.target.value }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.amount}</label>
+                        <input
+                          type="number"
+                          min="1"
+                          required
+                          value={carIncomeForm.amount || ''}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, amount: Number(e.target.value) }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>{t.reason}</label>
+                        <input
+                          type="text"
+                          value={carIncomeForm.reason}
+                          onChange={(e) => setCarIncomeForm(prev => ({ ...prev, reason: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <button className="primary" type="submit" style={{ marginTop: '24px' }} disabled={isSubmitting}>
+                      {language === 'my' ? 'ပြင်ဆင်မည်' : 'Save Changes'}
                     </button>
                   </form>
                 )}

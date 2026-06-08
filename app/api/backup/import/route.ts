@@ -19,7 +19,7 @@ export const POST = withAuth(
       const buffer = Buffer.from(await file.arrayBuffer());
       const workbook = XLSX.read(buffer, { type: 'buffer' });
       
-      const tables = ['pipe_types', 'villages', 'productions', 'distributions', 'returns', 'audit_logs', 'village_funding'];
+      const tables = ['pipe_types', 'villages', 'productions', 'distributions', 'returns', 'audit_logs', 'village_funding', 'cars', 'car_expenses', 'car_incomes'];
       const data: Record<string, any[]> = {};
       
       let foundSheetsCount = 0;
@@ -88,8 +88,32 @@ export const POST = withAuth(
         results.village_funding = data.village_funding.length;
       }
 
+      // 8. Restore cars
+      if (data.cars && data.cars.length > 0) {
+        const { error } = await supabase!.from('cars').upsert(data.cars);
+        if (error) throw new Error(`Failed to restore cars: ${error.message}`);
+        results.cars = data.cars.length;
+      }
+
+      // 9. Restore car_expenses
+      if (data.car_expenses && data.car_expenses.length > 0) {
+        const { error } = await supabase!.from('car_expenses').upsert(data.car_expenses);
+        if (error) throw new Error(`Failed to restore car_expenses: ${error.message}`);
+        results.car_expenses = data.car_expenses.length;
+      }
+
+      // 10. Restore car_incomes
+      if (data.car_incomes && data.car_incomes.length > 0) {
+        const { error } = await supabase!.from('car_incomes').upsert(data.car_incomes);
+        if (error) throw new Error(`Failed to restore car_incomes: ${error.message}`);
+        results.car_incomes = data.car_incomes.length;
+      }
+
       invalidateCache('villages');
       invalidateCache('audit_logs');
+      invalidateCache('cars');
+      invalidateCache('car_expenses');
+      invalidateCache('car_incomes');
 
       await logAction(
         user.email,

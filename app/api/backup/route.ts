@@ -35,6 +35,9 @@ async function createBackupFile(userEmail: string, isAuto = false) {
     returnsRes,
     auditLogsRes,
     villageFundingRes,
+    carsRes,
+    carExpensesRes,
+    carIncomesRes,
   ] = await Promise.all([
     supabase!.from('pipe_types').select('*'),
     supabase!.from('villages').select('*'),
@@ -43,6 +46,9 @@ async function createBackupFile(userEmail: string, isAuto = false) {
     supabase!.from('returns').select('*'),
     supabase!.from('audit_logs').select('*'),
     supabase!.from('village_funding').select('*'),
+    supabase!.from('cars').select('*'),
+    supabase!.from('car_expenses').select('*'),
+    supabase!.from('car_incomes').select('*'),
   ]);
 
   if (pipeTypesRes.error) throw pipeTypesRes.error;
@@ -52,6 +58,9 @@ async function createBackupFile(userEmail: string, isAuto = false) {
   if (returnsRes.error) throw returnsRes.error;
   if (auditLogsRes.error) throw auditLogsRes.error;
   if (villageFundingRes.error) throw villageFundingRes.error;
+  if (carsRes.error) throw carsRes.error;
+  if (carExpensesRes.error) throw carExpensesRes.error;
+  if (carIncomesRes.error) throw carIncomesRes.error;
 
   const backupData = {
     timestamp: new Date().toISOString(),
@@ -64,6 +73,9 @@ async function createBackupFile(userEmail: string, isAuto = false) {
       returns: returnsRes.data || [],
       audit_logs: auditLogsRes.data || [],
       village_funding: villageFundingRes.data || [],
+      cars: carsRes.data || [],
+      car_expenses: carExpensesRes.data || [],
+      car_incomes: carIncomesRes.data || [],
     },
   };
 

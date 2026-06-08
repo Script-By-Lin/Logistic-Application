@@ -45,3 +45,25 @@ export interface VillageFundingRecord {
   amount: number;
   remark: string | null;
 }
+
+export interface Car {
+  id: number;
+  car_number: string;
+}
+
+export interface CarExpense {
+  id: number;
+  car_id: number;
+  date: string;
+  amount: number;
+  reason: string;
+}
+
+export interface CarIncome {
+  id: number;
+  car_id: number;
+  date: string;
+  amount: number;
+  reason: string | null;
+}
+

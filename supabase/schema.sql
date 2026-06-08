@@ -69,3 +69,25 @@ insert into villages (name) values
   ('Village C'),
   ('Village D')
 on conflict (name) do nothing;
+
+create table if not exists cars (
+  id serial primary key,
+  car_number text not null unique
+);
+
+create table if not exists car_expenses (
+  id serial primary key,
+  car_id integer not null references cars(id) on delete cascade,
+  date date not null,
+  amount numeric not null check (amount >= 0),
+  reason text not null
+);
+
+create table if not exists car_incomes (
+  id serial primary key,
+  car_id integer not null references cars(id) on delete cascade,
+  date date not null,
+  amount numeric not null check (amount >= 0),
+  reason text
+);
+
