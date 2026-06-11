@@ -1109,17 +1109,7 @@ export default function InventoryApp() {
     }
 
     return (
-      <div className="pagination-container no-print" style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '16px 24px',
-        borderTop: '1px solid var(--border-color)',
-        backgroundColor: 'var(--bg-secondary)',
-        borderRadius: '0 0 12px 12px',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
+      <div className="pagination-container no-print">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {/* <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
             {language === 'my' ? 'ပြသမည် -' : 'Show'}
