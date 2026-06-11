@@ -658,7 +658,7 @@ export default function InventoryApp() {
   });
   const [message, setMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | 'edit_village' | 'update_profile' | 'new_car' | 'edit_car' | 'new_car_expense' | 'edit_car_expense' | 'new_car_income' | 'edit_car_income' | null>(null);
+  const [activeModal, setActiveModal] = useState<'production' | 'distribution' | 'return' | 'new_pipe' | 'new_outpost' | 'edit_price' | 'edit_production' | 'edit_distribution' | 'edit_return' | 'edit_funding' | 'edit_village' | 'update_profile' | 'new_car' | 'edit_car' | 'new_car_expense' | 'edit_car_expense' | 'new_car_income' | 'edit_car_income' | 'view_car_details' | null>(null);
 
   // --- Profile Edit Modal States ---
   const [profileEmail, setProfileEmail] = useState('');
@@ -974,6 +974,7 @@ export default function InventoryApp() {
   const [searchCarIncomeQuery, setSearchCarIncomeQuery] = useState('');
   const [searchCarExpenseQuery, setSearchCarExpenseQuery] = useState('');
   const [activeFerrySubTab, setActiveFerrySubTab] = useState<'incomes' | 'expenses'>('incomes');
+  const [modalSubTab, setModalSubTab] = useState<'incomes' | 'expenses'>('incomes');
   const [showFerryFilters, setShowFerryFilters] = useState(false);
   const [showFerryActions, setShowFerryActions] = useState(false);
   const [ferryMobileTab, setFerryMobileTab] = useState<'cars' | 'incomes' | 'expenses'>('cars');
@@ -4143,6 +4144,10 @@ export default function InventoryApp() {
     });
   }, [cars, carExpenses, carIncomes, filterStartDate, filterEndDate, isSpecificDate]);
 
+  const selectedCarWithBalance = useMemo(() => {
+    return carsWithBalances.find(c => c.id === selectedCarId);
+  }, [carsWithBalances, selectedCarId]);
+
   // --- Dynamic Live Alerts Calculation ---
   const systemAlerts = useMemo(() => {
     const alerts: Array<{ type: 'low-stock' | 'damaged' | 'info'; text: string }> = [];
@@ -6198,6 +6203,8 @@ export default function InventoryApp() {
                             setSelectedCarId(car.id);
                             setPage('carExpensesTable', 1);
                             setPage('carIncomesTable', 1);
+                            setModalSubTab('incomes');
+                            setActiveModal('view_car_details');
                           }}
                           style={{
                             padding: '16px',
@@ -8441,7 +8448,7 @@ export default function InventoryApp() {
         {/* MODAL OVERLAYS */}
         {activeModal && (
           <div className="modal-overlay" onClick={() => setActiveModal(null)}>
-            <div className={`modal-content ${['distribution', 'edit_distribution', 'return', 'edit_return'].includes(activeModal) ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
+            <div className={`modal-content ${['distribution', 'edit_distribution', 'return', 'edit_return', 'view_car_details'].includes(activeModal) ? 'wide' : ''}`} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <h2>
                   {activeModal === 'production' && t.recordCentralProduction}
@@ -8456,6 +8463,7 @@ export default function InventoryApp() {
                   {activeModal === 'edit_funding' && (language === 'my' ? 'ငွေကြေးလွှဲပြောင်းမှု ပြင်ဆင်ရန်' : 'Edit Cash Transaction')}
                   {activeModal === 'edit_village' && (language === 'my' ? 'ကျေးရွာ အမည်ပြင်ဆင်ရန်' : 'Edit Outpost Village Name')}
                   {activeModal === 'update_profile' && t.updateProfileTitle}
+                  {activeModal === 'view_car_details' && selectedCarWithBalance && (language === 'my' ? `${selectedCarWithBalance.car_number} ၏ အသေးစိတ် မှတ်တမ်း` : `Detailed Report: ${selectedCarWithBalance.car_number}`)}
                 </h2>
                 <button 
                   type="button" 
@@ -9901,6 +9909,208 @@ export default function InventoryApp() {
                       </div>
                     )}
                   </form>
+                )}
+
+                {activeModal === 'view_car_details' && selectedCarWithBalance && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    {/* Date filter notice */}
+                    <div style={{ padding: '12px 16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '10px', fontSize: '0.88rem', color: 'var(--text-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>
+                        📅 {language === 'my' ? 'ရွေးချယ်ထားသော ရက်စွဲအပိုင်းအခြား:' : 'Selected Date Period:'}{' '}
+                        <strong>
+                          {isSpecificDate 
+                            ? (filterStartDate || (language === 'my' ? 'အားလုံး' : 'All Time')) 
+                            : (filterStartDate || filterEndDate ? `${filterStartDate || '...'} ${language === 'my' ? 'မှ' : 'to'} ${filterEndDate || '...'}` : (language === 'my' ? 'အားလုံး' : 'All Time'))}
+                        </strong>
+                      </span>
+                    </div>
+
+                    {/* Stats mini grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                      <div style={{ padding: '14px', background: 'rgba(16, 185, 129, 0.08)', border: '1px solid var(--success)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--success)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          💵 {language === 'my' ? 'စုစုပေါင်း ဝင်ငွေ' : 'Total Incomes'}
+                        </span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--success)' }}>
+                          {formatCurrency(selectedCarWithBalance.totalIncome)}
+                        </span>
+                      </div>
+                      <div style={{ padding: '14px', background: 'rgba(239, 68, 68, 0.08)', border: '1px solid var(--danger)', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <span style={{ fontSize: '0.78rem', color: 'var(--danger)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          ⛽ {language === 'my' ? 'စုစုပေါင်း အသုံးစရိတ်' : 'Total Expenses'}
+                        </span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--danger)' }}>
+                          {formatCurrency(selectedCarWithBalance.totalExpense)}
+                        </span>
+                      </div>
+                      <div style={{ 
+                        padding: '14px', 
+                        background: selectedCarWithBalance.netBalance >= 0 ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)', 
+                        border: '1px solid',
+                        borderColor: selectedCarWithBalance.netBalance >= 0 ? 'var(--success)' : 'var(--danger)',
+                        borderRadius: '12px', 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        gap: '4px' 
+                      }}>
+                        <span style={{ 
+                          fontSize: '0.78rem', 
+                          color: selectedCarWithBalance.netBalance >= 0 ? 'var(--success)' : 'var(--danger)', 
+                          fontWeight: '600', 
+                          textTransform: 'uppercase', 
+                          letterSpacing: '0.05em' 
+                        }}>
+                          ⚖️ {language === 'my' ? 'အသားတင်ကျန်ရှိမှု' : 'Net Balance'}
+                        </span>
+                        <span style={{ 
+                          fontSize: '1.25rem', 
+                          fontWeight: '800', 
+                          color: selectedCarWithBalance.netBalance >= 0 ? 'var(--success)' : 'var(--danger)' 
+                        }}>
+                          {formatCurrency(selectedCarWithBalance.netBalance)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Sub Tab Switcher */}
+                    <div className="ferry-segmented-control" style={{ margin: '8px 0 0 0' }}>
+                      <button
+                        type="button"
+                        onClick={() => setModalSubTab('incomes')}
+                        className={`ferry-segmented-btn ${modalSubTab === 'incomes' ? 'active-income' : ''}`}
+                        style={{ flex: 1 }}
+                      >
+                        <span>💵</span> {language === 'my' ? 'ဝင်ငွေ မှတ်တမ်းများ' : 'Incomes Log'} ({filteredCarIncomes.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalSubTab('expenses')}
+                        className={`ferry-segmented-btn ${modalSubTab === 'expenses' ? 'active-expense' : ''}`}
+                        style={{ flex: 1 }}
+                      >
+                        <span>⛽</span> {language === 'my' ? 'အသုံးစရိတ် မှတ်တမ်းများ' : 'Expenses Log'} ({filteredCarExpenses.length})
+                      </button>
+                    </div>
+
+                    {/* Modal Sub Tab Content */}
+                    <div style={{ maxHeight: '350px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '12px', background: 'var(--bg-secondary)' }}>
+                      {modalSubTab === 'incomes' ? (
+                        <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', margin: 0 }}>
+                          <thead>
+                            <tr style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: 'var(--bg-tertiary)' }}>
+                              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.85rem' }}>{t.date}</th>
+                              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.85rem' }}>{t.amount}</th>
+                              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.85rem' }}>{t.reason}</th>
+                              {user?.role === 'admin' && <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '0.85rem' }}>{t.action}</th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredCarIncomes.length === 0 ? (
+                              <tr>
+                                <td colSpan={user?.role === 'admin' ? 4 : 3} style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                  📭 {language === 'my' ? 'ဝင်ငွေမှတ်တမ်းမရှိပါ။' : 'No income records found for this period.'}
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredCarIncomes.map((income) => (
+                                <tr key={income.id} style={{ borderTop: '1px solid var(--border-color)' }}>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.88rem' }}>{income.date}</td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.88rem', fontWeight: '700', color: 'var(--success)' }}>{formatCurrency(income.amount)}</td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.88rem', color: 'var(--text-primary)' }}>{income.reason || '-'}</td>
+                                  {user?.role === 'admin' && (
+                                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                        <button
+                                          type="button"
+                                          className="action-btn edit"
+                                          onClick={() => {
+                                            setEditingCarIncome(income);
+                                            setCarIncomeForm({
+                                              date: income.date,
+                                              carId: income.car_id,
+                                              amount: income.amount,
+                                              reason: income.reason || '',
+                                            });
+                                            setActiveModal('edit_car_income');
+                                          }}
+                                        >
+                                          ✏️
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="action-btn delete"
+                                          onClick={() => handleDeleteCarIncome(income.id)}
+                                        >
+                                          🗑️
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      ) : (
+                        <table className="data-table" style={{ width: '100%', borderCollapse: 'collapse', margin: 0 }}>
+                          <thead>
+                            <tr style={{ position: 'sticky', top: 0, zIndex: 1, backgroundColor: 'var(--bg-tertiary)' }}>
+                              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.85rem' }}>{t.date}</th>
+                              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.85rem' }}>{t.amount}</th>
+                              <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '0.85rem' }}>{t.reason}</th>
+                              {user?.role === 'admin' && <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '0.85rem' }}>{t.action}</th>}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredCarExpenses.length === 0 ? (
+                              <tr>
+                                <td colSpan={user?.role === 'admin' ? 4 : 3} style={{ textAlign: 'center', padding: '32px 16px', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                                  📭 {language === 'my' ? 'အသုံးစရိတ်မှတ်တမ်းမရှိပါ။' : 'No expense records found for this period.'}
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredCarExpenses.map((exp) => (
+                                <tr key={exp.id} style={{ borderTop: '1px solid var(--border-color)' }}>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.88rem' }}>{exp.date}</td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.88rem', fontWeight: '700', color: 'var(--danger)' }}>{formatCurrency(exp.amount)}</td>
+                                  <td style={{ padding: '12px 16px', fontSize: '0.88rem', color: 'var(--text-primary)' }}>{exp.reason}</td>
+                                  {user?.role === 'admin' && (
+                                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                        <button
+                                          type="button"
+                                          className="action-btn edit"
+                                          onClick={() => {
+                                            setEditingCarExpense(exp);
+                                            setCarExpenseForm({
+                                              date: exp.date,
+                                              carId: exp.car_id,
+                                              amount: exp.amount,
+                                              reason: exp.reason,
+                                            });
+                                            setActiveModal('edit_car_expense');
+                                          }}
+                                        >
+                                          ✏️
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="action-btn delete"
+                                          onClick={() => handleDeleteCarExpense(exp.id)}
+                                        >
+                                          🗑️
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
