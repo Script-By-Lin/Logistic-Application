@@ -3028,6 +3028,115 @@ export default function InventoryApp() {
     );
   };
 
+  // --- Ferry Cars Excel Export Handler ---
+  const handleExportFerryExcel = () => {
+    const t = TRANSLATIONS[language];
+    const wb = XLSX.utils.book_new();
+
+    // 1. Overview sheet
+    const overviewHeaders = [
+      language === 'my' ? "ကားနံပါတ်" : "Car Number",
+      language === 'my' ? "ဝင်ငွေ စုစုပေါင်း (MMK)" : "Total Income (MMK)",
+      language === 'my' ? "အသုံးစရိတ် စုစုပေါင်း (MMK)" : "Total Expense (MMK)",
+      language === 'my' ? "အသားတင် ကျန်ရှိမှု (MMK)" : "Net Balance (MMK)"
+    ];
+
+    const targetCars = selectedCarId === 'all' 
+      ? carsWithBalances 
+      : carsWithBalances.filter(c => c.id === selectedCarId);
+
+    const overviewRows = targetCars.map(c => [
+      c.car_number,
+      c.totalIncome,
+      c.totalExpense,
+      c.netBalance
+    ]);
+
+    // Add totals row at the bottom of Overview
+    const sumIncome = targetCars.reduce((sum, c) => sum + c.totalIncome, 0);
+    const sumExpense = targetCars.reduce((sum, c) => sum + c.totalExpense, 0);
+    const sumBalance = targetCars.reduce((sum, c) => sum + c.netBalance, 0);
+    overviewRows.push([
+      language === 'my' ? "စုစုပေါင်း" : "Total",
+      sumIncome,
+      sumExpense,
+      sumBalance
+    ]);
+
+    // Period / Date range info
+    let periodLabel = language === 'my' ? 'အားလုံး' : 'All Time';
+    if (filterStartDate || filterEndDate) {
+      if (isSpecificDate) {
+        periodLabel = filterStartDate || '';
+      } else {
+        periodLabel = `${filterStartDate || '...'} ${language === 'my' ? 'မှ' : 'to'} ${filterEndDate || '...'}`;
+      }
+    }
+
+    const overviewMetadata = [
+      [language === 'my' ? "ဖယ်ရီကားများ၏ ဘဏ္ဍာရေး စွမ်းဆောင်ရည် ခြုံငုံသုံးသပ်ချက်" : "Ferry Cars Financial Performance Overview"],
+      [language === 'my' ? "စစ်ထုတ်မှု ကာလ" : "Filter Period", periodLabel],
+      [language === 'my' ? "ထုတ်ယူသည့် ရက်စွဲ" : "Generated On", new Date().toLocaleString()],
+      []
+    ];
+
+    const wsOverview = XLSX.utils.aoa_to_sheet([...overviewMetadata, overviewHeaders, ...overviewRows]);
+    XLSX.utils.book_append_sheet(wb, wsOverview, language === 'my' ? "ခြုံငုံသုံးသပ်ချက်" : "Overview");
+
+    // 2. Incomes Registry Sheet
+    const incomeHeaders = [
+      language === 'my' ? "ရက်စွဲ" : "Date",
+      language === 'my' ? "ကားနံပါတ်" : "Car Number",
+      language === 'my' ? "ပမာဏ (MMK)" : "Amount (MMK)",
+      language === 'my' ? "အကြောင်းအရာ" : "Reason"
+    ];
+
+    const incomeRows = filteredCarIncomes.map(income => {
+      const car = cars.find(c => c.id === income.car_id);
+      return [
+        income.date,
+        car ? car.car_number : `ID ${income.car_id}`,
+        income.amount,
+        income.reason || '-'
+      ];
+    });
+
+    const wsIncomes = XLSX.utils.aoa_to_sheet([incomeHeaders, ...incomeRows]);
+    XLSX.utils.book_append_sheet(wb, wsIncomes, language === 'my' ? "ဝင်ငွေမှတ်တမ်း" : "Incomes");
+
+    // 3. Expenses Registry Sheet
+    const expenseHeaders = [
+      language === 'my' ? "ရက်စွဲ" : "Date",
+      language === 'my' ? "ကားနံပါတ်" : "Car Number",
+      language === 'my' ? "ပမာဏ (MMK)" : "Amount (MMK)",
+      language === 'my' ? "အကြောင်းအရာ" : "Reason"
+    ];
+
+    const expenseRows = filteredCarExpenses.map(exp => {
+      const car = cars.find(c => c.id === exp.car_id);
+      return [
+        exp.date,
+        car ? car.car_number : `ID ${exp.car_id}`,
+        exp.amount,
+        exp.reason || '-'
+      ];
+    });
+
+    const wsExpenses = XLSX.utils.aoa_to_sheet([expenseHeaders, ...expenseRows]);
+    XLSX.utils.book_append_sheet(wb, wsExpenses, language === 'my' ? "အသုံးစရိတ်မှတ်တမ်း" : "Expenses");
+
+    // Filename
+    let downloadName = `ferry_cars_report_${getLocalTodayDateString()}.xlsx`;
+    if (selectedCarId !== 'all') {
+      const car = cars.find(c => c.id === selectedCarId);
+      if (car) {
+        downloadName = `ferry_car_${car.car_number}_report_${getLocalTodayDateString()}.xlsx`;
+      }
+    }
+
+    XLSX.writeFile(wb, downloadName);
+  };
+
   // --- Reports Export Handlers ---
   const handleExportExcel = () => {
     const t = TRANSLATIONS[language];
@@ -5317,7 +5426,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable', 'carsTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />
@@ -5531,7 +5640,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable', 'carsTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />
@@ -5742,7 +5851,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable', 'carsTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />
@@ -5961,6 +6070,28 @@ export default function InventoryApp() {
                       <span>📅</span> {language === 'my' ? 'ရက်စွဲ စစ်ထုတ်မှု' : 'Date Filters'}
                     </button>
 
+                    <button
+                      type="button"
+                      onClick={handleExportFerryExcel}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-color)',
+                        backgroundColor: 'var(--bg-primary)',
+                        color: 'var(--text-secondary)',
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        height: '38px',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <span>📊</span> {t.exportToExcelBtn}
+                    </button>
+
                     {user?.role === 'admin' && (
                       <div style={{ position: 'relative' }}>
                         <button
@@ -6133,7 +6264,7 @@ export default function InventoryApp() {
                           checked={isSpecificDate}
                           onChange={(e) => {
                             setIsSpecificDate(e.target.checked);
-                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable', 'carsTable'];
                             tables.forEach(t => setPage(t, 1));
                           }}
                           style={{ margin: 0, accentColor: 'var(--accent)', cursor: 'pointer' }}
@@ -6195,76 +6326,82 @@ export default function InventoryApp() {
                       {t.noCarsRegistered}
                     </div>
                   ) : (
-                    <div className="ferry-cars-list-container">
-                      {carsWithBalances.map((car) => (
-                        <div
-                          key={car.id}
-                          onClick={() => {
-                            setSelectedCarId(car.id);
-                            setPage('carExpensesTable', 1);
-                            setPage('carIncomesTable', 1);
-                            setModalSubTab('incomes');
-                            setActiveModal('view_car_details');
-                          }}
-                          style={{
-                            padding: '16px',
-                            borderRadius: '12px',
-                            border: '1px solid',
-                            borderColor: selectedCarId === car.id ? 'var(--accent)' : 'var(--border-color)',
-                            backgroundColor: selectedCarId === car.id ? 'var(--accent-light)' : 'var(--bg-secondary)',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '8px'
-                          }}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontWeight: 700, fontSize: '1.1rem', color: selectedCarId === car.id ? 'var(--accent)' : 'var(--text-primary)' }}>
-                              {car.car_number}
-                            </span>
-                            {user?.role === 'admin' && (
-                              <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  type="button"
-                                  className="action-btn edit"
-                                  onClick={() => {
-                                    setEditingCar(car);
-                                    setCarForm({ carNumber: car.car_number });
-                                    setActiveModal('edit_car');
-                                  }}
-                                >
-                                  {t.edit}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="action-btn delete"
-                                  onClick={() => handleDeleteCar(car.id, car.car_number)}
-                                >
-                                  {t.delete}
-                                </button>
+                    <>
+                      <div className="ferry-cars-list-container" style={{ marginBottom: '16px' }}>
+                        {carsWithBalances.slice((getPage('carsTable') - 1) * getPageSize('carsTable'), getPage('carsTable') * getPageSize('carsTable')).map((car) => (
+                          <div
+                            key={car.id}
+                            onClick={() => {
+                              setSelectedCarId(car.id);
+                              setPage('carExpensesTable', 1);
+                              setPage('carIncomesTable', 1);
+                              setModalSubTab('incomes');
+                              setActiveModal('view_car_details');
+                            }}
+                            style={{
+                              padding: '16px',
+                              borderRadius: '12px',
+                              border: '1px solid',
+                              borderColor: selectedCarId === car.id ? 'var(--accent)' : 'var(--border-color)',
+                              backgroundColor: selectedCarId === car.id ? 'var(--accent-light)' : 'var(--bg-secondary)',
+                              cursor: 'pointer',
+                              transition: 'all 0.2s',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '8px'
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontWeight: 700, fontSize: '1.1rem', color: selectedCarId === car.id ? 'var(--accent)' : 'var(--text-primary)' }}>
+                                {car.car_number}
+                              </span>
+                              {user?.role === 'admin' && (
+                                <div style={{ display: 'flex', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
+                                  <button
+                                    type="button"
+                                    className="action-btn edit"
+                                    onClick={() => {
+                                      setEditingCar(car);
+                                      setCarForm({ carNumber: car.car_number });
+                                      setActiveModal('edit_car');
+                                    }}
+                                  >
+                                    {t.edit}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="action-btn delete"
+                                    onClick={() => handleDeleteCar(car.id, car.car_number)}
+                                  >
+                                    {t.delete}
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                              <div>
+                                <span>{t.income}: </span>
+                                <span style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(car.totalIncome)}</span>
                               </div>
-                            )}
-                          </div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                            <div>
-                              <span>{t.income}: </span>
-                              <span style={{ color: 'var(--success)', fontWeight: 600 }}>{formatCurrency(car.totalIncome)}</span>
+                              <div>
+                                <span>{t.expense}: </span>
+                                <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(car.totalExpense)}</span>
+                              </div>
                             </div>
-                            <div>
-                              <span>{t.expense}: </span>
-                              <span style={{ color: 'var(--danger)', fontWeight: 600 }}>{formatCurrency(car.totalExpense)}</span>
+                            <div style={{ fontSize: '0.9rem', borderTop: '1px solid var(--border-color)', paddingTop: '6px', marginTop: '2px', display: 'flex', justifyContent: 'space-between' }}>
+                              <span>{t.netIncome}:</span>
+                              <span style={{ fontWeight: 700, color: car.netBalance >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                                {formatCurrency(car.netBalance)}
+                              </span>
                             </div>
                           </div>
-                          <div style={{ fontSize: '0.9rem', borderTop: '1px solid var(--border-color)', paddingTop: '6px', marginTop: '2px', display: 'flex', justifyContent: 'space-between' }}>
-                            <span>{t.netIncome}:</span>
-                            <span style={{ fontWeight: 700, color: car.netBalance >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                              {formatCurrency(car.netBalance)}
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                      <PaginationControls
+                        tableKey="carsTable"
+                        totalItems={carsWithBalances.length}
+                      />
+                    </>
                   )}
                 </div>
 
@@ -6918,7 +7055,7 @@ export default function InventoryApp() {
                           checked={isSpecificDate}
                           onChange={(e) => {
                             setIsSpecificDate(e.target.checked);
-                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                            const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable', 'carsTable'];
                             tables.forEach(t => setPage(t, 1));
                           }}
                         />
@@ -7549,7 +7686,7 @@ export default function InventoryApp() {
                         checked={isSpecificDate}
                         onChange={(e) => {
                           setIsSpecificDate(e.target.checked);
-                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                          const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable', 'carsTable'];
                           tables.forEach(t => setPage(t, 1));
                         }}
                       />
@@ -8183,7 +8320,7 @@ export default function InventoryApp() {
                       checked={isSpecificDate}
                       onChange={(e) => {
                         setIsSpecificDate(e.target.checked);
-                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable'];
+                        const tables = ['production', 'distribution', 'returns', 'reconciliation', 'finRebuyProd', 'finRatio', 'finFunding', 'finCashFlow', 'repProd', 'repDist', 'repRet', 'repRecon', 'auditLogs', 'carExpensesTable', 'carIncomesTable', 'carsTable'];
                         tables.forEach(t => setPage(t, 1));
                       }}
                     />
