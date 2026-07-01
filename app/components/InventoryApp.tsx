@@ -1573,6 +1573,384 @@ export default function InventoryApp() {
     }
   };
 
+  const downloadExcelTemplate = (tableName: string) => {
+    const headersMap: Record<string, string[]> = {
+      productions: ['Date', 'Pipe Type', 'Quantity', 'Batch ID'],
+      distributions: ['Date', 'Pipe Type', 'Quantity', 'Village', 'Price', 'From Location', 'To Location', 'Remark', 'Batch ID'],
+      returns: ['Date', 'Village', 'Pipe Type', 'Quantity', 'Status', 'Price', 'Remark', 'Batch ID'],
+      village_funding: ['Date', 'Village', 'Type', 'Amount', 'Remark'],
+      pipe_types: ['Name', 'Unit Price'],
+      villages: ['Name'],
+      cars: ['Car Number'],
+      car_incomes: ['Date', 'Car Number', 'Amount', 'Reason'],
+      car_expenses: ['Date', 'Car Number', 'Amount', 'Reason'],
+    };
+
+    const headers = headersMap[tableName];
+    if (!headers) return;
+
+    const ws = XLSX.utils.aoa_to_sheet([headers]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template");
+
+    const sampleRows: Record<string, any[][]> = {
+      productions: [['2026-07-01', '6-inch pipe', 150, 'B-001']],
+      distributions: [['2026-07-01', '6-inch pipe', 50, 'Village A', 25000, 'Central Factory', 'Village A', 'Delivered by Truck 1', 'B-001']],
+      returns: [['2026-07-02', 'Village A', '6-inch pipe', 5, 'damaged', 25000, 'Cracked during transport', 'B-001']],
+      village_funding: [['2026-07-01', 'Village A', 'disbursement', 1000000, 'Initial setup fund']],
+      pipe_types: [['12-inch pipe', 75000]],
+      villages: [['Village E']],
+      cars: [['YGN-12345']],
+      car_incomes: [['2026-07-01', 'YGN-12345', 350000, 'Delivery job']],
+      car_expenses: [['2026-07-01', 'YGN-12345', 120000, 'Fuel purchase']],
+    };
+
+    if (sampleRows[tableName]) {
+      XLSX.utils.sheet_add_aoa(ws, sampleRows[tableName], { origin: 'A2' });
+    }
+
+    XLSX.writeFile(wb, `${tableName}_template.xlsx`);
+  };
+
+  const handleImportExcelSpecific = async (tableName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target?.result;
+        if (!data) return;
+        
+        const workbook = XLSX.read(data, { type: 'binary', cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        
+        if (rows.length === 0) {
+          alert(language === 'my' ? 'ဖိုင်ထဲတွင် မည်သည့်ဒေတာမှ မတွေ့ပါ။' : 'No data records found in the Excel file.');
+          return;
+        }
+
+        const getRowValue = (row: any, keys: string[]) => {
+          const rowKeys = Object.keys(row);
+          for (const k of keys) {
+            const matchedKey = rowKeys.find(rk => rk.trim().toLowerCase() === k.toLowerCase());
+            if (matchedKey !== undefined) return row[matchedKey];
+          }
+          return undefined;
+        };
+
+        const parseExcelDate = (val: any): string | null => {
+          if (!val) return null;
+          if (val instanceof Date) {
+            return val.toISOString().split('T')[0];
+          }
+          if (typeof val === 'number') {
+            const date = new Date(Math.round((val - 25569) * 86400 * 1000));
+            if (!isNaN(date.getTime())) {
+              return date.toISOString().split('T')[0];
+            }
+          }
+          if (typeof val === 'string') {
+            const date = new Date(val);
+            if (!isNaN(date.getTime())) {
+              return date.toISOString().split('T')[0];
+            }
+            const partsObj = val.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+            if (partsObj) {
+              return `${partsObj[1]}-${partsObj[2].padStart(2, '0')}-${partsObj[3].padStart(2, '0')}`;
+            }
+            const partsDmy = val.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+            if (partsDmy) {
+              return `${partsDmy[3]}-${partsDmy[2].padStart(2, '0')}-${partsDmy[1].padStart(2, '0')}`;
+            }
+          }
+          return null;
+        };
+
+        const parsedRecords: any[] = [];
+        for (let i = 0; i < rows.length; i++) {
+          const rowNum = i + 2;
+          const row = rows[i];
+
+          if (tableName === 'productions') {
+            const rawDate = getRowValue(row, ['date', 'datum', 'ရက်စွဲ']);
+            const date = parseExcelDate(rawDate);
+            if (!date) throw new Error(`Row ${rowNum}: Invalid or missing Date.`);
+
+            const pipeName = getRowValue(row, ['pipe type', 'model', 'pipe model', 'pipe_type', 'အမျိုးအစား']);
+            if (!pipeName) throw new Error(`Row ${rowNum}: Missing Pipe Type.`);
+            const pipeType = pipeTypes.find(p => p.name.trim().toLowerCase() === String(pipeName).trim().toLowerCase());
+            if (!pipeType) throw new Error(`Row ${rowNum}: Pipe Type "${pipeName}" not found in catalog.`);
+
+            const rawQty = getRowValue(row, ['quantity', 'qty', 'output', 'amount', 'အရေအတွက်']);
+            const quantity = parseInt(String(rawQty));
+            if (isNaN(quantity) || quantity <= 0) throw new Error(`Row ${rowNum}: Quantity must be a positive integer.`);
+
+            const batchId = getRowValue(row, ['batch id', 'batch_id', 'batch', 'အသုတ်']);
+            const finalBatchId = batchId ? String(batchId).trim() : null;
+
+            parsedRecords.push({
+              date,
+              pipe_type_id: pipeType.id,
+              quantity,
+              batch_id: finalBatchId,
+            });
+          }
+
+          else if (tableName === 'distributions') {
+            const rawDate = getRowValue(row, ['date', 'datum', 'ရက်စွဲ']);
+            const date = parseExcelDate(rawDate);
+            if (!date) throw new Error(`Row ${rowNum}: Invalid or missing Date.`);
+
+            const pipeName = getRowValue(row, ['pipe type', 'model', 'pipe model', 'pipe_type', 'အမျိုးအစား']);
+            if (!pipeName) throw new Error(`Row ${rowNum}: Missing Pipe Type.`);
+            const pipeType = pipeTypes.find(p => p.name.trim().toLowerCase() === String(pipeName).trim().toLowerCase());
+            if (!pipeType) throw new Error(`Row ${rowNum}: Pipe Type "${pipeName}" not found in catalog.`);
+
+            const rawQty = getRowValue(row, ['quantity', 'qty', 'amount', 'အရေအတွက်']);
+            const quantity = parseInt(String(rawQty));
+            if (isNaN(quantity) || quantity <= 0) throw new Error(`Row ${rowNum}: Quantity must be a positive integer.`);
+
+            const villageName = getRowValue(row, ['village', 'outpost', 'destination', 'ကျေးရွာ']);
+            if (!villageName) throw new Error(`Row ${rowNum}: Missing Outpost Village.`);
+            const villageExists = villages.some(v => v.name.trim().toLowerCase() === String(villageName).trim().toLowerCase());
+            if (!villageExists) throw new Error(`Row ${rowNum}: Village "${villageName}" not found in Outpost Village registry.`);
+
+            const rawPrice = getRowValue(row, ['price', 'unit price', 'unit_price', 'တန်ဖိုး', 'ဈေးနှုန်း']);
+            const price = parseFloat(String(rawPrice));
+            if (isNaN(price) || price < 0) throw new Error(`Row ${rowNum}: Price must be a non-negative number.`);
+
+            const fromLocation = getRowValue(row, ['from location', 'from_location', 'from', 'စတင်ရာနေရာ']);
+            const toLocation = getRowValue(row, ['to location', 'to_location', 'to', 'ရောက်ရှိရာနေရာ']);
+            const remark = getRowValue(row, ['remark', 'remarks', 'note', 'notes', 'မှတ်ချက်']);
+            const batchId = getRowValue(row, ['batch id', 'batch_id', 'batch', 'အသုတ်']);
+
+            parsedRecords.push({
+              date,
+              pipe_type_id: pipeType.id,
+              quantity,
+              village: String(villageName).trim(),
+              price,
+              from_location: fromLocation ? String(fromLocation).trim() : null,
+              to_location: toLocation ? String(toLocation).trim() : null,
+              remark: remark ? String(remark).trim() : null,
+              batch_id: batchId ? String(batchId).trim() : null,
+            });
+          }
+
+          else if (tableName === 'returns') {
+            const rawDate = getRowValue(row, ['date', 'datum', 'ရက်စွဲ']);
+            const date = parseExcelDate(rawDate);
+            if (!date) throw new Error(`Row ${rowNum}: Invalid or missing Date.`);
+
+            const villageName = getRowValue(row, ['village', 'outpost', 'ကျေးရွာ']);
+            if (!villageName) throw new Error(`Row ${rowNum}: Missing Outpost Village.`);
+            const villageExists = villages.some(v => v.name.trim().toLowerCase() === String(villageName).trim().toLowerCase());
+            if (!villageExists) throw new Error(`Row ${rowNum}: Village "${villageName}" not found in Outpost Village registry.`);
+
+            const pipeName = getRowValue(row, ['pipe type', 'model', 'pipe model', 'pipe_type', 'အမျိုးအစား']);
+            if (!pipeName) throw new Error(`Row ${rowNum}: Missing Pipe Type.`);
+            const pipeType = pipeTypes.find(p => p.name.trim().toLowerCase() === String(pipeName).trim().toLowerCase());
+            if (!pipeType) throw new Error(`Row ${rowNum}: Pipe Type "${pipeName}" not found in catalog.`);
+
+            const rawQty = getRowValue(row, ['quantity', 'qty', 'amount', 'အရေအတွက်']);
+            const quantity = parseInt(String(rawQty));
+            if (isNaN(quantity) || quantity <= 0) throw new Error(`Row ${rowNum}: Quantity must be a positive integer.`);
+
+            const rawStatus = getRowValue(row, ['status', 'condition', 'အမျိုးအစား/အခြေအနေ', 'အခြေအနေ']);
+            if (!rawStatus) throw new Error(`Row ${rowNum}: Missing Status.`);
+            const statusStr = String(rawStatus).trim().toLowerCase();
+            let status: 'damaged' | 'production_grade';
+            if (statusStr === 'damaged' || statusStr === 'ပျက်စီး' || statusStr === 'damage') {
+              status = 'damaged';
+            } else if (statusStr === 'production_grade' || statusStr === 'good' || statusStr === 'production grade' || statusStr === 'ပြန်ကောင်း') {
+              status = 'production_grade';
+            } else {
+              throw new Error(`Row ${rowNum}: Status must be "damaged" or "production_grade".`);
+            }
+
+            const rawPrice = getRowValue(row, ['price', 'unit price', 'unit_price', 'တန်ဖိုး', 'ဈေးနှုန်း']);
+            const price = rawPrice !== undefined ? parseFloat(String(rawPrice)) : 0;
+            if (isNaN(price) || price < 0) throw new Error(`Row ${rowNum}: Price must be a non-negative number.`);
+
+            const remark = getRowValue(row, ['remark', 'remarks', 'note', 'notes', 'မှတ်ချက်']);
+            const batchId = getRowValue(row, ['batch id', 'batch_id', 'batch', 'အသုတ်']);
+
+            parsedRecords.push({
+              date,
+              village: String(villageName).trim(),
+              pipe_type_id: pipeType.id,
+              quantity,
+              status,
+              price,
+              remark: remark ? String(remark).trim() : null,
+              batch_id: batchId ? String(batchId).trim() : null,
+            });
+          }
+
+          else if (tableName === 'village_funding') {
+            const rawDate = getRowValue(row, ['date', 'datum', 'ရက်စွဲ']);
+            const date = parseExcelDate(rawDate);
+            if (!date) throw new Error(`Row ${rowNum}: Invalid or missing Date.`);
+
+            const villageName = getRowValue(row, ['village', 'outpost', 'ကျေးရွာ']);
+            if (!villageName) throw new Error(`Row ${rowNum}: Missing Outpost Village.`);
+            const villageExists = villages.some(v => v.name.trim().toLowerCase() === String(villageName).trim().toLowerCase());
+            if (!villageExists) throw new Error(`Row ${rowNum}: Village "${villageName}" not found in Outpost Village registry.`);
+
+            const rawType = getRowValue(row, ['type', 'transaction type', 'transaction_type', 'အမျိုးအစား']);
+            if (!rawType) throw new Error(`Row ${rowNum}: Missing Type.`);
+            const typeStr = String(rawType).trim().toLowerCase();
+            let type: 'disbursement' | 'repayment';
+            if (typeStr === 'disbursement' || typeStr === 'disburse' || typeStr === 'ထုတ်ပေးငွေ') {
+              type = 'disbursement';
+            } else if (typeStr === 'repayment' || typeStr === 'repay' || typeStr === 'ပြန်ဆပ်ငွေ') {
+              type = 'repayment';
+            } else {
+              throw new Error(`Row ${rowNum}: Type must be "disbursement" or "repayment".`);
+            }
+
+            const rawAmount = getRowValue(row, ['amount', 'sum', 'value', 'ပမာဏ']);
+            const amount = parseFloat(String(rawAmount));
+            if (isNaN(amount) || amount <= 0) throw new Error(`Row ${rowNum}: Amount must be a positive number.`);
+
+            const remark = getRowValue(row, ['remark', 'remarks', 'note', 'notes', 'မှတ်ချက်']);
+
+            parsedRecords.push({
+              date,
+              village: String(villageName).trim(),
+              type,
+              amount,
+              remark: remark ? String(remark).trim() : null,
+            });
+          }
+
+          else if (tableName === 'pipe_types') {
+            const name = getRowValue(row, ['name', 'pipe type', 'model', 'pipe model', 'အမျိုးအစား', 'အမည်']);
+            if (!name || String(name).trim() === '') throw new Error(`Row ${rowNum}: Name is required.`);
+
+            const rawPrice = getRowValue(row, ['price', 'unit price', 'unit_price', 'တန်ဖိုး', 'ဈေးနှုန်း']);
+            const unit_price = parseFloat(String(rawPrice));
+            if (isNaN(unit_price) || unit_price < 0) throw new Error(`Row ${rowNum}: Unit Price must be a non-negative number.`);
+
+            parsedRecords.push({
+              name: String(name).trim(),
+              unit_price,
+            });
+          }
+
+          else if (tableName === 'villages') {
+            const name = getRowValue(row, ['name', 'village', 'outpost', 'ကျေးရွာ', 'အမည်']);
+            if (!name || String(name).trim() === '') throw new Error(`Row ${rowNum}: Name is required.`);
+
+            parsedRecords.push({
+              name: String(name).trim(),
+            });
+          }
+
+          else if (tableName === 'cars') {
+            const car_number = getRowValue(row, ['car number', 'car_number', 'number', 'license plate', 'ကားနံပါတ်']);
+            if (!car_number || String(car_number).trim() === '') throw new Error(`Row ${rowNum}: Car Number is required.`);
+
+            parsedRecords.push({
+              car_number: String(car_number).trim(),
+            });
+          }
+
+          else if (tableName === 'car_incomes') {
+            const rawDate = getRowValue(row, ['date', 'datum', 'ရက်စွဲ']);
+            const date = parseExcelDate(rawDate);
+            if (!date) throw new Error(`Row ${rowNum}: Invalid or missing Date.`);
+
+            const carNo = getRowValue(row, ['car number', 'car_number', 'number', 'license plate', 'ကားနံပါတ်']);
+            if (!carNo) throw new Error(`Row ${rowNum}: Missing Car Number.`);
+            const car = cars.find(c => c.car_number.trim().toLowerCase() === String(carNo).trim().toLowerCase());
+            if (!car) throw new Error(`Row ${rowNum}: Car "${carNo}" not found in registered cars.`);
+
+            const rawAmount = getRowValue(row, ['amount', 'sum', 'value', 'ဝင်ငွေ', 'ပမာဏ']);
+            const amount = parseFloat(String(rawAmount));
+            if (isNaN(amount) || amount < 0) throw new Error(`Row ${rowNum}: Amount must be a non-negative number.`);
+
+            const reason = getRowValue(row, ['reason', 'description', 'detail', 'details', 'အကြောင်းအရာ']);
+
+            parsedRecords.push({
+              date,
+              car_id: car.id,
+              amount,
+              reason: reason ? String(reason).trim() : null,
+            });
+          }
+
+          else if (tableName === 'car_expenses') {
+            const rawDate = getRowValue(row, ['date', 'datum', 'ရက်စွဲ']);
+            const date = parseExcelDate(rawDate);
+            if (!date) throw new Error(`Row ${rowNum}: Invalid or missing Date.`);
+
+            const carNo = getRowValue(row, ['car number', 'car_number', 'number', 'license plate', 'ကားနံပါတ်']);
+            if (!carNo) throw new Error(`Row ${rowNum}: Missing Car Number.`);
+            const car = cars.find(c => c.car_number.trim().toLowerCase() === String(carNo).trim().toLowerCase());
+            if (!car) throw new Error(`Row ${rowNum}: Car "${carNo}" not found in registered cars.`);
+
+            const rawAmount = getRowValue(row, ['amount', 'sum', 'value', 'အသုံးစရိတ်', 'ပမာဏ']);
+            const amount = parseFloat(String(rawAmount));
+            if (isNaN(amount) || amount < 0) throw new Error(`Row ${rowNum}: Amount must be a non-negative number.`);
+
+            const reason = getRowValue(row, ['reason', 'description', 'detail', 'details', 'အကြောင်းအရာ']);
+            if (!reason || String(reason).trim() === '') throw new Error(`Row ${rowNum}: Reason is required.`);
+
+            parsedRecords.push({
+              date,
+              car_id: car.id,
+              amount,
+              reason: String(reason).trim(),
+            });
+          }
+        }
+
+        if (confirm(language === 'my' 
+          ? `ကျေးဇူးပြု၍ အတည်ပြုပေးပါ - စုစုပေါင်းမှတ်တမ်း ${parsedRecords.length} ခုကို တင်သွင်းရန် သေချာပါသလား?`
+          : `Confirm to import ${parsedRecords.length} records into "${tableName}"?`)) {
+          
+          setIsSubmitting(true);
+          setMessage(null);
+
+          const response = await fetch('/api/import-data', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              table: tableName,
+              records: parsedRecords,
+            })
+          });
+
+          const resData = await response.json();
+          if (response.ok) {
+            setMessage(language === 'my' 
+              ? `အချက်အလက်များကို အောင်မြင်စွာ တင်သွင်းပြီးပါပြီ။ (သွင်းယူပြီးဦးရေ: ${resData.count})`
+              : `Successfully imported ${resData.count} records into ${tableName}.`);
+            
+            await loadData();
+            await loadVillages();
+            await loadAuditLogs();
+          } else {
+            alert(resData.error || 'Failed to import records.');
+          }
+        }
+
+      } catch (err: any) {
+        alert(err.message || 'Error processing Excel file.');
+        console.error(err);
+      } finally {
+        e.target.value = '';
+        setIsSubmitting(false);
+      }
+    };
+    
+    reader.readAsBinaryString(file);
+  };
+
   // Reload data when user logs in successfully
   useEffect(() => {
     if (user) {
@@ -4991,43 +5369,171 @@ export default function InventoryApp() {
             {user.role === 'admin' && (
               <div className="header-actions">
                 {activeTab === 'Production' && (
-                  <button 
-                    className="primary" 
-                    onClick={() => setActiveModal('production')}
-                  >
-                    {t.addProduction}
-                  </button>
-                )}
-                {activeTab === 'Distribution' && (
-                  <button 
-                    className="primary" 
-                    onClick={() => setActiveModal('distribution')}
-                  >
-                    {t.addDistribution}
-                  </button>
-                )}
-                {activeTab === 'Returns' && (
-                  <button 
-                    className="primary" 
-                    onClick={() => setActiveModal('return')}
-                  >
-                    {t.addReturn}
-                  </button>
-                )}
-                {activeTab === 'Catalog Settings' && (
-                  <div className="catalog-actions-row">
-                    <button 
-                      className="secondary" 
-                      onClick={() => setActiveModal('new_pipe')}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="file"
+                      id="import-excel-productions"
+                      accept=".xlsx, .xls, .csv"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleImportExcelSpecific('productions', e)}
+                    />
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => document.getElementById('import-excel-productions')?.click()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                     >
-                      {t.newPipeModel}
+                      📊 {language === 'my' ? 'Excel သွင်းမည်' : 'Import Excel'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => downloadExcelTemplate('productions')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📄 {language === 'my' ? 'နမူနာဖိုင်' : 'Get Template'}
                     </button>
                     <button 
                       className="primary" 
-                      onClick={() => setActiveModal('new_outpost')}
+                      onClick={() => setActiveModal('production')}
                     >
-                      {t.newOutpostNode}
+                      {t.addProduction}
                     </button>
+                  </div>
+                )}
+                {activeTab === 'Distribution' && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="file"
+                      id="import-excel-distributions"
+                      accept=".xlsx, .xls, .csv"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleImportExcelSpecific('distributions', e)}
+                    />
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => document.getElementById('import-excel-distributions')?.click()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📊 {language === 'my' ? 'Excel သွင်းမည်' : 'Import Excel'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => downloadExcelTemplate('distributions')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📄 {language === 'my' ? 'နမူနာဖိုင်' : 'Get Template'}
+                    </button>
+                    <button 
+                      className="primary" 
+                      onClick={() => setActiveModal('distribution')}
+                    >
+                      {t.addDistribution}
+                    </button>
+                  </div>
+                )}
+                {activeTab === 'Returns' && (
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <input
+                      type="file"
+                      id="import-excel-returns"
+                      accept=".xlsx, .xls, .csv"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleImportExcelSpecific('returns', e)}
+                    />
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => document.getElementById('import-excel-returns')?.click()}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📊 {language === 'my' ? 'Excel သွင်းမည်' : 'Import Excel'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => downloadExcelTemplate('returns')}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📄 {language === 'my' ? 'နမူနာဖိုင်' : 'Get Template'}
+                    </button>
+                    <button 
+                      className="primary" 
+                      onClick={() => setActiveModal('return')}
+                    >
+                      {t.addReturn}
+                    </button>
+                  </div>
+                )}
+                {activeTab === 'Catalog Settings' && (
+                  <div className="catalog-actions-row" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    {catalogSubTab === 'pipes' ? (
+                      <>
+                        <input
+                          type="file"
+                          id="import-excel-pipe-types"
+                          accept=".xlsx, .xls, .csv"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleImportExcelSpecific('pipe_types', e)}
+                        />
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => document.getElementById('import-excel-pipe-types')?.click()}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          📊 {language === 'my' ? 'Excel သွင်းမည်' : 'Import Excel'}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => downloadExcelTemplate('pipe_types')}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          📄 {language === 'my' ? 'နမူနာဖိုင်' : 'Get Template'}
+                        </button>
+                        <button 
+                          className="secondary" 
+                          onClick={() => setActiveModal('new_pipe')}
+                        >
+                          {t.newPipeModel}
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="file"
+                          id="import-excel-villages"
+                          accept=".xlsx, .xls, .csv"
+                          style={{ display: 'none' }}
+                          onChange={(e) => handleImportExcelSpecific('villages', e)}
+                        />
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => document.getElementById('import-excel-villages')?.click()}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          📊 {language === 'my' ? 'Excel သွင်းမည်' : 'Import Excel'}
+                        </button>
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => downloadExcelTemplate('villages')}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                          📄 {language === 'my' ? 'နမူနာဖိုင်' : 'Get Template'}
+                        </button>
+                        <button 
+                          className="primary" 
+                          onClick={() => setActiveModal('new_outpost')}
+                        >
+                          {t.newOutpostNode}
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -6109,7 +6615,13 @@ export default function InventoryApp() {
                         {showFerryActions && (
                           <>
                             <div onClick={() => setShowFerryActions(false)} style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} />
-                            <div className="ferry-actions-dropdown">
+                            <div className="ferry-actions-dropdown" style={{ width: '260px', maxHeight: '450px', overflowY: 'auto', padding: '12px' }}>
+                              
+                              {/* Section 1: Manual Entry */}
+                              <div style={{ padding: '4px 8px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                                {language === 'my' ? 'လက်ဖြင့် ဖြည့်သွင်းရန်' : 'MANUAL ENTRY'}
+                              </div>
+                              
                               <button
                                 type="button"
                                 onClick={() => {
@@ -6117,6 +6629,7 @@ export default function InventoryApp() {
                                   setCarForm({ carNumber: '' });
                                   setActiveModal('new_car');
                                 }}
+                                style={{ margin: '2px 0' }}
                               >
                                 <span>🚗</span> {t.addCar}
                               </button>
@@ -6133,6 +6646,7 @@ export default function InventoryApp() {
                                   });
                                   setActiveModal('new_car_income');
                                 }}
+                                style={{ margin: '2px 0' }}
                               >
                                 <span>💵</span> {t.addIncome}
                               </button>
@@ -6149,8 +6663,112 @@ export default function InventoryApp() {
                                   });
                                   setActiveModal('new_car_expense');
                                 }}
+                                style={{ margin: '2px 0' }}
                               >
                                 <span>⛽</span> {t.addExpense}
+                              </button>
+
+                              <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '8px 0' }} />
+
+                              {/* Section 2: Excel Import */}
+                              <div style={{ padding: '4px 8px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                                {language === 'my' ? 'EXCEL သွင်းယူရန်' : 'EXCEL IMPORT'}
+                              </div>
+                              
+                              <input
+                                type="file"
+                                id="import-excel-cars"
+                                accept=".xlsx, .xls, .csv"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleImportExcelSpecific('cars', e)}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowFerryActions(false);
+                                  document.getElementById('import-excel-cars')?.click();
+                                }}
+                                style={{ margin: '2px 0' }}
+                              >
+                                <span>🚗</span> {language === 'my' ? 'ကား စာရင်းသွင်းမည်' : 'Import Cars'}
+                              </button>
+
+                              <input
+                                type="file"
+                                id="import-excel-car-incomes"
+                                accept=".xlsx, .xls, .csv"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleImportExcelSpecific('car_incomes', e)}
+                              />
+                              <button
+                                type="button"
+                                disabled={cars.length === 0}
+                                onClick={() => {
+                                  setShowFerryActions(false);
+                                  document.getElementById('import-excel-car-incomes')?.click();
+                                }}
+                                style={{ margin: '2px 0' }}
+                              >
+                                <span>💵</span> {language === 'my' ? 'ဝင်ငွေ စာရင်းသွင်းမည်' : 'Import Incomes'}
+                              </button>
+
+                              <input
+                                type="file"
+                                id="import-excel-car-expenses"
+                                accept=".xlsx, .xls, .csv"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleImportExcelSpecific('car_expenses', e)}
+                              />
+                              <button
+                                type="button"
+                                disabled={cars.length === 0}
+                                onClick={() => {
+                                  setShowFerryActions(false);
+                                  document.getElementById('import-excel-car-expenses')?.click();
+                                }}
+                                style={{ margin: '2px 0' }}
+                              >
+                                <span>⛽</span> {language === 'my' ? 'အသုံးစရိတ် သွင်းမည်' : 'Import Expenses'}
+                              </button>
+
+                              <div style={{ height: '1px', backgroundColor: 'var(--border-color)', margin: '8px 0' }} />
+
+                              {/* Section 3: Excel Templates */}
+                              <div style={{ padding: '4px 8px', fontSize: '0.75rem', fontWeight: 'bold', color: 'var(--text-secondary)', letterSpacing: '0.05em' }}>
+                                {language === 'my' ? 'နမူနာဖိုင် ရယူရန်' : 'EXCEL TEMPLATES'}
+                              </div>
+                              
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowFerryActions(false);
+                                  downloadExcelTemplate('cars');
+                                }}
+                                style={{ margin: '2px 0' }}
+                              >
+                                <span>📄</span> {language === 'my' ? 'ကား စာရင်း နမူနာ' : 'Get Cars Template'}
+                              </button>
+                              
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowFerryActions(false);
+                                  downloadExcelTemplate('car_incomes');
+                                }}
+                                style={{ margin: '2px 0' }}
+                              >
+                                <span>📄</span> {language === 'my' ? 'ဝင်ငွေ စာရင်း နမူနာ' : 'Get Incomes Template'}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowFerryActions(false);
+                                  downloadExcelTemplate('car_expenses');
+                                }}
+                                style={{ margin: '2px 0' }}
+                              >
+                                <span>📄</span> {language === 'my' ? 'အသုံးစရိတ် နမူနာ' : 'Get Expenses Template'}
                               </button>
                             </div>
                           </>
@@ -7402,9 +8020,36 @@ export default function InventoryApp() {
                         setFilterFundingEndDate(e.target.value);
                         setPage('finCashFlow', 1);
                       }}
-                      style={{ padding: '6px 10px', fontSize: '0.85rem' }}
                     />
                   </div>
+
+                  {user.role === 'admin' && (
+                    <div style={{ display: 'flex', gap: '8px', marginLeft: 'auto', alignItems: 'center' }}>
+                      <input
+                        type="file"
+                        id="import-excel-village-funding"
+                        accept=".xlsx, .xls, .csv"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleImportExcelSpecific('village_funding', e)}
+                      />
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => document.getElementById('import-excel-village-funding')?.click()}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '38px', padding: '6px 12px' }}
+                      >
+                        📊 {language === 'my' ? 'Excel သွင်းမည်' : 'Import Excel'}
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary"
+                        onClick={() => downloadExcelTemplate('village_funding')}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '38px', padding: '6px 12px' }}
+                      >
+                        📄 {language === 'my' ? 'နမူနာဖိုင်' : 'Get Template'}
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="table-wrapper mobile-cards" style={{ marginTop: '12px' }}>
